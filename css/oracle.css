@@ -272,3 +272,12 @@ body.oracle-open {
     animation: none;
   }
 }
+
+html[data-runtime="electron"] .oracle-overlay {
+  backdrop-filter: none;
+}
+
+html[data-runtime="electron"] .oracle-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 236px;
+}

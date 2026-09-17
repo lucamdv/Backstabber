@@ -26,8 +26,11 @@ body {
     height: 100vh;
     object-fit: cover; 
     z-index: -1;
-    /* Escurece levemente o vídeo para o Neon Rosa explodir na tela */
-    filter: brightness(0.70); 
+    /* Opacidade sobre o fundo escuro evita um filtro GPU contínuo por frame. */
+    opacity: 0.70;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: strict;
 }
 
 /* O Menu Lateral - 100% Flutuante e sem caixa de fundo! */
@@ -301,6 +304,18 @@ input::placeholder { color: #4a4a4a; }
 .pwa-install:disabled {
     opacity: 0.64;
     cursor: default;
+}
+
+/* Perfil do executável: preserva a identidade visual com menos composição GPU. */
+html[data-runtime="electron"] .terminal-modal,
+html[data-runtime="electron"] .pwa-install {
+    backdrop-filter: none;
+}
+
+html.app-backgrounded *,
+html.app-backgrounded *::before,
+html.app-backgrounded *::after {
+    animation-play-state: paused !important;
 }
 
 @media (max-width: 760px) {

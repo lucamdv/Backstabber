@@ -2223,3 +2223,122 @@ body.backstab-impact .hud-container {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ================= PERFIS DE DESEMPENHO =================
+   O navegador mantém todos os efeitos. O executável troca filtros que exigem
+   repintura contínua por transformações compostas pela GPU. */
+.backstab-cinematic,
+.defeat-cinematic,
+.victory-overlay,
+#intro-overlay {
+  contain: layout paint style;
+}
+
+.backstab-cinematic.active .backstab-impact-content,
+.backstab-cinematic.active .backstab-curtain,
+.backstab-cinematic.active .backstab-rift,
+.defeat-cinematic.active .defeat-content,
+.victory-overlay.active .victory-content,
+.victory-overlay.active .victory-particle,
+.intro-card {
+  will-change: transform, opacity;
+}
+
+html.app-backgrounded *,
+html.app-backgrounded *::before,
+html.app-backgrounded *::after {
+  animation-play-state: paused !important;
+}
+
+html[data-runtime="electron"] .overlay {
+  backdrop-filter: none;
+}
+
+html[data-runtime="electron"] .backstab-cinematic::after,
+html[data-runtime="electron"] .defeat-scanlines,
+html[data-runtime="electron"] .victory-grid {
+  animation: none;
+}
+
+html[data-runtime="electron"] .backstab-impact-content {
+  animation-name: backstabExecutionGpu;
+}
+
+html[data-runtime="electron"] .defeat-content {
+  animation-name: defeatDropGpu;
+}
+
+html[data-runtime="electron"] .victory-content {
+  animation-name: victoryAscensionGpu;
+}
+
+html[data-runtime="electron"] .victory-content h2 {
+  animation-name: victoryTitleImpactGpu;
+}
+
+html[data-runtime="electron"] .victory-particle {
+  box-shadow: none;
+}
+
+html[data-runtime="electron"] .intro-card {
+  filter: none;
+}
+
+@keyframes backstabExecutionGpu {
+  0%, 20% { opacity: 0; transform: scale(1.55) rotate(-3deg); }
+  27% { opacity: 1; transform: scale(0.88) rotate(1deg); }
+  34% { transform: scale(1.06) translateX(-10px); }
+  41% { transform: scale(1) translateX(8px); }
+  48%, 84% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+@keyframes defeatDropGpu {
+  0% { opacity: 0; transform: translateY(-28px) scale(1.12); }
+  24% { opacity: 1; }
+  72% { transform: translateY(0) scale(1); }
+  100% { opacity: 0.96; }
+}
+
+@keyframes victoryAscensionGpu {
+  0% { opacity: 0; transform: translateY(64px) scale(0.84); }
+  55% { opacity: 1; transform: translateY(-7px) scale(1.025); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes victoryTitleImpactGpu {
+  0% { opacity: 0; transform: scale(1.6); }
+  54% { opacity: 1; transform: scale(0.93); }
+  72% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+
+html[data-fx="lite"] .backstab-cinematic::after,
+html[data-fx="lite"] .backstab-noise,
+html[data-fx="lite"] .backstab-rift-echo,
+html[data-fx="lite"] .victory-overlay::before,
+html[data-fx="lite"] .victory-overlay::after,
+html[data-fx="lite"] .victory-grid,
+html[data-fx="lite"] .victory-rays {
+  display: none;
+}
+
+html[data-fx="lite"] .backstab-logo-frame {
+  filter: drop-shadow(5px 0 0 rgba(255, 0, 62, 0.48))
+    drop-shadow(-4px 0 0 rgba(0, 243, 255, 0.3));
+}
+
+html[data-fx="lite"] .victory-content h2::before,
+html[data-fx="lite"] .victory-content h2::after,
+html[data-fx="lite"] .victory-isotipo {
+  animation: none;
+}
+
+html[data-fx="lite"] .victory-content h2::before,
+html[data-fx="lite"] .victory-content h2::after {
+  opacity: 0.28;
+}
+
+html[data-fx="lite"] .victory-emblem-ring {
+  animation-duration: 10s;
+}

@@ -498,7 +498,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ui.victoryParticles) {
       ui.victoryParticles.innerHTML = "";
       const cores = ["#00f3ff", "#ffffff", "#ff0055", "#5effff"];
-      for (let index = 0; index < 28; index += 1) {
+      const totalParticulas = window.BackstabberPerformance?.particleCount ?? 28;
+      for (let index = 0; index < totalParticulas; index += 1) {
         const particula = document.createElement("i");
         particula.className = "victory-particle";
         particula.style.setProperty("--particle-x", `${(index * 37) % 101}%`);
@@ -963,6 +964,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ui.blindfold.classList.remove("active");
       
       const reduzirMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const duracaoIntro = window.BackstabberPerformance?.introDuration ?? 3000;
 
       // Aguarda o embaralhamento, exceto quando o sistema pede menos movimento.
       setTimeout(() => {
@@ -977,7 +979,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ui.blindfoldMsg.textContent = `SISTEMA PRONTO! ${jogo.getJogadorAtual().nome}, assuma o terminal.`;
               ui.blindfold.classList.add("active");
           }, reduzirMovimento ? 0 : 500);
-      }, reduzirMovimento ? 0 : 3000);
+      }, reduzirMovimento ? 0 : duracaoIntro);
   } else {
       // Fallback de segurança se o HTML da intro não for encontrado
       atualizarInterface();

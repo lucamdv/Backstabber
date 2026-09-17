@@ -1,4 +1,4 @@
-const CACHE_NAME = "backstabber-shell-v4";
+const CACHE_NAME = "backstabber-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "./css/style-game.css",
   "./css/oracle.css",
   "./js/setup.js",
+  "./js/runtime-performance.js",
   "./js/classes.js",
   "./js/engine.js",
   "./js/oracle.js",
