@@ -1,0 +1,29 @@
+{
+  "id": "./",
+  "name": "Backstabber",
+  "short_name": "Backstabber",
+  "description": "Blefe, influência e traição em uma mesa cyberpunk.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape-primary",
+  "background_color": "#050510",
+  "theme_color": "#050510",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

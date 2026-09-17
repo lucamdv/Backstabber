@@ -1,0 +1,100 @@
+{
+  "name": "backstabber",
+  "version": "1.1.0",
+  "description": "Jogo de blefe e influência cyberpunk para mesa local.",
+  "author": "Backstabber Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucamdv/Backstabber.git"
+  },
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "desktop": "electron .",
+    "build:web": "node scripts/prepare-web-release.cjs",
+    "build:windows": "node desktop/prepare-windows-icon.cjs && electron-builder --win nsis --x64",
+    "build:windows:portable": "node desktop/prepare-windows-icon.cjs && electron-builder --win portable --x64",
+    "build:mac": "node desktop/prepare-mac-icon.cjs && electron-builder --mac --universal",
+    "build:mac:apple": "node desktop/prepare-mac-icon.cjs && electron-builder --mac --arm64",
+    "build:mac:intel": "node desktop/prepare-mac-icon.cjs && electron-builder --mac --x64"
+  },
+  "devDependencies": {
+    "electron": "38.8.6",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.backstabber.game",
+    "productName": "Backstabber",
+    "asar": true,
+    "asarUnpack": [
+      "background.mp4"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "lucamdv",
+        "repo": "Backstabber"
+      }
+    ],
+    "files": [
+      "index.html",
+      "game.html",
+      "background.mp4",
+      "manifest.webmanifest",
+      "version.json",
+      "sw.js",
+      "css/**/*",
+      "js/**/*",
+      "images/**/*",
+      "desktop/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Backstabber-Windows-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Backstabber"
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.board-games",
+      "darkModeSupport": true,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "artifactName": "Backstabber-macOS-universal.${ext}"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

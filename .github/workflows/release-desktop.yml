@@ -1,0 +1,127 @@
+name: Publicar aplicativos atualizáveis
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    env:
+      APP_VERSION: 1.1.${{ github.run_number }}
+
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Definir versão automática
+        run: npm version $env:APP_VERSION --no-git-tag-version
+
+      - name: Preparar ícone Windows
+        run: node desktop/prepare-windows-icon.cjs
+
+      - name: Gerar instalador Windows
+        run: >-
+          npx electron-builder --win nsis --x64 --publish never
+          --config.publish.provider=github
+          --config.publish.owner=${{ github.repository_owner }}
+          --config.publish.repo=${{ github.event.repository.name }}
+
+      - name: Guardar pacote Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            release/Backstabber-Windows-Setup.exe
+            release/*.blockmap
+            release/latest.yml
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    env:
+      APP_VERSION: 1.1.${{ github.run_number }}
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Definir versão automática
+        run: npm version "$APP_VERSION" --no-git-tag-version
+
+      - name: Preparar ícone macOS
+        run: node desktop/prepare-mac-icon.cjs
+
+      - name: Gerar DMG universal
+        run: >-
+          npx electron-builder --mac --universal --publish never
+          --config.publish.provider=github
+          --config.publish.owner=${{ github.repository_owner }}
+          --config.publish.repo=${{ github.event.repository.name }}
+
+      - name: Guardar pacote macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: |
+            release/Backstabber-macOS-universal.dmg
+            release/Backstabber-macOS-universal.zip
+            release/*.blockmap
+            release/latest-mac.yml
+          if-no-files-found: error
+
+  publish-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    env:
+      APP_VERSION: 1.1.${{ github.run_number }}
+
+    steps:
+      - name: Reunir aplicativos
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Criar atualização no GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          name: Backstabber ${{ env.APP_VERSION }}
+          body: |
+            Atualização automática do Backstabber.
+
+            - Windows: baixe `Backstabber-Windows-Setup.exe`.
+            - macOS: baixe `Backstabber-macOS-universal.dmg`.
+          files: release-assets/*
+          make_latest: true

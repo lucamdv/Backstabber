@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050508">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Backstabber">
+    <title>Backstabber - Arena</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="images/isotipo.png" type="image/png">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <link rel="stylesheet" href="css/style-game.css">
+    <link rel="stylesheet" href="css/oracle.css">
+</head>
+<body>
+    
+    <div class="hud-container">
+        <!-- ================= CABEÇALHO ================= -->
+        <header class="hud-header">
+            <div class="header-logo" aria-label="Backstabber">
+                <img class="brand-isotipo" src="images/isotipo.png" alt="">
+                <span class="brand-isologo-frame" aria-hidden="true">
+                    <img class="brand-isologo" src="images/isologo.png" alt="">
+                </span>
+            </div>
+            
+            <div class="header-center">
+                <span class="turn-label">STATUS DA MESA</span>
+                <div id="scoreboard" class="scoreboard-bar"></div>
+            </div>
+
+            <div class="header-right">
+                <div class="header-tools" aria-label="Controles da partida">
+                    <button type="button" class="header-tool-btn" data-oracle-open aria-controls="oracle-modal" aria-label="Abrir Oráculo" title="Oráculo">?</button>
+                    <button type="button" class="header-tool-btn" id="btn-pause" aria-controls="pause-modal" aria-label="Abrir menu de pausa" title="Pausar">Ⅱ</button>
+                </div>
+                <p>TRUST<br>IS A<br>CURRENCY.</p>
+            </div>
+        </header>
+
+        <!-- ================= CORPO PRINCIPAL ================= -->
+        <main class="hud-body">
+            
+            <!-- PAINEL ESQUERDO: TRIBUNAL E DECK -->
+            <aside class="panel-left">
+                <div class="hud-box tribunal-box">
+                    <h3 class="box-title">TRIBUNAL</h3>
+                    <div class="tribunal-header">
+                        <span>JOGADOR</span><span>AÇÃO</span>
+                    </div>
+                    <div class="log-scroll">
+                        <table id="action-log">
+                            <tbody id="action-log-body" aria-live="polite"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="deck-box">
+                    <img class="deck-card" src="images/verso_card.png" alt="Verso do baralho">
+                    <div class="deck-info">
+                        <span>DECK</span>
+                        <small id="deck-count">CARREGANDO...</small>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- PAINEL CENTRAL: ARENA, MÃO E AÇÕES -->
+            <section class="panel-center">
+                <!-- A Arena (Tabuleiro central) -->
+                <div class="playmat-arena">
+                    <div class="crosshair top-left">+</div>
+                    <div class="crosshair top-right">+</div>
+                    <div class="crosshair bottom-left">+</div>
+                    <div class="crosshair bottom-right">+</div>
+                    <div class="arena-center-logo">👑</div>
+                    <div class="arena-border-label top">SISTEMA ONLINE</div>
+                    <div class="arena-border-label bottom">LADO ATIVO</div>
+                </div>
+
+                <!-- A Mão do Jogador -->
+                <div class="player-hand-container">
+                    <div class="turn-indicator">
+                        <span>TERMINAL ATIVO</span>
+                        <h2 id="current-player-name" aria-live="polite"></h2>
+                    </div>
+                    <div class="hand" id="player-hand" aria-live="polite"></div>
+                </div>
+
+                <!-- A Barra de Ações -->
+                <div class="actions-bar" id="action-panel">
+                    <button class="btn-action" data-action="income" id="btn-income">RENDA<span class="action-effect">+1 CRÉDITO</span><small>EXECUTA: AÇÃO LIVRE</small></button>
+                    <button class="btn-action" data-action="patrocinio" id="btn-patrocinio">PATROCÍNIO<span class="action-effect">+2 CRÉDITOS</span><small>AÇÃO LIVRE • BLOQ.: MAGNATA</small></button>
+                    <button class="btn-action" data-action="tax" id="btn-tax">TAXAR<span class="action-effect">+3 CRÉDITOS</span><small>EXECUTA: MAGNATA</small></button>
+                    <button class="btn-action" data-action="steal" id="btn-steal">EXTORQUIR<span class="action-effect">ROUBA 2 CRÉDITOS</span><small>EXECUTA: MERCENÁRIO</small></button>
+                    <button class="btn-action" data-action="assassinate" id="btn-assassinate">EXECUTAR<span class="action-effect">CUSTO: 3 CRÉDITOS</span><small>EXECUTA: EXECUTOR</small></button>
+                    <button class="btn-action" data-action="backstab" id="btn-backstab">BACKSTAB<span class="action-effect">CUSTO: 7 CRÉDITOS</span><small>EXECUTA: AÇÃO LIVRE</small></button>
+                    <button class="btn-action" data-action="negotiate" id="btn-negotiate">NEGOCIAR<span class="action-effect">COMPRA 2 CARTAS</span><small>EXECUTA: BROKER</small></button>
+                </div>
+            </section>
+
+            <!-- PAINEL DIREITO: CEMITÉRIO -->
+            <aside class="panel-right">
+                <div class="hud-box cemetery-box">
+                    <h3 class="box-title">CEMITÉRIO</h3>
+                    <ul id="cemetery-list" aria-live="polite"></ul>
+                </div>
+            </aside>
+
+        </main>
+    </div>
+
+    <!-- ================= MODAIS DE SOBREPOSIÇÃO ================= -->
+    <div id="blindfold" class="overlay active">
+        <h2 id="blindfold-msg" class="neon-text">Carregando o sistema...</h2>
+        <button id="btn-reveal" class="btn-cyber">ACESSAR TERMINAL</button>
+    </div>
+
+    <div id="target-modal" class="overlay">
+        <div class="overlay-content">
+            <h2 id="target-title">Escolha seu Alvo</h2>
+            <div id="target-actions"></div>
+            <button id="btn-cancel-target" class="btn-pass">Cancelar Operação</button>
+        </div>
+    </div>
+
+    <div id="reaction-modal" class="overlay">
+        <div class="overlay-content reaction-content">
+            <h2 id="reaction-title">Alerta de Ação</h2>
+            <div id="reaction-card-stage" class="reaction-card-stage" aria-live="polite"></div>
+            <p id="reaction-desc">...</p>
+            <div id="reaction-actions"></div>
+            <button id="btn-accept-action" class="btn-pass">Ninguém se opõe (Permitir)</button>
+        </div>
+    </div>
+
+    <div id="loss-modal" class="overlay">
+        <div class="overlay-content loss-content">
+            <span class="loss-kicker">ACESSO PRIVADO // INFLUÊNCIA COMPROMETIDA</span>
+            <h2 id="loss-title">Segurança Violada!</h2>
+            <p id="loss-instruction">Passe o dispositivo ao jogador indicado. As influências permanecem protegidas até serem reveladas.</p>
+            <button type="button" id="btn-reveal-loss-cards" class="btn-reveal-loss">VIRAR MINHAS CARTAS</button>
+            <div id="loss-cards" class="hand is-concealed" aria-live="polite"></div>
+        </div>
+    </div>
+
+    <div id="negotiation-modal" class="overlay">
+        <div class="overlay-content negotiation-content">
+            <h2 id="negotiation-title">Negociação Segura: Broker</h2>
+            <p id="negotiation-instruction">Selecione as cartas que deseja <strong>MANTER</strong>.</p>
+            <div id="negotiation-cards" class="hand"></div>
+            <button id="btn-confirm-negotiation" class="btn-pass" disabled>Confirmar Negociação</button>
+        </div>
+    </div>
+
+    <div id="pause-modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <div class="overlay-content pause-content">
+            <span class="pause-kicker">PROTOCOLO SUSPENSO</span>
+            <h2 id="pause-title">PAUSA</h2>
+            <p>A partida permanece salva neste dispositivo.</p>
+            <button type="button" id="btn-resume" class="btn-pass">Retomar partida</button>
+            <button type="button" id="btn-exit-to-menu" class="btn-danger">Sair para o menu principal</button>
+        </div>
+    </div>
+
+    <div id="oracle-modal" class="oracle-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="oracle-title">
+        <section class="oracle-shell">
+            <header class="oracle-header">
+                <div>
+                    <span class="oracle-kicker">BANCO DE DADOS // INFLUÊNCIAS</span>
+                    <h2 id="oracle-title">ORÁCULO</h2>
+                    <p>Consulte ações, defesas e vulnerabilidades antes de declarar sua jogada.</p>
+                </div>
+                <button type="button" class="oracle-close" data-oracle-close aria-label="Fechar Oráculo">✕</button>
+            </header>
+            <div class="oracle-grid" data-oracle-grid></div>
+        </section>
+    </div>
+
+    <!-- ================= IMPACTO DO BACKSTAB ================= -->
+    <div id="backstab-cinematic" class="backstab-cinematic" aria-hidden="true" aria-live="assertive">
+        <div class="backstab-curtain backstab-curtain-left" aria-hidden="true"></div>
+        <div class="backstab-curtain backstab-curtain-right" aria-hidden="true"></div>
+        <div class="backstab-noise" aria-hidden="true"></div>
+        <div class="backstab-rift backstab-rift-main" aria-hidden="true"></div>
+        <div class="backstab-rift backstab-rift-echo" aria-hidden="true"></div>
+        <div class="backstab-shockwave" aria-hidden="true"></div>
+        <div class="backstab-impact-content">
+            <span class="backstab-eyebrow">PROTOCOLO IRREVERSÍVEL // 7 CRÉDITOS</span>
+            <div class="backstab-logo-frame" aria-hidden="true">
+                <img src="images/isologo.png" alt="">
+            </div>
+            <strong class="backstab-impact-title" data-text="BACKSTAB">BACKSTAB</strong>
+            <p id="backstab-impact-message"></p>
+        </div>
+    </div>
+
+    <!-- ================= ANIMAÇÃO DE DERROTA ================= -->
+    <div id="defeat-cinematic" class="defeat-cinematic" aria-hidden="true" aria-live="assertive">
+        <div class="defeat-scanlines" aria-hidden="true"></div>
+        <div class="defeat-content">
+            <img class="defeat-isotipo" src="images/isotipo.png" alt="">
+            <span>SINAL PERDIDO</span>
+            <strong>ELIMINADO</strong>
+            <p id="defeat-player"></p>
+        </div>
+    </div>
+
+    <!-- ================= TELA DE VITÓRIA ================= -->
+    <div id="victory-modal" class="overlay victory-overlay" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+        <div class="victory-grid" aria-hidden="true"></div>
+        <div class="victory-rays" aria-hidden="true"></div>
+        <div id="victory-particles" class="victory-particles" aria-hidden="true"></div>
+        <section class="victory-content">
+            <div class="victory-emblem" aria-hidden="true">
+                <span class="victory-emblem-ring"></span>
+                <img class="victory-isotipo" src="images/isotipo.png" alt="">
+            </div>
+            <span class="victory-kicker">TRANSMISSÃO CONCLUÍDA // ÚLTIMO SOBREVIVENTE</span>
+            <h2 id="victory-title" data-text="VITÓRIA">VITÓRIA</h2>
+            <p class="victory-announcement"><strong id="victory-player"></strong><span>DOMINOU A MESA</span></p>
+            <div class="victory-card-vault">
+                <span class="victory-cards-label">INFLUÊNCIAS RESTANTES</span>
+                <div id="victory-cards" class="victory-cards" aria-live="polite"></div>
+            </div>
+            <div class="victory-actions">
+                <button type="button" id="btn-play-again" class="btn-victory-primary">Jogar novamente</button>
+                <button type="button" id="btn-victory-menu" class="btn-victory-secondary">Voltar ao menu principal</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ================= ANIMAÇÃO DE ENTRADA (EMBARALHAMENTO) ================= -->
+    <div id="intro-overlay">
+        <div class="intro-deck">
+            <div class="intro-card" id="icard-1">
+                <div class="intro-face intro-front carta carta-magnata"></div>
+                <div class="intro-face intro-back carta carta-verso"></div>
+            </div>
+            <div class="intro-card" id="icard-2">
+                <div class="intro-face intro-front carta carta-executor"></div>
+                <div class="intro-face intro-back carta carta-verso"></div>
+            </div>
+            <div class="intro-card" id="icard-3">
+                <div class="intro-face intro-front carta carta-mercenario"></div>
+                <div class="intro-face intro-back carta carta-verso"></div>
+            </div>
+        </div>
+        <div class="intro-text">EMBARALHANDO DADOS...</div>
+    </div>
+
+    <script src="js/classes.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/oracle.js"></script>
+    <script src="js/pwa.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050510">
+    <meta name="description" content="Backstabber: blefe, influência e traição em uma mesa cyberpunk.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Backstabber">
+    <title>Backstabber - Terminal de Acesso</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="images/isotipo.png" type="image/png">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <link rel="stylesheet" href="css/style-index.css">
+    <link rel="stylesheet" href="css/oracle.css">
+</head>
+<body>
+
+    <!-- Vídeo de Fundo em Loop -->
+<video autoplay muted loop playsinline id="bg-video">
+        <source src="background.mp4" type="video/mp4">
+    </video>
+    <!-- Menu Lateral Esquerdo Flutuante -->
+    <nav class="main-menu" aria-label="Menu principal">
+        <button type="button" class="menu-btn" data-target="panel-jogar" aria-controls="panel-jogar" aria-expanded="false">▶ JOGAR</button>
+        <button type="button" class="menu-btn" data-target="panel-amigos" aria-controls="panel-amigos" aria-expanded="false">▶ AMIGOS</button>
+        <button type="button" class="menu-btn" data-target="panel-config" aria-controls="panel-config" aria-expanded="false">▶ CONFIGURAÇÕES</button>
+        <button type="button" class="menu-btn oracle-menu-btn" data-oracle-open aria-controls="oracle-modal">? ORÁCULO</button>
+    </nav>
+
+    <!-- Painel 1: Formulário do Jogo -->
+    <div id="panel-jogar" class="terminal-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="titulo-nova-partida">
+        <button type="button" class="close-btn" aria-label="Fechar painel">✖</button>
+        <h2 class="neon-text" id="titulo-nova-partida">NOVA PARTIDA</h2>
+        <p class="glitch-text">INICIALIZANDO PROTOCOLO DE CONEXÃO...</p>
+        
+        <form id="setup-form">
+            <div class="setup-options">
+                <div class="input-group">
+                    <label for="player-count">> NÚMERO DE JOGADORES</label>
+                    <select id="player-count" name="players">
+                        <option value="1">1 — SOLO / TESTE</option>
+                        <option value="2" selected>2 JOGADORES</option>
+                        <option value="3">3 JOGADORES</option>
+                        <option value="4">4 JOGADORES</option>
+                        <option value="5">5 JOGADORES</option>
+                        <option value="6">6 JOGADORES</option>
+                        <option value="7">7 JOGADORES</option>
+                        <option value="8">8 JOGADORES</option>
+                        <option value="9">9 JOGADORES</option>
+                        <option value="10">10 JOGADORES</option>
+                    </select>
+                </div>
+
+                <div class="deck-preview" aria-live="polite">
+                    <span>BARALHO AUTOMÁTICO</span>
+                    <strong><output id="deck-size">15</output> CARTAS</strong>
+                    <small id="deck-rule">3 cópias de cada personagem</small>
+                </div>
+            </div>
+
+            <div id="player-inputs" class="player-inputs"></div>
+
+            <button type="submit" class="btn-start">ESTABELECER CONEXÃO</button>
+        </form>
+    </div>
+
+    <!-- Painel 2: Amigos -->
+    <div id="panel-amigos" class="terminal-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="titulo-amigos">
+        <button type="button" class="close-btn" aria-label="Fechar painel">✖</button>
+        <h2 class="neon-text" id="titulo-amigos">AMIGOS</h2>
+        <p class="glitch-text" style="color: #ff0055;">SINAL PERDIDO. NENHUM ALIADO ENCONTRADO NA REDE.</p>
+    </div>
+
+    <!-- Painel 3: Configurações -->
+    <div id="panel-config" class="terminal-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="titulo-sistema">
+        <button type="button" class="close-btn" aria-label="Fechar painel">✖</button>
+        <h2 class="neon-text" id="titulo-sistema">SISTEMA</h2>
+        <p class="glitch-text" style="color: #ff0055;">ACESSO RESTRITO. REQUER CREDENCIAIS NÍVEL 4.</p>
+    </div>
+
+    <div id="oracle-modal" class="oracle-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="oracle-title">
+        <section class="oracle-shell">
+            <header class="oracle-header">
+                <div>
+                    <span class="oracle-kicker">BANCO DE DADOS // INFLUÊNCIAS</span>
+                    <h2 id="oracle-title">ORÁCULO</h2>
+                    <p>Consulte ações, defesas e vulnerabilidades antes de declarar sua jogada.</p>
+                </div>
+                <button type="button" class="oracle-close" data-oracle-close aria-label="Fechar Oráculo">✕</button>
+            </header>
+            <div class="oracle-grid" data-oracle-grid></div>
+        </section>
+    </div>
+
+    <button type="button" id="btn-install-pwa" class="pwa-install" aria-describedby="pwa-install-status" aria-label="Instalar Backstabber como aplicativo" hidden>
+        <img src="images/icon-192.png" alt="" aria-hidden="true">
+        <span class="pwa-install-copy">
+            <strong>INSTALAR</strong>
+            <small id="pwa-install-status" aria-live="polite">APLICATIVO</small>
+        </span>
+    </button>
+
+    <script src="js/setup.js"></script>
+    <script src="js/oracle.js"></script>
+    <script src="js/pwa.js"></script>
+</body>
+</html>
