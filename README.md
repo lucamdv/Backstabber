@@ -1,30 +1,77 @@
-# Backstabber
+<div align="center">
+  <img src="images/isologo.png" alt="Backstabber" width="560">
 
-Jogo local de blefe, influência e traição com interface cyberpunk.
+  <p><strong>Blefe. Influência. Traição.</strong><br>Um jogo de intriga social com estética cyberpunk para jogar presencialmente em um único dispositivo.</p>
 
-## Jogar
+  [![PWA](https://img.shields.io/badge/JOGAR-PWA-00f3ff?style=for-the-badge&logo=pwa&logoColor=050510)](https://lucamdv.github.io/Backstabber/)
+  [![Windows](https://img.shields.io/badge/BAIXAR-WINDOWS-ff0055?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-Windows-Setup.exe)
+  [![macOS](https://img.shields.io/badge/BAIXAR-macOS-f2f2f2?style=for-the-badge&logo=apple&logoColor=050510)](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-macOS-universal.dmg)
 
-- **PWA:** abra [lucamdv.github.io/Backstabber](https://lucamdv.github.io/Backstabber/) e use o botão compacto **Instalar**.
-- **Windows:** baixe `Backstabber-Windows-Setup.exe` na [versão mais recente](https://github.com/lucamdv/Backstabber/releases/latest).
-- **macOS:** baixe `Backstabber-macOS-universal.dmg` na [versão mais recente](https://github.com/lucamdv/Backstabber/releases/latest).
+  ![Versão](https://img.shields.io/github/v/release/lucamdv/Backstabber?display_name=tag&style=flat-square&color=00f3ff)
+  ![Build](https://img.shields.io/github/actions/workflow/status/lucamdv/Backstabber/release-desktop.yml?style=flat-square&label=desktop&color=ff0055)
+  ![PWA](https://img.shields.io/github/actions/workflow/status/lucamdv/Backstabber/deploy-pwa.yml?style=flat-square&label=PWA&color=00f3ff)
+</div>
 
-O PWA consulta novas versões automaticamente. O instalador do Windows baixa atualizações em segundo plano e oferece a reinicialização quando a nova versão estiver pronta.
+---
 
-## Gerar no Windows
+## Entre no jogo
 
-Clique com o botão direito em `scripts/build-windows.ps1` e escolha **Executar com PowerShell**, ou execute:
+| Plataforma | Acesso | Observação |
+| --- | --- | --- |
+| 🌐 **PWA** | [Jogar ou instalar no navegador](https://lucamdv.github.io/Backstabber/) | Funciona offline depois do primeiro acesso |
+| 🪟 **Windows** | [Baixar o instalador `.exe`](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-Windows-Setup.exe) | Abre em tela cheia e recebe atualizações automáticas |
+| 🍎 **macOS** | [Baixar o instalador `.dmg`](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-macOS-universal.dmg) | Aplicativo universal para Apple Silicon e Intel |
+
+> Os downloads sempre apontam para a versão mais recente publicada no GitHub Releases.
+
+## Sobre o Backstabber
+
+No Backstabber, cada jogador controla influências secretas e pode declarar qualquer personagem — tendo a carta ou não. Use Créditos, conteste blefes, bloqueie seus rivais e seja a última pessoa com uma influência em jogo.
+
+- De **1 a 10 jogadores** no mesmo dispositivo.
+- Baralhos proporcionais de **15, 20 ou 25 cartas**.
+- Cartas: **Magnata, Executor, Sentinela, Mercenário e Broker**.
+- Ações de **Patrocínio, Backstab, Taxar, Executar, Extorquir e Negociar**.
+- Oráculo integrado com ações e bloqueios de cada personagem.
+- Animações cinematográficas de Backstab, derrota e vitória.
+- Partida salva localmente e funcionamento offline no PWA.
+
+## Atualizações automáticas
+
+O PWA verifica novas versões sem interromper uma partida em andamento. No Windows, o aplicativo baixa a atualização em segundo plano e oferece a reinicialização quando ela estiver pronta.
+
+Cada envio à branch `main` executa o GitHub Actions para:
+
+1. publicar o PWA no GitHub Pages;
+2. gerar o instalador atualizável do Windows;
+3. gerar o DMG universal para macOS;
+4. publicar todos os arquivos em uma nova versão do GitHub Releases.
+
+## macOS e Gatekeeper
+
+Como o projeto ainda não possui um certificado Apple Developer, o macOS pode informar que o desenvolvedor não foi identificado. Se o aplicativo foi baixado deste repositório oficial, abra **Ajustes do Sistema › Privacidade e Segurança** e escolha **Abrir Mesmo Assim**.
+
+Mais detalhes estão em [BUILD-MAC.md](BUILD-MAC.md).
+
+## Desenvolvimento
+
+Requer [Node.js 24 ou mais recente](https://nodejs.org/).
+
+```bash
+npm ci
+npm run desktop
+```
+
+Para gerar o instalador do Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 ```
 
-O instalador será criado em `release/Backstabber-Windows-Setup.exe`.
+O arquivo será criado em `release/Backstabber-Windows-Setup.exe`.
 
-## Publicação automática
+---
 
-Um envio para a branch `main` dispara duas automações:
-
-- publica o PWA no GitHub Pages com uma versão única;
-- gera os aplicativos Windows e macOS e cria uma nova versão em GitHub Releases.
-
-Consulte [BUILD-MAC.md](BUILD-MAC.md) para as instruções do Mac e as observações sobre o Gatekeeper.
+<div align="center">
+  <strong>Confie em ninguém. Principalmente em quem diz ter a carta.</strong>
+</div>
