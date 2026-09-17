@@ -113,15 +113,44 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Criar atualização no GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.APP_VERSION }}
-          name: Backstabber ${{ env.APP_VERSION }}
-          body: |
-            Atualização automática do Backstabber.
+      - name: Criar a versão pública
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ env.APP_VERSION }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Backstabber $APP_VERSION" \
+              --notes $'Atualização automática do Backstabber.\n\n- Windows: baixe `Backstabber-Windows-Setup.exe`.\n- macOS: baixe `Backstabber-macOS-universal.dmg`.' \
+              --latest
+          fi
 
-            - Windows: baixe `Backstabber-Windows-Setup.exe`.
-            - macOS: baixe `Backstabber-macOS-universal.dmg`.
-          files: release-assets/*
-          make_latest: true
+      - name: Enviar os downloads com repetição automática
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ env.APP_VERSION }}
+        run: |
+          upload_asset() {
+            local file="$1"
+            for attempt in 1 2 3; do
+              if gh release upload "$RELEASE_TAG" "$file" --clobber --repo "$GITHUB_REPOSITORY"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                echo "Upload de $file falhou; nova tentativa em $((attempt * 15)) segundos."
+                sleep $((attempt * 15))
+              fi
+            done
+            return 1
+          }
+
+          upload_asset release-assets/latest.yml
+          upload_asset release-assets/Backstabber-Windows-Setup.exe.blockmap
+          upload_asset release-assets/Backstabber-Windows-Setup.exe
+          upload_asset release-assets/Backstabber-macOS-universal.dmg.blockmap
+          upload_asset release-assets/Backstabber-macOS-universal.dmg
+          upload_asset release-assets/latest-mac.yml
+          upload_asset release-assets/Backstabber-macOS-universal.zip.blockmap
+          upload_asset release-assets/Backstabber-macOS-universal.zip
