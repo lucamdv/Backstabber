@@ -36,6 +36,22 @@ No Backstabber, cada jogador controla influências secretas e pode declarar qual
 - Animações cinematográficas de Backstab, derrota e vitória.
 - Partida salva localmente e funcionamento offline no PWA.
 
+## Oráculo
+
+<div align="center">
+  <p>Conheça as cinco influências que comandam a mesa.</p>
+</div>
+
+| Carta | Poderes |
+| :---: | --- |
+| <img src="images/magnata_card.png" alt="Carta Magnata" width="170"><br>**MAGNATA** | **Ação — Taxa:** recebe **3 Créditos** do tesouro.<br><br>**Bloqueia:** Patrocínio, impedindo qualquer jogador de receber 2 Créditos.<br><br>**Pode ser bloqueado por:** ninguém. |
+| <img src="images/executor_card.png" alt="Carta Executor" width="170"><br>**EXECUTOR** | **Ação — Executar:** paga **3 Créditos** para eliminar uma influência de outro jogador.<br><br>**Bloqueia:** nenhuma ação.<br><br>**Pode ser bloqueado por:** Sentinela. |
+| <img src="images/sentinela_card.png" alt="Carta Sentinela" width="170"><br>**SENTINELA** | **Ação:** não possui ação própria no turno.<br><br>**Bloqueia:** Executor, protegendo sua influência da eliminação.<br><br>**Pode ser bloqueado por:** não se aplica. |
+| <img src="images/mercenario_card.png" alt="Carta Mercenário" width="170"><br>**MERCENÁRIO** | **Ação — Extorquir:** rouba até **2 Créditos** de outro jogador.<br><br>**Bloqueia:** outro Mercenário.<br><br>**Pode ser bloqueado por:** Mercenário ou Broker. |
+| <img src="images/broker_card.png" alt="Carta Broker" width="170"><br>**BROKER** | **Ação — Negociar:** compra **2 cartas**, escolhe quais influências manter e devolve 2 ao baralho.<br><br>**Bloqueia:** Mercenário, impedindo que seus Créditos sejam roubados.<br><br>**Pode ser bloqueado por:** ninguém. |
+
+Toda declaração de personagem pode ser contestada. Se a carta for verdadeira, ela volta ao monte, o jogador compra uma substituta aleatória e quem contestou perde uma influência. Se era blefe, quem declarou perde a influência e a ação é cancelada.
+
 ## Atualizações automáticas
 
 O PWA verifica novas versões sem interromper uma partida em andamento. No Windows, o aplicativo baixa a atualização em segundo plano e oferece a reinicialização quando ela estiver pronta.
