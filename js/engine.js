@@ -26,6 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSteal: document.getElementById("btn-steal"),
     btnNegotiate: document.getElementById("btn-negotiate"),
     deckCount: document.getElementById("deck-count"),
+    mobileDeckCount: document.getElementById("mobile-deck-count"),
+    btnMobileTribunal: document.getElementById("btn-mobile-tribunal"),
+    btnMobileCemetery: document.getElementById("btn-mobile-cemetery"),
+    mobileTribunalPanel: document.getElementById("mobile-tribunal-panel"),
+    mobileCemeteryPanel: document.getElementById("mobile-cemetery-panel"),
+    mobileDrawerScrim: document.getElementById("mobile-drawer-scrim"),
     btnPause: document.getElementById("btn-pause"),
     pauseModal: document.getElementById("pause-modal"),
     btnResume: document.getElementById("btn-resume"),
@@ -81,6 +87,38 @@ document.addEventListener("DOMContentLoaded", () => {
   function exibirModal(modal) {
     modal.classList.add("active");
     rolarModalParaTopo(modal);
+  }
+
+  const paineisMoveis = [ui.mobileTribunalPanel, ui.mobileCemeteryPanel];
+  const gatilhosMoveis = [ui.btnMobileTribunal, ui.btnMobileCemetery];
+
+  function fecharPainelMovel(devolverFoco = false) {
+    const gatilhoAtivo = gatilhosMoveis.find(
+      (gatilho) => gatilho.getAttribute("aria-expanded") === "true",
+    );
+    paineisMoveis.forEach((painel) => painel.classList.remove("is-mobile-open"));
+    gatilhosMoveis.forEach((gatilho) => gatilho.setAttribute("aria-expanded", "false"));
+    ui.mobileDrawerScrim.classList.remove("is-open");
+    document.body.classList.remove("mobile-drawer-open");
+    if (devolverFoco) gatilhoAtivo?.focus();
+  }
+
+  function alternarPainelMovel(painel, gatilho) {
+    const deveAbrir = !painel.classList.contains("is-mobile-open");
+    fecharPainelMovel(false);
+    if (!deveAbrir) return;
+    painel.classList.add("is-mobile-open");
+    gatilho.setAttribute("aria-expanded", "true");
+    ui.mobileDrawerScrim.classList.add("is-open");
+    document.body.classList.add("mobile-drawer-open");
+    painel.querySelector("[data-mobile-panel-close]")?.focus();
+  }
+
+  function solicitarOrientacaoRetrato() {
+    if (!window.matchMedia("(max-width: 900px), (pointer: coarse)").matches) return;
+    const orientacao = window.screen?.orientation;
+    if (typeof orientacao?.lock !== "function") return;
+    orientacao.lock("portrait-primary").catch(() => undefined);
   }
 
   // Mapeia o nome do personagem do motor para a classe CSS da imagem
@@ -323,11 +361,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (j === jogador) div.setAttribute("aria-current", "true");
       const nome = document.createElement("strong");
       nome.textContent = j.nome;
-      div.append(
-        nome,
-        document.createElement("br"),
-        document.createTextNode(`◆ ${j.moedas} CR | 🃏 ${j.cartas.length}`),
-      );
+      const recursos = document.createElement("span");
+      recursos.className = "player-resources";
+      recursos.textContent = `${j.moedas} CR · ${j.cartas.length} INF`;
+      div.append(nome, recursos);
       ui.scoreboard.appendChild(div);
     });
 
@@ -349,6 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `Influências de ${jogador.nome}`,
     );
     ui.deckCount.textContent = `${jogo.baralho.cartas.length} RESTANTES`;
+    ui.mobileDeckCount.textContent = String(jogo.baralho.cartas.length);
 
     const moedas = jogador.moedas;
     const temAlvo = jogo.jogadores.some((j) => j !== jogador && j.isVivo());
@@ -550,13 +588,26 @@ document.addEventListener("DOMContentLoaded", () => {
     salvarEstado();
   }
 
-  ui.btnReveal.addEventListener("click", () =>
-    ui.blindfold.classList.remove("active")
+  ui.btnReveal.addEventListener("click", () => {
+    solicitarOrientacaoRetrato();
+    ui.blindfold.classList.remove("active");
+  });
+
+  ui.btnMobileTribunal.addEventListener("click", () =>
+    alternarPainelMovel(ui.mobileTribunalPanel, ui.btnMobileTribunal),
   );
+  ui.btnMobileCemetery.addEventListener("click", () =>
+    alternarPainelMovel(ui.mobileCemeteryPanel, ui.btnMobileCemetery),
+  );
+  ui.mobileDrawerScrim.addEventListener("click", () => fecharPainelMovel(true));
+  document.querySelectorAll("[data-mobile-panel-close]").forEach((botao) => {
+    botao.addEventListener("click", () => fecharPainelMovel(true));
+  });
 
   window.addEventListener("backstabber-before-update", salvarEstado);
 
   ui.btnPause.addEventListener("click", () => {
+    fecharPainelMovel(false);
     salvarEstado();
     document.body.classList.add("game-paused");
     exibirModal(ui.pauseModal);
@@ -575,6 +626,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("mobile-drawer-open")) {
+      fecharPainelMovel(true);
+      return;
+    }
     if (event.key === "Escape" && ui.pauseModal.classList.contains("active")) {
       ui.pauseModal.classList.remove("active");
       document.body.classList.remove("game-paused");

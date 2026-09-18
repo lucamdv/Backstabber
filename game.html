@@ -43,9 +43,22 @@
 
         <!-- ================= CORPO PRINCIPAL ================= -->
         <main class="hud-body">
+            <nav class="mobile-table-nav mobile-only" aria-label="Informações da mesa">
+                <button type="button" id="btn-mobile-tribunal" class="mobile-table-button" aria-controls="mobile-tribunal-panel" aria-expanded="false">
+                    <span aria-hidden="true">▤</span><small>REGISTRO</small>
+                </button>
+                <div class="mobile-deck-status" aria-label="Cartas restantes no baralho">
+                    <img src="images/verso_card.png" alt="">
+                    <span>DECK <strong id="mobile-deck-count">--</strong></span>
+                </div>
+                <button type="button" id="btn-mobile-cemetery" class="mobile-table-button" aria-controls="mobile-cemetery-panel" aria-expanded="false">
+                    <span aria-hidden="true">✦</span><small>DESCARTE</small>
+                </button>
+            </nav>
             
             <!-- PAINEL ESQUERDO: TRIBUNAL E DECK -->
-            <aside class="panel-left">
+            <aside class="panel-left" id="mobile-tribunal-panel" aria-label="Registro da mesa">
+                <button type="button" class="mobile-panel-close mobile-only" data-mobile-panel-close aria-label="Fechar registro">✕</button>
                 <div class="hud-box tribunal-box">
                     <h3 class="box-title">TRIBUNAL</h3>
                     <div class="tribunal-header">
@@ -102,7 +115,8 @@
             </section>
 
             <!-- PAINEL DIREITO: CEMITÉRIO -->
-            <aside class="panel-right">
+            <aside class="panel-right" id="mobile-cemetery-panel" aria-label="Cartas descartadas">
+                <button type="button" class="mobile-panel-close mobile-only" data-mobile-panel-close aria-label="Fechar cemitério">✕</button>
                 <div class="hud-box cemetery-box">
                     <h3 class="box-title">CEMITÉRIO</h3>
                     <ul id="cemetery-list" aria-live="polite"></ul>
@@ -110,6 +124,7 @@
             </aside>
 
         </main>
+        <button type="button" id="mobile-drawer-scrim" class="mobile-drawer-scrim mobile-only" aria-label="Fechar painel de informações"></button>
     </div>
 
     <!-- ================= MODAIS DE SOBREPOSIÇÃO ================= -->
@@ -249,6 +264,12 @@
             </div>
         </div>
         <div class="intro-text">EMBARALHANDO DADOS...</div>
+    </div>
+
+    <div class="portrait-lock" role="status" aria-live="polite">
+        <img src="images/isotipo.png" alt="">
+        <strong>GIRE O DISPOSITIVO</strong>
+        <span>A mesa do Backstabber foi projetada para o modo retrato.</span>
     </div>
 
     <script src="js/classes.js"></script>

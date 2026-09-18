@@ -36,6 +36,11 @@ body.game-paused {
   overflow: hidden;
 }
 
+.mobile-only,
+.portrait-lock {
+  display: none;
+}
+
 /* ================= GRID PRINCIPAL ================= */
 .hud-container {
   display: flex;
