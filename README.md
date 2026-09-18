@@ -19,6 +19,8 @@
 | Plataforma | Acesso | Observação |
 | --- | --- | --- |
 | 🌐 **PWA** | [Jogar ou instalar no navegador](https://lucamdv.github.io/Backstabber/) | Funciona offline depois do primeiro acesso |
+| 🤖 **Android** | [Instalar pelo navegador](https://lucamdv.github.io/Backstabber/) | Chrome › menu ⋮ › Instalar aplicativo |
+| 📱 **iPhone/iPad** | [Instalar pelo Safari](https://lucamdv.github.io/Backstabber/) | Compartilhar › Adicionar à Tela de Início |
 | 🪟 **Windows** | [Baixar o instalador `.exe`](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-Windows-Setup.exe) | Abre em tela cheia e recebe atualizações automáticas |
 | 🍎 **macOS** | [Baixar o instalador `.dmg`](https://github.com/lucamdv/Backstabber/releases/latest/download/Backstabber-macOS-universal.dmg) | Aplicativo universal para Apple Silicon e Intel |
 

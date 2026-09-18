@@ -1,0 +1,739 @@
+/* Backstabber mobile arena — HUD inspirado no tabuleiro vertical de referência. */
+:root {
+  --mobile-edge: max(12px, env(safe-area-inset-left), env(safe-area-inset-right));
+  --mobile-bottom: max(10px, env(safe-area-inset-bottom));
+  --mobile-panel: rgba(5, 5, 14, 0.91);
+}
+
+html {
+  background: #02030a;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: #02030a;
+  background-image: url("../images/playmat_mobile.png");
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+body:has(.overlay.active),
+body.oracle-open {
+  overflow: hidden;
+}
+
+.hud-container {
+  min-height: 100dvh;
+  padding: max(8px, env(safe-area-inset-top)) var(--mobile-edge) calc(18px + var(--mobile-bottom));
+  background:
+    linear-gradient(180deg, rgba(1, 2, 8, 0.24), transparent 30%, rgba(1, 2, 8, 0.22) 72%, rgba(1, 2, 8, 0.72)),
+    rgba(0, 0, 0, 0.08);
+}
+
+.hud-header {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  grid-template-areas: "brand status quote";
+  gap: 8px;
+  align-items: center;
+  min-height: 66px;
+  margin: 0 calc(var(--mobile-edge) * -0.5) 12px;
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 0, 85, 0.45);
+  border-bottom: 2px solid #ff0055;
+  background:
+    linear-gradient(112deg, rgba(255, 0, 85, 0.12), transparent 48%, rgba(0, 243, 255, 0.08)),
+    rgba(4, 4, 13, 0.94);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.48), inset 0 0 20px rgba(255, 0, 85, 0.05);
+  backdrop-filter: blur(10px);
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+}
+
+.header-logo {
+  width: 50px;
+  height: 50px;
+  justify-content: center;
+  border: 1px solid rgba(255, 0, 85, 0.5);
+  background: rgba(255, 0, 85, 0.07);
+}
+
+.brand-isotipo {
+  width: 45px;
+  height: 45px;
+}
+
+.brand-isologo-frame,
+.header-right p,
+.turn-label {
+  display: none;
+}
+
+.header-center {
+  min-width: 0;
+  align-items: stretch;
+}
+
+.scoreboard-bar {
+  display: block;
+  min-width: 0;
+}
+
+.player-stat {
+  display: none;
+}
+
+.player-stat.active {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 7px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 243, 255, 0.55);
+  border-left: 3px solid #00f3ff;
+  border-radius: 0;
+  color: #fff;
+  background: linear-gradient(105deg, rgba(0, 243, 255, 0.1), rgba(255, 0, 85, 0.08));
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  white-space: nowrap;
+}
+
+.player-stat.active strong {
+  max-width: 48%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 1.08em;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: block;
+}
+
+.header-tools {
+  gap: 5px;
+}
+
+.header-tool-btn {
+  width: 46px;
+  height: 48px;
+  border-radius: 0;
+  background: rgba(8, 5, 16, 0.92);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  font-size: 1.55rem;
+  touch-action: manipulation;
+}
+
+.hud-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.panel-center {
+  order: 1;
+  gap: 10px;
+  min-width: 0;
+}
+
+.panel-left {
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-right {
+  order: 3;
+}
+
+.playmat-arena {
+  min-height: clamp(245px, 41dvh, 390px);
+}
+
+.player-hand-container {
+  margin-top: clamp(-120px, -15dvh, -82px);
+}
+
+.turn-indicator {
+  min-width: min(310px, 88vw);
+  justify-content: center;
+  margin-bottom: 7px;
+  padding: 6px 16px;
+  border: 1px solid rgba(175, 74, 208, 0.7);
+  border-radius: 0;
+  background: rgba(7, 5, 16, 0.9);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
+}
+
+.turn-indicator span {
+  font-size: 0.78rem;
+}
+
+.turn-indicator h2 {
+  max-width: 58%;
+  overflow: hidden;
+  font-size: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hand {
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+.carta {
+  width: clamp(106px, 31vw, 132px);
+  height: clamp(174px, 51vw, 217px);
+  flex: 0 0 auto;
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.86));
+}
+
+.carta:hover {
+  transform: none;
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.86));
+}
+
+.actions-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  grid-template-columns: none;
+  gap: 8px;
+  width: calc(100% + var(--mobile-edge) * 2);
+  margin: 3px calc(var(--mobile-edge) * -1) 0;
+  padding: 12px var(--mobile-edge) calc(11px + var(--mobile-bottom));
+  overflow-x: auto;
+  border: 0;
+  border-top: 1px solid rgba(255, 0, 85, 0.64);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 0, 85, 0.08), transparent 45%),
+    rgba(3, 3, 11, 0.96);
+  box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.5);
+  scroll-padding-inline: var(--mobile-edge);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.actions-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.btn-action {
+  --action-color: #ff0055;
+  position: relative;
+  flex: 0 0 clamp(126px, 35vw, 150px);
+  min-height: 118px;
+  padding: 38px 9px 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--action-color) 78%, #fff 22%);
+  border-bottom: 4px solid var(--action-color);
+  border-radius: 0;
+  color: #fff;
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--action-color) 19%, transparent), transparent 55%),
+    rgba(7, 6, 15, 0.96);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--action-color) 8%, transparent);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  font-size: 1.3rem;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+}
+
+.btn-action::before {
+  content: "◆";
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  color: var(--action-color);
+  font-size: 1.45rem;
+  text-shadow: 0 0 10px var(--action-color);
+  transform: translateX(-50%);
+}
+
+#btn-income { --action-color: #ffad32; }
+#btn-patrocinio { --action-color: #b936ff; }
+#btn-tax { --action-color: #ff155f; }
+#btn-steal { --action-color: #00bfff; }
+#btn-assassinate { --action-color: #b992ff; }
+#btn-backstab { --action-color: #ff174f; }
+#btn-negotiate { --action-color: #00f3ff; }
+
+#btn-income::before { content: "◉"; }
+#btn-patrocinio::before { content: "◇"; }
+#btn-tax::before { content: "♛"; }
+#btn-steal::before { content: "◈"; }
+#btn-assassinate::before { content: "†"; }
+#btn-backstab::before { content: "⟋"; }
+#btn-negotiate::before { content: "⇄"; }
+
+.btn-action .action-effect {
+  color: var(--action-color) !important;
+  font-size: 0.92rem;
+}
+
+.btn-action small {
+  color: #c7b9c3;
+  font-size: 0.7rem;
+}
+
+.btn-action:active:not(:disabled) {
+  background: color-mix(in srgb, var(--action-color) 25%, #060611 75%);
+  transform: translateY(2px);
+}
+
+.btn-action:disabled {
+  opacity: 0.46;
+  filter: grayscale(0.75);
+}
+
+.deck-box,
+.hud-box {
+  border-radius: 0;
+  background: var(--mobile-panel);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.deck-box {
+  order: -1;
+  min-height: 54px;
+  padding: 9px 13px;
+  border-color: rgba(0, 243, 255, 0.44);
+}
+
+.deck-card {
+  display: none;
+}
+
+.deck-info {
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deck-info span {
+  font-size: 1.22rem;
+  letter-spacing: 0.15em;
+}
+
+.deck-info small {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.hud-box {
+  min-height: 0;
+  max-height: 260px;
+  padding: 13px;
+}
+
+.tribunal-box {
+  flex: none;
+  min-height: 150px;
+}
+
+.cemetery-box {
+  min-height: 100px;
+}
+
+.box-title {
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+}
+
+.tribunal-header {
+  font-size: 0.95rem;
+}
+
+#action-log {
+  font-size: 1rem;
+}
+
+#action-log td {
+  padding: 7px 3px;
+}
+
+#cemetery-list {
+  display: flex;
+  grid-template-columns: none;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+}
+
+#cemetery-list li {
+  flex: 0 0 78px;
+  scroll-snap-align: start;
+}
+
+.cemetery-card-art {
+  width: 68px;
+  height: 112px;
+}
+
+.cemetery-card-name {
+  font-size: 0.82rem;
+}
+
+/* Todos os formulários do jogo viram bottom sheets tocáveis. */
+.overlay {
+  align-items: flex-end;
+  justify-content: center;
+  height: 100dvh;
+  padding-top: max(42px, env(safe-area-inset-top));
+  background: rgba(1, 1, 7, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+.overlay.active {
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.overlay-content {
+  width: 100%;
+  max-height: 92dvh;
+  padding: 22px var(--mobile-edge) calc(18px + var(--mobile-bottom));
+  border: 0;
+  border-top: 2px solid #ff0055;
+  border-radius: 22px 22px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 0, 85, 0.09), transparent 100px),
+    rgba(6, 5, 15, 0.985);
+  box-shadow: 0 -20px 54px rgba(0, 0, 0, 0.68), 0 0 24px rgba(255, 0, 85, 0.24);
+  animation: mobileGameSheetIn 0.28s cubic-bezier(0.18, 0.82, 0.22, 1);
+}
+
+.overlay-content h2 {
+  margin-bottom: 9px;
+  font-size: clamp(1.85rem, 8vw, 2.6rem);
+  line-height: 0.95;
+}
+
+.overlay-content p {
+  margin-bottom: 14px;
+  font-size: 1.12rem;
+  line-height: 1.2;
+}
+
+.overlay-content button,
+.btn-reveal-loss {
+  min-height: 54px;
+  margin-bottom: 8px;
+  padding: 11px 13px;
+  border-radius: 0;
+  font-size: 1.18rem;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  touch-action: manipulation;
+}
+
+.reaction-content,
+.negotiation-content,
+.loss-content,
+.pause-content {
+  width: 100%;
+}
+
+.reaction-card-stage {
+  gap: 7px;
+  min-height: 220px;
+  margin: 4px 0 12px;
+  overflow-x: auto;
+}
+
+.declared-card {
+  min-width: 108px;
+  gap: 4px;
+}
+
+.declared-card .carta-declarada {
+  width: 108px;
+  height: 178px;
+}
+
+.declared-card strong {
+  font-size: 1rem;
+}
+
+.declared-card > span:not(.declaration-versus) {
+  font-size: 0.9rem;
+}
+
+.declaration-versus {
+  font-size: 1.3rem;
+}
+
+.generic-action-label {
+  font-size: 1.05rem;
+}
+
+#negotiation-cards,
+#loss-cards {
+  justify-content: safe center;
+  gap: 7px;
+  padding: 9px 4px 17px;
+  scroll-snap-type: x mandatory;
+}
+
+#negotiation-cards .carta,
+#loss-cards .carta {
+  flex-basis: 112px;
+  width: 112px;
+  height: 184px;
+  scroll-snap-align: center;
+}
+
+.loss-kicker,
+.pause-kicker {
+  font-size: 0.78rem;
+}
+
+/* Troca de jogador continua privada, mas com controles proporcionais. */
+#blindfold {
+  align-items: center;
+  justify-content: center;
+  padding: 24px var(--mobile-edge);
+  text-align: center;
+}
+
+#blindfold.active {
+  justify-content: center;
+}
+
+#blindfold .neon-text {
+  max-width: 92vw;
+  margin-bottom: 24px;
+  font-size: clamp(2.1rem, 10vw, 3.5rem);
+  line-height: 0.95;
+}
+
+.btn-cyber {
+  width: min(100%, 390px);
+  min-height: 58px;
+  padding: 12px 20px;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  font-size: 1.45rem;
+  touch-action: manipulation;
+}
+
+/* Oráculo em tela inteira com cabeçalho fixo. */
+.oracle-overlay {
+  align-items: flex-end;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+.oracle-shell {
+  width: 100%;
+  max-height: 96dvh;
+  padding: 20px var(--mobile-edge) calc(18px + var(--mobile-bottom));
+  border: 0;
+  border-top: 2px solid #ff0055;
+  border-radius: 22px 22px 0 0;
+}
+
+.oracle-header {
+  position: sticky;
+  top: -20px;
+  z-index: 4;
+  margin: -20px calc(var(--mobile-edge) * -1) 15px;
+  padding: 18px var(--mobile-edge) 13px;
+  background: rgba(7, 5, 14, 0.985);
+}
+
+.oracle-header h2 {
+  font-size: 2.6rem;
+}
+
+.oracle-header p {
+  font-size: 1rem;
+}
+
+.oracle-card {
+  grid-template-columns: 94px minmax(0, 1fr);
+  gap: 11px;
+  min-height: 178px;
+  padding: 11px 9px;
+}
+
+.oracle-card-image {
+  width: 94px;
+  height: 155px;
+}
+
+/* Finais e cinematográficas permanecem grandes sem estourar a viewport. */
+.victory-content {
+  width: 100%;
+  max-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top)) var(--mobile-edge) calc(24px + var(--mobile-bottom));
+}
+
+.victory-emblem {
+  width: 104px;
+  height: 104px;
+}
+
+.victory-content h2 {
+  font-size: clamp(4.6rem, 23vw, 7.5rem);
+}
+
+.victory-announcement strong {
+  font-size: 2rem;
+}
+
+.victory-cards {
+  min-height: 170px;
+}
+
+.victory-card {
+  width: 102px;
+  height: 168px;
+}
+
+.victory-actions {
+  grid-template-columns: 1fr;
+}
+
+.backstab-impact-content {
+  width: 96vw;
+}
+
+.backstab-impact-title {
+  margin-top: -5px;
+  font-size: clamp(4.2rem, 21vw, 7rem);
+}
+
+.backstab-logo-frame {
+  width: min(420px, 86vw);
+  height: 108px;
+}
+
+.backstab-impact-content p {
+  margin: 14px 12px 0;
+  padding: 8px 12px;
+  font-size: 1.2rem;
+}
+
+.defeat-content strong {
+  font-size: clamp(4.2rem, 20vw, 7rem);
+}
+
+#intro-overlay {
+  height: 100dvh;
+}
+
+.intro-deck {
+  width: 120px;
+  height: 192px;
+}
+
+.intro-text {
+  margin-top: 38px;
+  font-size: 1.35rem;
+}
+
+@keyframes mobileGameSheetIn {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 390px) {
+  .hud-header {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+
+  .header-logo,
+  .brand-isotipo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .header-tool-btn {
+    width: 40px;
+  }
+
+  .player-stat.active {
+    padding-inline: 8px;
+    font-size: 0.94rem;
+  }
+
+  .actions-bar {
+    gap: 7px;
+  }
+
+  .btn-action {
+    flex-basis: 122px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  body {
+    background-size: cover;
+  }
+
+  .hud-container {
+    padding-top: 6px;
+  }
+
+  .hud-header {
+    position: relative;
+    min-height: 56px;
+  }
+
+  .hud-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-areas:
+      "center center"
+      "left right";
+  }
+
+  .panel-center { grid-area: center; }
+  .panel-left { grid-area: left; }
+  .panel-right { grid-area: right; }
+
+  .playmat-arena {
+    min-height: 145px;
+  }
+
+  .player-hand-container {
+    margin-top: -95px;
+  }
+
+  .carta {
+    width: 98px;
+    height: 161px;
+  }
+
+  .actions-bar {
+    position: relative;
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .overlay-content {
+    width: min(680px, 88vw);
+    max-height: 100dvh;
+    margin-inline: auto;
+    border-right: 1px solid #ff0055;
+    border-left: 1px solid #ff0055;
+    border-radius: 18px 18px 0 0;
+  }
+}

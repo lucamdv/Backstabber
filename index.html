@@ -14,13 +14,20 @@
     <script src="js/runtime-performance.js"></script>
     <link rel="stylesheet" href="css/style-index.css">
     <link rel="stylesheet" href="css/oracle.css">
+    <link rel="stylesheet" href="css/mobile-index.css" media="(max-width: 900px), (max-height: 600px) and (pointer: coarse)">
 </head>
 <body>
 
     <!-- Vídeo de Fundo em Loop -->
 <video autoplay muted loop playsinline preload="auto" id="bg-video">
+        <source src="background_mobile.mp4" type="video/mp4" media="(max-width: 900px), (max-height: 600px) and (pointer: coarse)">
         <source src="background.mp4" type="video/mp4">
     </video>
+    <div class="mobile-brand" aria-label="Backstabber">
+        <img class="mobile-brand-symbol" src="images/isotipo.png" alt="">
+        <span class="mobile-brand-wordmark" aria-hidden="true"><img src="images/isologo.png" alt=""></span>
+        <small>PROTOCOLO MOBILE</small>
+    </div>
     <!-- Menu Lateral Esquerdo Flutuante -->
     <nav class="main-menu" aria-label="Menu principal">
         <button type="button" class="menu-btn" data-target="panel-jogar" aria-controls="panel-jogar" aria-expanded="false">▶ JOGAR</button>
@@ -97,10 +104,21 @@
     <button type="button" id="btn-install-pwa" class="pwa-install" aria-describedby="pwa-install-status" aria-label="Instalar Backstabber como aplicativo" hidden>
         <img src="images/icon-192.png" alt="" aria-hidden="true">
         <span class="pwa-install-copy">
-            <strong>INSTALAR</strong>
+            <strong id="pwa-install-label">INSTALAR</strong>
             <small id="pwa-install-status" aria-live="polite">APLICATIVO</small>
         </span>
     </button>
+
+    <div id="mobile-install-guide" class="install-guide-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="install-guide-title">
+        <section class="install-guide-shell">
+            <button type="button" id="btn-close-install-guide" class="install-guide-close" aria-label="Fechar instruções">✕</button>
+            <span class="install-guide-kicker">APLICATIVO MOBILE // PWA</span>
+            <h2 id="install-guide-title">INSTALAR BACKSTABBER</h2>
+            <p id="install-guide-intro"></p>
+            <ol id="install-guide-steps"></ol>
+            <small>Depois da instalação, o jogo abre em tela cheia e se atualiza automaticamente.</small>
+        </section>
+    </div>
 
     <script src="js/setup.js"></script>
     <script src="js/oracle.js"></script>

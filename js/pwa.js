@@ -8,8 +8,68 @@
   function getInstallUi() {
     return {
       button: document.getElementById("btn-install-pwa"),
+      label: document.getElementById("pwa-install-label"),
       status: document.getElementById("pwa-install-status"),
     };
+  }
+
+  function getMobilePlatform() {
+    const userAgent = navigator.userAgent;
+    const isIpadOs =
+      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    if (/iphone|ipad|ipod/i.test(userAgent) || isIpadOs) return "ios";
+    if (/android/i.test(userAgent)) return "android";
+    return null;
+  }
+
+  function openInstallGuide(platform) {
+    const guide = document.getElementById("mobile-install-guide");
+    const intro = document.getElementById("install-guide-intro");
+    const steps = document.getElementById("install-guide-steps");
+    if (!guide || !intro || !steps) return;
+
+    const instructions =
+      platform === "ios"
+        ? {
+            intro: "No iPhone e iPad, o Backstabber é instalado diretamente pelo Safari:",
+            steps: [
+              "Abra esta página no Safari.",
+              "Toque no botão Compartilhar na barra do navegador.",
+              "Escolha Adicionar à Tela de Início.",
+              "Confirme em Adicionar.",
+            ],
+          }
+        : {
+            intro: "No Android, instale o Backstabber pelo menu do navegador:",
+            steps: [
+              "Abra esta página no Chrome ou navegador compatível.",
+              "Toque no menu de três pontos (⋮).",
+              "Escolha Instalar aplicativo ou Adicionar à tela inicial.",
+              "Confirme a instalação.",
+            ],
+          };
+
+    intro.textContent = instructions.intro;
+    steps.replaceChildren(
+      ...instructions.steps.map((instruction) => {
+        const item = document.createElement("li");
+        item.textContent = instruction;
+        return item;
+      }),
+    );
+    guide.classList.add("is-open");
+    guide.setAttribute("aria-hidden", "false");
+    document.body.classList.add("install-guide-open");
+    document.getElementById("btn-close-install-guide")?.focus();
+  }
+
+  function closeInstallGuide() {
+    const guide = document.getElementById("mobile-install-guide");
+    if (!guide) return;
+    guide.classList.remove("is-open");
+    guide.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("install-guide-open");
+    getInstallUi().button?.focus();
   }
 
   function isStandalone() {
@@ -112,7 +172,7 @@
   });
 
   document.addEventListener("DOMContentLoaded", () => {
-    const { button } = getInstallUi();
+    const { button, label } = getInstallUi();
     if (!button) return;
 
     if (!isWeb || isStandalone()) {
@@ -121,6 +181,23 @@
     }
 
     button.hidden = false;
+    const mobilePlatform = getMobilePlatform();
+    if (mobilePlatform === "ios") {
+      if (label) label.textContent = "INSTALAR NO IPHONE";
+      updateInstallUi("TELA DE INÍCIO");
+      button.setAttribute("aria-label", "Instalar Backstabber no iPhone ou iPad");
+    } else if (mobilePlatform === "android") {
+      if (label) label.textContent = "INSTALAR NO ANDROID";
+      updateInstallUi("APLICATIVO PWA");
+      button.setAttribute("aria-label", "Instalar Backstabber no Android");
+    }
+
+    document
+      .getElementById("btn-close-install-guide")
+      ?.addEventListener("click", closeInstallGuide);
+    document.getElementById("mobile-install-guide")?.addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeInstallGuide();
+    });
 
     if (
       !isGameScreen() &&
@@ -133,17 +210,16 @@
 
     button.addEventListener("click", async () => {
       if (!installPrompt) {
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isMacSafari =
           /macintosh/i.test(navigator.userAgent) &&
           /safari/i.test(navigator.userAgent) &&
           !/chrome|chromium|crios|edg/i.test(navigator.userAgent);
+        if (mobilePlatform) {
+          openInstallGuide(mobilePlatform);
+          return;
+        }
         updateInstallUi(
-          isIos
-            ? "ADICIONAR À TELA"
-            : isMacSafari
-              ? "ADICIONAR AO DOCK"
-              : "HTTPS NECESSÁRIO",
+          isMacSafari ? "ADICIONAR AO DOCK" : "USE UM NAVEGADOR COMPATÍVEL",
         );
         return;
       }

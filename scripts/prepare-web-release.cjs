@@ -13,6 +13,7 @@ const files = [
   "manifest.webmanifest",
   "sw.js",
   "background.mp4",
+  "background_mobile.mp4",
 ];
 const directories = ["css", "js", "images"];
 

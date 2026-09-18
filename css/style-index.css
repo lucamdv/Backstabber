@@ -17,6 +17,10 @@ body {
     position: relative;
 }
 
+.mobile-brand {
+    display: none;
+}
+
 /* Estilo do Fundo em Vídeo MP4 (HD) */
 #bg-video {
     position: fixed;
@@ -304,6 +308,83 @@ input::placeholder { color: #4a4a4a; }
 .pwa-install:disabled {
     opacity: 0.64;
     cursor: default;
+}
+
+body.install-guide-open {
+    overflow: hidden;
+}
+
+.install-guide-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(1, 1, 7, 0.88);
+    backdrop-filter: blur(10px);
+}
+
+.install-guide-overlay.is-open {
+    display: flex;
+}
+
+.install-guide-shell {
+    position: relative;
+    width: min(520px, 94vw);
+    padding: 28px;
+    border: 2px solid #00f3ff;
+    background: rgba(5, 5, 16, 0.98);
+    box-shadow: 0 0 32px rgba(0, 243, 255, 0.22);
+}
+
+.install-guide-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ff0055;
+    color: #ff0055;
+    background: rgba(255, 0, 85, 0.08);
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+
+.install-guide-kicker {
+    color: #00f3ff;
+    letter-spacing: 0.16em;
+}
+
+.install-guide-shell h2 {
+    max-width: calc(100% - 45px);
+    margin: 4px 0 12px;
+    color: #ff0055;
+    font-size: 2.5rem;
+    line-height: 0.95;
+}
+
+.install-guide-shell p,
+.install-guide-shell li {
+    color: #ded4da;
+    font-size: 1.2rem;
+    line-height: 1.25;
+}
+
+.install-guide-shell ol {
+    display: grid;
+    gap: 8px;
+    margin: 16px 0 18px 24px;
+}
+
+.install-guide-shell li::marker {
+    color: #00f3ff;
+}
+
+.install-guide-shell > small {
+    color: #8ebfc3;
+    font-size: 0.95rem;
 }
 
 /* Perfil do executável: preserva a identidade visual com menos composição GPU. */

@@ -28,7 +28,8 @@
     "productName": "Backstabber",
     "asar": true,
     "asarUnpack": [
-      "background.mp4"
+      "background.mp4",
+      "background_mobile.mp4"
     ],
     "directories": {
       "output": "release"
@@ -44,6 +45,7 @@
       "index.html",
       "game.html",
       "background.mp4",
+      "background_mobile.mp4",
       "manifest.webmanifest",
       "version.json",
       "sw.js",

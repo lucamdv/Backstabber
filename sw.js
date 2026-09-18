@@ -1,4 +1,4 @@
-const CACHE_NAME = "backstabber-shell-v5";
+const CACHE_NAME = "backstabber-shell-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,6 +8,8 @@ const APP_SHELL = [
   "./css/style-index.css",
   "./css/style-game.css",
   "./css/oracle.css",
+  "./css/mobile-index.css",
+  "./css/mobile-game.css",
   "./js/setup.js",
   "./js/runtime-performance.js",
   "./js/classes.js",
@@ -20,6 +22,7 @@ const APP_SHELL = [
   "./images/icon-512.png",
   "./images/menu.png",
   "./images/playmat.png",
+  "./images/playmat_mobile.png",
   "./images/verso_card.png",
   "./images/magnata_card.png",
   "./images/executor_card.png",
