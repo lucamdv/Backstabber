@@ -7,6 +7,26 @@
   const highDensityLoad = window.devicePixelRatio > 1.75 && cores <= 8;
   const modestHardware = cores <= 4 || memory <= 4 || highDensityLoad;
 
+  function lockInstalledAppZoom() {
+    const isInstalled =
+      window.matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches ||
+      navigator.standalone === true;
+    if (!isInstalled) return;
+
+    const preventGesture = (event) => event.preventDefault();
+    const preventPinch = (event) => {
+      if (event.touches?.length > 1) event.preventDefault();
+    };
+    const preventKeyboardZoom = (event) => {
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    };
+
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("touchmove", preventPinch, { passive: false });
+    document.addEventListener("wheel", preventKeyboardZoom, { passive: false });
+  }
+
   function chooseFxProfile() {
     if (reducedMotion.matches) return "reduced";
     if (modestHardware) return "lite";
@@ -56,6 +76,7 @@
   }
 
   applyFxProfile();
+  lockInstalledAppZoom();
   reducedMotion.addEventListener?.("change", applyFxProfile);
   document.addEventListener("DOMContentLoaded", configureBackgroundWork, { once: true });
 })();
