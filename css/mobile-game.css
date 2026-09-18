@@ -48,13 +48,13 @@ body.mobile-drawer-open { overflow: hidden; }
   top: auto;
   z-index: 120;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
   grid-template-areas: "brand status quote";
   gap: 5px;
   align-items: center;
-  min-height: 48px;
+  min-height: 66px;
   margin: 0 0 5px;
-  padding: 3px 4px;
+  padding: 5px;
   border: 1px solid rgba(255, 0, 85, 0.42);
   border-bottom: 2px solid #ff0055;
   background: linear-gradient(105deg, rgba(255, 0, 85, 0.09), rgba(3, 4, 13, 0.92) 48%, rgba(0, 243, 255, 0.05));
@@ -64,14 +64,14 @@ body.mobile-drawer-open { overflow: hidden; }
 }
 
 .header-logo {
-  width: 36px;
-  height: 36px;
+  width: 50px;
+  height: 50px;
   justify-content: center;
   border: 1px solid rgba(255, 0, 85, 0.42);
   background: rgba(255, 0, 85, 0.05);
 }
 
-.brand-isotipo { width: 34px; height: 34px; }
+.brand-isotipo { width: 48px; height: 48px; }
 .brand-isologo-frame,
 .header-right p,
 .turn-label { display: none; }
@@ -82,12 +82,13 @@ body.mobile-drawer-open { overflow: hidden; }
 
 .player-stat.active {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
   align-items: center;
   gap: 5px;
   width: 100%;
-  min-height: 38px;
-  padding: 4px 8px;
+  min-height: 54px;
+  padding: 3px 7px 4px;
   overflow: hidden;
   border: 1px solid rgba(0, 243, 255, 0.48);
   border-left: 2px solid #00f3ff;
@@ -102,26 +103,50 @@ body.mobile-drawer-open { overflow: hidden; }
   min-width: 0;
   overflow: hidden;
   color: #fff;
-  font-size: 0.98rem;
+  font-size: 1.12rem;
   text-overflow: ellipsis;
 }
 
 .player-resources {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+}
+
+.player-resource {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 21px;
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 213, 109, 0.34);
   color: #ffd56d;
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
+  background: rgba(255, 173, 50, 0.08);
+  line-height: 1;
+}
+
+.player-resource b { font-size: 0.96rem; }
+.player-resource small { font-size: 0.54rem; letter-spacing: 0.04em; }
+
+.player-influences {
+  border-color: rgba(0, 243, 255, 0.34);
+  color: #70f8ff;
+  background: rgba(0, 243, 255, 0.07);
 }
 
 .header-right { display: block; }
 .header-tools { gap: 4px; }
 
 .header-tool-btn {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 54px;
   border-radius: 0;
   background: rgba(7, 5, 16, 0.9);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  font-size: 1.22rem;
+  font-size: 1.45rem;
   touch-action: manipulation;
 }
 
@@ -189,7 +214,7 @@ body.mobile-drawer-open { overflow: hidden; }
   grid-area: auto;
   grid-row: 2;
   display: grid;
-  grid-template-rows: minmax(150px, 1fr) 145px 102px;
+  grid-template-rows: minmax(108px, 1fr) 155px 184px;
   gap: 3px;
   min-width: 0;
   min-height: 0;
@@ -204,8 +229,8 @@ body.mobile-drawer-open { overflow: hidden; }
 .player-hand-container {
   position: relative;
   z-index: 10;
-  min-height: 145px;
-  margin-top: -32px;
+  min-height: 155px;
+  margin-top: -34px;
   justify-content: flex-end;
 }
 
@@ -239,8 +264,8 @@ body.mobile-drawer-open { overflow: hidden; }
 }
 
 .carta {
-  width: clamp(84px, 23vw, 92px);
-  height: clamp(138px, 37.8vw, 151px);
+  width: clamp(92px, 25vw, 100px);
+  height: clamp(151px, 41vw, 164px);
   flex: 0 0 auto;
   filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.82));
 }
@@ -250,14 +275,14 @@ body.mobile-drawer-open { overflow: hidden; }
   filter: drop-shadow(0 7px 8px rgba(0, 0, 0, 0.82));
 }
 
-/* All seven actions remain visible: four above, three centered below. */
+/* Two broad columns prioritize readability while preserving a single viewport. */
 .actions-bar {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 4px;
   width: 100%;
-  height: 102px;
+  height: 184px;
   margin: 0;
   padding: 3px;
   overflow: hidden;
@@ -270,7 +295,7 @@ body.mobile-drawer-open { overflow: hidden; }
 .btn-action {
   --action-color: #ff0055;
   position: relative;
-  grid-column: span 2;
+  grid-column: auto;
   min-width: 0;
   min-height: 0;
   padding: 3px 2px 2px;
@@ -282,12 +307,16 @@ body.mobile-drawer-open { overflow: hidden; }
   background: linear-gradient(145deg, color-mix(in srgb, var(--action-color) 9%, transparent), rgba(6, 5, 14, 0.94));
   box-shadow: inset 0 0 11px color-mix(in srgb, var(--action-color) 5%, transparent);
   clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  font-size: clamp(0.66rem, 2.7vw, 0.76rem);
-  line-height: 0.82;
+  font-size: clamp(0.92rem, 4vw, 1rem);
+  line-height: 0.88;
   touch-action: manipulation;
 }
 
-.actions-bar .btn-action:nth-child(5) { grid-column: 2 / span 2; }
+.actions-bar .btn-action:nth-child(7) {
+  grid-column: 1 / -1;
+  width: calc(50% - 2px);
+  justify-self: center;
+}
 
 .btn-action::before {
   content: "";
@@ -311,7 +340,7 @@ body.mobile-drawer-open { overflow: hidden; }
 .btn-action .action-effect {
   margin-top: 1px;
   color: var(--action-color) !important;
-  font-size: clamp(0.47rem, 1.9vw, 0.54rem);
+  font-size: clamp(0.62rem, 2.7vw, 0.7rem);
   white-space: nowrap;
 }
 
@@ -319,10 +348,16 @@ body.mobile-drawer-open { overflow: hidden; }
   margin-top: 1px;
   overflow: hidden;
   color: #bdaeb8;
-  font-size: clamp(0.39rem, 1.55vw, 0.45rem);
+  font-size: 0;
   line-height: 0.85;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.btn-action small::after {
+  content: attr(data-mobile);
+  color: inherit;
+  font-size: clamp(0.52rem, 2.25vw, 0.6rem);
 }
 
 .btn-action:active:not(:disabled) {
@@ -627,15 +662,15 @@ body.mobile-drawer-open { overflow: hidden; }
 }
 
 @media (max-width: 360px), (max-height: 690px) and (orientation: portrait) {
-  .hud-header { grid-template-columns: 34px minmax(0, 1fr) auto; min-height: 44px; }
+  .hud-header { grid-template-columns: 46px minmax(0, 1fr) auto; min-height: 62px; }
   .header-logo,
-  .brand-isotipo { width: 32px; height: 32px; }
-  .header-tool-btn { width: 37px; height: 37px; }
-  .panel-center { grid-template-rows: minmax(135px, 1fr) 136px 96px; }
-  .player-hand-container { min-height: 136px; margin-top: -28px; }
-  .carta { width: 78px; height: 128px; }
-  .actions-bar { height: 96px; }
-  .btn-action { min-height: 0; font-size: 0.65rem; }
+  .brand-isotipo { width: 44px; height: 44px; }
+  .header-tool-btn { width: 46px; height: 48px; }
+  .panel-center { grid-template-rows: minmax(96px, 1fr) 145px 176px; }
+  .player-hand-container { min-height: 145px; margin-top: -30px; }
+  .carta { width: 86px; height: 141px; }
+  .actions-bar { height: 176px; }
+  .btn-action { min-height: 0; font-size: 0.9rem; }
 }
 
 /* The installed game requests portrait; browsers that refuse get a clear guard. */

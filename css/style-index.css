@@ -21,6 +21,11 @@ body {
     display: none;
 }
 
+.menu-icon,
+.menu-mobile-label {
+    display: none;
+}
+
 /* Estilo do Fundo em Vídeo MP4 (HD) */
 #bg-video {
     position: fixed;

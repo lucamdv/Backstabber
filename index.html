@@ -30,10 +30,18 @@
     </div>
     <!-- Menu Lateral Esquerdo Flutuante -->
     <nav class="main-menu" aria-label="Menu principal">
-        <button type="button" class="menu-btn" data-target="panel-jogar" aria-controls="panel-jogar" aria-expanded="false">▶ JOGAR</button>
-        <button type="button" class="menu-btn" data-target="panel-amigos" aria-controls="panel-amigos" aria-expanded="false">▶ AMIGOS</button>
-        <button type="button" class="menu-btn" data-target="panel-config" aria-controls="panel-config" aria-expanded="false">▶ CONFIGURAÇÕES</button>
-        <button type="button" class="menu-btn oracle-menu-btn" data-oracle-open aria-controls="oracle-modal">? ORÁCULO</button>
+        <button type="button" class="menu-btn menu-start-btn" data-target="panel-jogar" aria-controls="panel-jogar" aria-expanded="false" aria-label="Jogar">
+            <span class="menu-desktop-label">▶ JOGAR</span><span class="menu-mobile-label">START</span>
+        </button>
+        <button type="button" class="menu-btn menu-friends-btn" data-target="panel-amigos" aria-controls="panel-amigos" aria-expanded="false" aria-label="Amigos">
+            <span class="menu-desktop-label">▶ AMIGOS</span><span class="menu-icon menu-icon-profile" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="menu-btn menu-settings-btn" data-target="panel-config" aria-controls="panel-config" aria-expanded="false" aria-label="Configurações">
+            <span class="menu-desktop-label">▶ CONFIGURAÇÕES</span><span class="menu-icon menu-icon-settings" aria-hidden="true">⚙</span>
+        </button>
+        <button type="button" class="menu-btn oracle-menu-btn" data-oracle-open aria-controls="oracle-modal" aria-label="Abrir Oráculo">
+            <span class="menu-desktop-label">? ORÁCULO</span><span class="menu-icon menu-icon-help" aria-hidden="true">?</span>
+        </button>
     </nav>
 
     <!-- Painel 1: Formulário do Jogo -->

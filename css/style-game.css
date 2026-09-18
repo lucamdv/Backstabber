@@ -605,6 +605,19 @@ body.game-paused {
 #btn-backstab span {
   color: var(--magenta);
 }
+
+.player-resources,
+.player-resource {
+  display: flex;
+  align-items: center;
+}
+
+.player-resources { gap: 8px; }
+.player-resource { gap: 3px; }
+.player-resource b { color: #fff; }
+.player-resource small { color: var(--text-muted); font-size: 0.75em; }
+.player-credits b { color: #ffd56d; }
+.player-influences b { color: var(--cyan); }
 #btn-assassinate:hover:not(:disabled),
 #btn-backstab:hover:not(:disabled) {
   background: rgba(255, 0, 85, 0.1);

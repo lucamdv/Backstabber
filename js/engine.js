@@ -363,7 +363,24 @@ document.addEventListener("DOMContentLoaded", () => {
       nome.textContent = j.nome;
       const recursos = document.createElement("span");
       recursos.className = "player-resources";
-      recursos.textContent = `${j.moedas} CR · ${j.cartas.length} INF`;
+
+      const creditos = document.createElement("span");
+      creditos.className = "player-resource player-credits";
+      const valorCreditos = document.createElement("b");
+      valorCreditos.textContent = String(j.moedas);
+      const rotuloCreditos = document.createElement("small");
+      rotuloCreditos.textContent = "CRÉDITOS";
+      creditos.append(valorCreditos, rotuloCreditos);
+
+      const influencias = document.createElement("span");
+      influencias.className = "player-resource player-influences";
+      const valorInfluencias = document.createElement("b");
+      valorInfluencias.textContent = String(j.cartas.length);
+      const rotuloInfluencias = document.createElement("small");
+      rotuloInfluencias.textContent = "INFL.";
+      influencias.append(valorInfluencias, rotuloInfluencias);
+
+      recursos.append(creditos, influencias);
       div.append(nome, recursos);
       ui.scoreboard.appendChild(div);
     });
