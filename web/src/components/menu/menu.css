@@ -1,0 +1,27 @@
+.menu-notice {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 5;
+  max-width: min(30rem, calc(100vw - 28px));
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #00f3ff;
+  background: #090912;
+  color: #e0e0e0;
+}
+
+.menu-form-error {
+  color: #ff9abb;
+  margin-block: 0.35rem;
+}
+
+.btn-start.menu-resume {
+  margin: 0 0 1rem;
+  border-color: #00f3ff;
+  background: #071721;
+  color: #00f3ff;
+}
+
+.menu-offline-message {
+  color: #ff2d72;
+}
