@@ -30,6 +30,27 @@
 
 No Backstabber, cada jogador controla influências secretas e pode declarar qualquer personagem — tendo a carta ou não. Use Créditos, conteste blefes, bloqueie seus rivais e seja a última pessoa com uma influência em jogo.
 
+### Desenvolvimento da versão React (AV2)
+
+No checkout da branch da Sprint 01, use Node.js 22 ou superior e execute dentro de `web/`.
+
+```bash
+cd web
+npm ci
+npm run dev
+npm run test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+`npm run preview` serve o build de `web/dist/` para teste local. O build reutiliza as artes e folhas de estilo do repositório. O modo local salva partidas no navegador e oferece a opção **Retomar partida** quando há um estado recuperável.
+
+- [Inventário do legado](docs/av2/sprint-01-baseline.md)
+- [Contrato dos backends](docs/av2/backend-contract.md)
+- [Plano de distribuição](docs/av2/distribution-migration.md)
+- [Validação e paridade funcional](docs/av2/sprint-01-validation.md)
+
 - De **1 a 10 jogadores** no mesmo dispositivo.
 - Baralhos proporcionais de **15, 20 ou 25 cartas**.
 - Cartas: **Magnata, Executor, Sentinela, Mercenário e Broker**.
