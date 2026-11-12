@@ -11,7 +11,7 @@ type SetupPanelProps = {
   onClose: () => void;
 };
 
-const playerCounts = Array.from({ length: 10 }, (_, index) => index + 1);
+const playerCounts = Array.from({ length: 9 }, (_, index) => index + 2);
 
 export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: SetupPanelProps) {
   const [names, setNames] = useState(['', '']);
@@ -21,6 +21,7 @@ export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: Set
   if (!active) return null;
 
   function changeCount(nextCount: number) {
+    if (!playerCounts.includes(nextCount)) return;
     setNames((previous) => Array.from({ length: nextCount }, (_, index) => previous[index] ?? ''));
     setError(null);
   }
@@ -50,7 +51,7 @@ export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: Set
               onChange={(event) => changeCount(Number(event.target.value))}
             >
               {playerCounts.map((value) => (
-                <option key={value} value={value}>{value === 1 ? '1 — SOLO / TESTE' : `${value} JOGADORES`}</option>
+                <option key={value} value={value}>{value} JOGADORES</option>
               ))}
             </select>
           </div>

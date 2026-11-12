@@ -92,6 +92,30 @@ describe('mesa local', () => {
     expect(localStorage.getItem(saveKey)).toBe('{');
   });
 
+  it('preserva a criação interna e a recuperação de salvamentos solo das duas versões', () => {
+    const solo = createGame(['Solo'], random);
+    const [player] = solo.players;
+    const legacyKey = 'backstabber_jogo_v3';
+    const legacy = JSON.stringify({
+      jogadores: [{
+        nome: player.name,
+        moedas: player.credits,
+        cartas: player.cards.map(card => ({ personagem: characterNames[card.character] })),
+      }],
+      baralho: { cartas: solo.deck.map(card => ({ personagem: characterNames[card.character] })) },
+      turnoAtual: 0,
+    });
+    localStorage.setItem(legacyKey, legacy);
+    const migrated = loadGame(localStorage).state;
+    expect(migrated?.players.map(saved => saved.name)).toEqual(['Solo']);
+    expect(migrated?.players[0].cards.map(card => card.character)).toEqual(player.cards.map(card => card.character));
+    expect(migrated?.deck).toHaveLength(13);
+
+    saveGame(localStorage, solo);
+    expect(loadGame(localStorage)).toEqual({ state: solo });
+    expect(localStorage.getItem(legacyKey)).toBe(legacy);
+  });
+
   it('não oferece uma vitória encerrada nem reimporta uma partida antiga após a vitória', () => {
     const state = initial();
     const winner = state.players[0];

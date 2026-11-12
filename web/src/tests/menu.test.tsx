@@ -24,7 +24,27 @@ test('abre os painéis do menu e devolve o foco ao fechar por teclado', () => {
   expect(screen.getByRole('dialog', { name: 'SISTEMA' })).toBeTruthy();
 });
 
-test.each([[1, 15], [6, 15], [7, 20], [8, 20], [9, 25], [10, 25]])(
+test('oferece de 2 a 10 jogadores e começa com dois campos na criação local', () => {
+  render(<MenuPage onStart={() => undefined} />);
+  const setup = openSetup();
+  expect(setup.getByRole('combobox')).toHaveValue('2');
+  expect(setup.getAllByRole('option').map(option => option.getAttribute('value'))).toEqual([
+    '2', '3', '4', '5', '6', '7', '8', '9', '10',
+  ]);
+  expect(setup.getAllByRole('textbox')).toHaveLength(2);
+});
+
+test('ignora uma mudança para solo enviada ao seletor de nova partida', () => {
+  const onStart = vi.fn();
+  render(<MenuPage onStart={onStart} />);
+  const setup = openSetup();
+  fireEvent.change(setup.getByRole('combobox'), { target: { value: '1' } });
+  expect(setup.getByRole('combobox')).toHaveValue('2');
+  expect(setup.getAllByRole('textbox')).toHaveLength(2);
+  expect(onStart).not.toHaveBeenCalled();
+});
+
+test.each([[2, 15], [6, 15], [7, 20], [8, 20], [9, 25], [10, 25]])(
   'exibe %i campos e um baralho com %i cartas',
   (count, deck) => {
     render(<MenuPage onStart={() => undefined} />);
