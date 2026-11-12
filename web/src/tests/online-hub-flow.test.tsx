@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { App } from '../app/App';
 import { OnlineHub } from '../online/OnlineHub';
 import type { Room } from '../online/types';
 
@@ -82,4 +83,66 @@ test('a room broadcast reloads the server snapshot before mounting the match for
   snapshot = { ...room, status: 'started', matchId: 'game-9' };
   await act(async () => { refresh.get(`room:${room.id}`)?.(); });
   expect(await screen.findByText('Partida game-9 · eva,rui')).toBeInTheDocument();
+});
+
+test('Amigos asks for login and a callback restores the Friends destination, including with an active match', async () => {
+  useOnlineAuth.mockReturnValue({ supabase: {}, session: null, authError: '' });
+  const app = render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Amigos' }));
+  expect(window.location.hash).toBe('#/amigos');
+  expect(screen.getByRole('button', { name: 'Entrar com Google' })).toBeInTheDocument();
+  app.unmount();
+
+  window.history.replaceState(null, '', '/?online=amigos&code=example');
+  connect(async path => path === '/rooms' ? [{ ...room, status: 'started', matchId: 'existing' }] : baseData(path));
+  render(<App />);
+  expect(await screen.findByRole('heading', { name: 'Amigos' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Lobby' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Amigos' })).toHaveAttribute('aria-current', 'page');
+});
+
+test('Jogar online opens the rooms destination and leaves local setup available from the menu', async () => {
+  connect(async path => path === '/rooms' ? [] : baseData(path));
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Jogar' }));
+  expect(screen.getByRole('button', { name: 'ESTABELECER CONEXÃO' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Jogar online' }));
+  expect(window.location.hash).toBe('#/online');
+  expect(await screen.findByRole('heading', { name: 'Salas privadas' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Amigos' })).toBeNull();
+});
+
+test('a first-time account creates its profile and lands directly in Friends', async () => {
+  window.history.replaceState(null, '', '/#/amigos');
+  const request = vi.fn(async (path: string, method?: string) => {
+    if (path === '/profile') return method === 'PUT' ? me : null;
+    if (path === '/rooms') return [];
+    return baseData(path);
+  });
+  connect(request);
+  render(<App />);
+  expect(await screen.findByRole('heading', { name: 'Configure seu perfil' })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Nome de usuário'), { target: { value: 'eva' } });
+  fireEvent.change(screen.getByLabelText('Nome de exibição'), { target: { value: 'Eva' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar perfil' }));
+  expect(await screen.findByRole('heading', { name: 'Amigos' })).toBeInTheDocument();
+  expect(request).toHaveBeenCalledWith('/profile', 'PUT', {
+    username: 'eva', displayName: 'Eva', avatarUrl: null, showOnline: false,
+  });
+});
+
+test('Friends distinguishes a connection failure from an empty list and allows retry', async () => {
+  let failed = true;
+  connect(async path => {
+    if (path === '/rooms') return [];
+    if (path === '/friends' && failed) throw new Error('unreachable');
+    return baseData(path);
+  });
+  render(<OnlineHub section="friends" onExit={() => undefined} renderMatch={() => null} />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível atualizar amigos e convites');
+  expect(screen.queryByText('Você ainda não adicionou amigos.')).toBeNull();
+  failed = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+  expect(await screen.findByText('Você ainda não adicionou amigos.')).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeNull();
 });

@@ -10,23 +10,20 @@ function Identity({ profile }: { profile: Profile }) {
 }
 
 export function FriendsPanel({
-  userId, social, invites, busy, onSearch, onRequest, onRespond, onRemove, onInviteRespond,
+  userId, social, busy, onSearch, onRequest, onRespond, onRemove,
 }: {
   userId: string;
   social: Social;
-  invites: Invite[];
   busy: boolean;
   onSearch: (username: string) => Promise<Profile[]>;
   onRequest: (userId: string) => void;
   onRespond: (id: string, accept: boolean) => void;
   onRemove: (id: string) => void;
-  onInviteRespond: (id: string, accept: boolean) => void;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Profile[]>();
   const [searching, setSearching] = useState(false);
   const pending = social.requests.filter(request => request.status === 'pending');
-  const pendingInvites = invites.filter(invite => invite.status === 'pending');
   const received = pending.filter(request => request.to.id === userId);
   const sent = pending.filter(request => request.from.id === userId);
 
@@ -68,18 +65,6 @@ export function FriendsPanel({
         <button disabled={busy || alreadyConnected(person)} onClick={() => onRequest(person.id)}>Adicionar amigo</button>
       </li>)}
     </ul>}
-    {pendingInvites.length > 0 && <>
-      <h3>Convites para sala</h3>
-      <ul className="online-list" aria-label="Convites para sala">
-        {pendingInvites.map(invite => <li key={invite.id}>
-          <Identity profile={invite.from} />
-          <div className="online-actions">
-            <button onClick={() => onInviteRespond(invite.id, true)} disabled={busy}>Entrar pelo convite</button>
-            <button onClick={() => onInviteRespond(invite.id, false)} disabled={busy}>Recusar convite</button>
-          </div>
-        </li>)}
-      </ul>
-    </>}
     {pending.length > 0 && <>
       <h3>Solicitações de amizade</h3>
       <ul className="online-list" aria-label="Solicitações de amizade">
@@ -97,6 +82,27 @@ export function FriendsPanel({
             {friend.online ? 'Online' : 'Offline'}
           </span>}
           <button onClick={() => onRemove(friend.id)} disabled={busy}>Remover amigo</button>
+        </div>
+      </li>)}
+    </ul>
+  </section>;
+}
+
+export function RoomInvites({ invites, busy, onRespond }: {
+  invites: Invite[];
+  busy: boolean;
+  onRespond: (id: string, accept: boolean) => void;
+}) {
+  const pending = invites.filter(invite => invite.status === 'pending');
+  if (pending.length === 0) return null;
+  return <section className="online-card" aria-labelledby="online-invites-title">
+    <h2 id="online-invites-title">Convites para sala</h2>
+    <ul className="online-list" aria-label="Convites para sala">
+      {pending.map(invite => <li key={invite.id}>
+        <Identity profile={invite.from} />
+        <div className="online-actions">
+          <button onClick={() => onRespond(invite.id, true)} disabled={busy}>Entrar pelo convite</button>
+          <button onClick={() => onRespond(invite.id, false)} disabled={busy}>Recusar convite</button>
         </div>
       </li>)}
     </ul>

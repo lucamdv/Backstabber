@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClientId } from '../game/application/clientId';
 import type { OnlineCommand, OnlineView } from '../game/application/online-contracts';
 import { ArenaOnline } from './ArenaOnline';
+import { OnlineApiError } from './api';
 import type { OnlineApi } from './api';
 
 const mobile = '(max-width: 900px), (max-height: 600px) and (pointer: coarse)';
@@ -30,13 +31,39 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
   const [view, setView] = useState<OnlineView>();
   const [error, setError] = useState<string>();
   const [connectionError, setConnectionError] = useState(false);
+  const [accessError, setAccessError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const accessEpoch = useRef(0);
   const path = `/matches/${matchId}`;
 
-  function accept(next: OnlineView) {
+  const accept = useCallback((next: OnlineView) => {
     setView(current => !current || (next.revision >= current.revision && (!current.closed || next.closed)) ? next : current);
-  }
+  }, []);
+
+  const loadSnapshot = useCallback(async (isCurrent: () => boolean = () => true) => {
+    const epoch = accessEpoch.current;
+    try {
+      const next = await api.request<OnlineView>(path);
+      if (isCurrent() && epoch === accessEpoch.current) {
+        accept(next);
+        setAccessError(undefined);
+        setConnectionError(false);
+      }
+      return next;
+    } catch (failure) {
+      if (isCurrent() && epoch === accessEpoch.current) {
+        if (failure instanceof OnlineApiError && [401, 403, 404].includes(failure.status)) {
+          accessEpoch.current++;
+          setView(undefined);
+          setAccessError(failure.status === 401 ? messages.UNAUTHENTICATED : messages.NOT_FOUND);
+        } else {
+          setConnectionError(true);
+        }
+      }
+      throw failure;
+    }
+  }, [accept, api, path]);
 
   useEffect(() => {
     let disposed = false;
@@ -45,13 +72,9 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
       if (running) return;
       running = true;
       try {
-        const next = await api.request<OnlineView>(path);
-        if (!disposed) {
-          accept(next);
-          setConnectionError(false);
-        }
+        await loadSnapshot(() => !disposed);
       } catch {
-        if (!disposed) setConnectionError(true);
+        // The snapshot loader reports failure in the arena.
       } finally {
         running = false;
       }
@@ -64,7 +87,7 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
       window.clearInterval(timer);
       window.removeEventListener('online', refresh);
     };
-  }, [api, path, matchInvalidation]);
+  }, [loadSnapshot, matchInvalidation]);
 
   async function run(operation: () => Promise<void>) {
     if (pending.current) return;
@@ -79,12 +102,6 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
       pending.current = false;
       setBusy(false);
     }
-  }
-
-  async function refresh() {
-    const next = await api.request<OnlineView>(path);
-    accept(next);
-    return next;
   }
 
   function send(command: OnlineCommand) {
@@ -102,13 +119,13 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
           break;
         } catch (failure) {
           if (code(failure) !== 'STALE_REVISION') throw failure;
-          const fresh = await refresh();
+          const fresh = await loadSnapshot();
           if (command.type !== 'vote' || fresh.window?.id !== command.windowId || !fresh.window.options.length
             || attempt >= 9 || fresh.revision <= revision) throw failure;
           revision = fresh.revision;
         }
       }
-      await refresh();
+      await loadSnapshot();
     });
   }
 
@@ -118,12 +135,15 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
     {view ? <ArenaOnline view={view} connectedIds={connectedIds} busy={busy}
       error={error ?? (connectionError ? 'Reconectando à partida…' : undefined)}
       send={send} onExit={onExit}
-      onRematch={() => void run(async () => accept(await api.request<OnlineView>(`${path}/rematch`, 'POST')))}
+      onRematch={() => void run(async () => {
+        await api.request<OnlineView>(`${path}/rematch`, 'POST');
+        await loadSnapshot();
+      })}
       onCloseMatch={() => void run(async () => {
         await api.request(`/rooms/${roomId}/close`, 'POST');
-        await refresh();
+        await loadSnapshot();
       })} /> : <main className="overlay active">
-      <p role="status">{connectionError ? 'Reconectando à partida…' : 'Carregando partida…'}</p>
+      <p role={accessError ? 'alert' : 'status'}>{accessError ?? (connectionError ? 'Reconectando à partida…' : 'Carregando partida…')}</p>
       <button className="btn-pass" onClick={onExit}>Sair da arena</button>
     </main>}
   </>;

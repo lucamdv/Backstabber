@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { GameEvent, GameView } from '../../game/application/contracts';
 import { Card } from '../game/Card';
 import { playerName } from '../game/gameDisplay';
@@ -139,9 +139,16 @@ function VictoryParticles() {
   </div>;
 }
 
-export function VictoryDialog({ view, onRematch, onExit }: { view: GameView; onRematch: () => void; onExit: () => void }) {
+export function VictoryDialog({ view, onRematch, onExit, online }: {
+  view: GameView;
+  onRematch?: () => void;
+  onExit: () => void;
+  online?: { viewerId: string; busy: boolean; details?: ReactNode };
+}) {
   if (view.phase.kind !== 'finished') return null;
-  return <ArenaDialog id="victory-modal" titleId="victory-title" className="victory-overlay">
+  const cards = !online || online.viewerId === view.phase.winnerId ? view.phase.cards : [];
+  return <ArenaDialog id="victory-modal" titleId="victory-title"
+    className={`victory-overlay${online ? ' online-victory' : ''}`}>
     <div className="victory-grid" aria-hidden="true" />
     <div className="victory-rays" aria-hidden="true" />
     <VictoryParticles />
@@ -153,17 +160,22 @@ export function VictoryDialog({ view, onRematch, onExit }: { view: GameView; onR
       <span className="victory-kicker">TRANSMISSÃO CONCLUÍDA // ÚLTIMO SOBREVIVENTE</span>
       <h2 id="victory-title" data-text="VITÓRIA">VITÓRIA</h2>
       <p className="victory-announcement"><strong id="victory-player">{playerName(view, view.phase.winnerId)}</strong><span>DOMINOU A MESA</span></p>
-      <div className="victory-card-vault">
+      {cards.length > 0 && <div className="victory-card-vault">
         <span className="victory-cards-label">INFLUÊNCIAS RESTANTES</span>
         <div id="victory-cards" className="victory-cards" aria-live="polite">
-          {view.phase.cards.map((card, index) => <Card className="victory-card" key={card.id} character={card.character}
+          {cards.map((card, index) => <Card className="victory-card" key={card.id} character={card.character}
             animationDelay={`${index * 120}ms`} />)}
         </div>
+      </div>}
+      <div className={`victory-actions${!onRematch ? ' victory-single-action' : ''}`}>
+        {onRematch && <button type="button" id="btn-play-again" className="btn-victory-primary" disabled={online?.busy}
+          onClick={onRematch}>{online ? 'Jogar revanche' : 'Jogar novamente'}</button>}
+        <button type="button" id="btn-victory-menu" className="btn-victory-secondary" onClick={onExit}
+          title={online ? 'Voltar ao menu principal' : undefined}>
+          {online ? 'Sair da arena' : 'Voltar ao menu principal'}
+        </button>
       </div>
-      <div className="victory-actions">
-        <button type="button" id="btn-play-again" className="btn-victory-primary" onClick={onRematch}>Jogar novamente</button>
-        <button type="button" id="btn-victory-menu" className="btn-victory-secondary" onClick={onExit}>Voltar ao menu principal</button>
-      </div>
+      {online?.details}
     </section>
   </ArenaDialog>;
 }

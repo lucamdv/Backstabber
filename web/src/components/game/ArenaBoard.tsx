@@ -4,7 +4,7 @@ import type { Action, GameView } from '../../game/application/contracts';
 import { Card } from './Card';
 import { actions, characterName, playerName } from './gameDisplay';
 
-type Drawer = 'tribunal' | 'cemetery';
+type Drawer = 'tribunal' | 'cemetery' | 'scoreboard';
 
 interface ArenaBoardProps {
   view: GameView;
@@ -22,6 +22,24 @@ interface ArenaBoardProps {
   };
 }
 
+function PlayerStats({ view, online }: Pick<ArenaBoardProps, 'view' | 'online'>) {
+  return view.players.map((player) => {
+    const connected = online?.connectedIds.includes(player.id);
+    return <div key={player.id} aria-current={player.id === view.activeId || undefined}
+      className={`player-stat${player.id === view.activeId ? ' active' : ''}${online?.viewerId === player.id ? ' online-viewer' : ''}`}>
+      <strong title={player.name}>{player.name}</strong>
+      <span className="player-resources">
+        <span className="player-resource player-credits"><b>{player.credits}</b><small>CRÉDITOS</small></span>
+        <span className="player-resource player-influences"><b>{player.influence}</b><small>INFL.</small></span>
+      </span>
+      {online && <span className="online-player-presence" data-connected={connected}>
+        {connected ? 'Conectado' : 'Desconectado'}
+        {player.influence === 0 && ' · Eliminado'}
+      </span>}
+    </div>;
+  });
+}
+
 function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'>) {
   return <header className="hud-header">
     <div className="header-logo" role="img" aria-label="Backstabber">
@@ -33,19 +51,8 @@ function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, '
     <div className="header-center">
       <span className="turn-label">STATUS DA MESA</span>
       <div id="scoreboard" className="scoreboard-bar" role={online ? 'group' : undefined}
-        aria-label={online ? 'Placar e conexão dos jogadores' : undefined} tabIndex={online ? 0 : undefined}>
-        {view.players.map((player) => <div key={player.id} aria-current={player.id === view.activeId || undefined}
-          className={`player-stat${player.id === view.activeId ? ' active' : ''}${online?.viewerId === player.id ? ' online-viewer' : ''}`}>
-          <strong title={player.name}>{player.name}</strong>
-          <span className="player-resources">
-            <span className="player-resource player-credits"><b>{player.credits}</b><small>CRÉDITOS</small></span>
-            <span className="player-resource player-influences"><b>{player.influence}</b><small>INFL.</small></span>
-          </span>
-          {online && <span className="online-player-presence" data-connected={online.connectedIds.includes(player.id)}>
-            {online.connectedIds.includes(player.id) ? 'Conectado' : 'Desconectado'}
-            {player.influence === 0 && ' · Eliminado'}
-          </span>}
-        </div>)}
+        aria-label={online ? 'Placar e conexão dos jogadores' : undefined}>
+        <PlayerStats view={view} online={online} />
       </div>
     </div>
     <div className="header-right">
@@ -79,8 +86,12 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   const openDrawer = blocked ? null : drawer;
   const tribunalTrigger = useRef<HTMLButtonElement>(null);
   const cemeteryTrigger = useRef<HTMLButtonElement>(null);
+  const scoreboardTrigger = useRef<HTMLButtonElement>(null);
   const closeTribunal = useRef<HTMLButtonElement>(null);
   const closeCemetery = useRef<HTMLButtonElement>(null);
+  const closeScoreboard = useRef<HTMLButtonElement>(null);
+  const activeTrigger = openDrawer === 'tribunal' ? tribunalTrigger : openDrawer === 'cemetery' ? cemeteryTrigger : scoreboardTrigger;
+  const activeClose = openDrawer === 'tribunal' ? closeTribunal : openDrawer === 'cemetery' ? closeCemetery : closeScoreboard;
   const currentPlayer = playerName(view, view.activeId);
   const handOwner = online?.viewerId ?? view.activeId;
   const handLabel = online ? 'Minhas influências' : `Influências de ${currentPlayer}`;
@@ -90,22 +101,21 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   }
 
   function closeDrawer() {
-    (openDrawer === 'tribunal' ? tribunalTrigger : cemeteryTrigger).current?.focus();
+    activeTrigger.current?.focus();
     setDrawer(null);
   }
 
   useEffect(() => {
     if (!openDrawer) return;
-    const trigger = openDrawer === 'tribunal' ? tribunalTrigger : cemeteryTrigger;
-    (openDrawer === 'tribunal' ? closeTribunal : closeCemetery).current?.focus();
+    activeClose.current?.focus();
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
       setDrawer(null);
-      trigger.current?.focus();
+      activeTrigger.current?.focus();
     }
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, [openDrawer]);
+  }, [activeClose, activeTrigger, openDrawer]);
 
   return <div className="hud-container" inert={blocked || undefined}>
     <Scoreboard view={view} online={online} onOracle={() => { setDrawer(null); onOracle(); }}
@@ -124,6 +134,10 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
           aria-controls="mobile-cemetery-panel" aria-expanded={openDrawer === 'cemetery'} onClick={() => toggleDrawer('cemetery')}>
           <span aria-hidden="true">✦</span><small>DESCARTE</small>
         </button>
+        {online && <button type="button" ref={scoreboardTrigger} className="mobile-table-button" aria-label="Mesa"
+          aria-controls="mobile-scoreboard-panel" aria-expanded={openDrawer === 'scoreboard'} onClick={() => toggleDrawer('scoreboard')}>
+          <span aria-hidden="true">◈</span><small>MESA</small>
+        </button>}
       </nav>
       <aside className={`panel-left${openDrawer === 'tribunal' ? ' is-mobile-open' : ''}`}
         id="mobile-tribunal-panel" aria-label="Registro da mesa">
@@ -145,6 +159,14 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
           <div className="deck-info"><span>DECK</span><small id="deck-count">{view.deckCount} RESTANTES</small></div>
         </div>
       </aside>
+      {online && openDrawer === 'scoreboard' && <aside className="panel-left online-scoreboard-drawer is-mobile-open mobile-only"
+        id="mobile-scoreboard-panel" aria-label="Jogadores da mesa">
+        <button type="button" className="mobile-panel-close" aria-label="Fechar placar" ref={closeScoreboard} onClick={closeDrawer}>✕</button>
+        <h3 className="box-title">JOGADORES DA MESA</h3>
+        <div className="online-scoreboard-list">
+          <PlayerStats view={view} online={online} />
+        </div>
+      </aside>}
       <section className={`panel-center${online && !online.showActions ? ' online-no-action-bar' : ''}`}>
         <Playmat>{online?.panel}</Playmat>
         <div className="player-hand-container">

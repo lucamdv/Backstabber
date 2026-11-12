@@ -31,6 +31,19 @@ function setup(view: OnlineView) {
 }
 
 describe('arena online', () => {
+  it('abre o placar completo pela barra mobile e devolve o foco ao fechar', () => {
+    setup(fixture());
+    const toggle = screen.getByRole('button', { name: 'Mesa' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    const panel = screen.getByRole('complementary', { name: 'Jogadores da mesa' });
+    expect(within(panel).getByText('Desconectado')).toBeVisible();
+    expect(within(panel).getByText('Caio')).toBeVisible();
+    fireEvent.keyDown(within(panel).getByRole('button', { name: 'Fechar placar' }), { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+  });
+
   it('mantém as cartas próprias acessíveis fora do turno e no Oráculo', () => {
     const { update } = setup(fixture());
     expect(screen.getByText('Aguardando a jogada de Ana.')).toBeVisible();
@@ -142,5 +155,29 @@ describe('arena online', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sair da arena' }));
     expect(onExit).toHaveBeenCalledTimes(1);
     expect(onRematch).toHaveBeenCalledTimes(1);
+  });
+
+  it('mostra as cartas autorizadas da fase final mesmo com a mão do vencedor preenchida', () => {
+    setup(fixture({ phase: { kind: 'finished', winnerId: 'bia', cards: [broker, magnata] } }));
+    const victory = screen.getByRole('dialog', { name: 'VITÓRIA' });
+    expect(within(victory).getByText('Bia')).toBeVisible();
+    expect(within(victory).getByText('INFLUÊNCIAS RESTANTES')).toBeVisible();
+    expect(within(victory).getByRole('img', { name: 'Broker' })).toBeVisible();
+    expect(within(victory).getByRole('img', { name: 'Magnata' })).toBeVisible();
+  });
+
+  it('aguarda a ciência final e protege as cartas do vencedor na tela de outro jogador', () => {
+    const phase = { kind: 'finished', winnerId: 'ana', cards: [executor] } as const;
+    const { update } = setup(fixture({
+      phase: { ...phase, cards: [executor] },
+      window: { id: 'final', kind: 'acknowledge', eligible: ['ana'], responded: [], options: [], summary: 'Resultado final.' },
+    }));
+    expect(screen.queryByRole('heading', { name: 'VITÓRIA' })).toBeNull();
+    expect(within(screen.getByRole('group', { name: 'Minhas influências' })).getByRole('img', { name: 'Broker' })).toBeVisible();
+    update({ window: undefined });
+    const victory = screen.getByRole('dialog', { name: 'VITÓRIA' });
+    expect(within(victory).getByText('Ana')).toBeVisible();
+    expect(within(victory).queryByRole('img', { name: 'Executor' })).toBeNull();
+    expect(within(victory).queryByRole('img', { name: 'Broker' })).toBeNull();
   });
 });

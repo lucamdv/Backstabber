@@ -9,6 +9,7 @@ type MenuPageProps = {
   onStart: (names: string[]) => void;
   onResume?: () => void;
   onOnline?: () => void;
+  onFriends?: () => void;
   notice?: string;
 };
 
@@ -21,7 +22,7 @@ const entries = [
 
 type Panel = typeof entries[number]['panel'];
 
-export default function MenuPage({ onStart, onResume, onOnline, notice }: MenuPageProps) {
+export default function MenuPage({ onStart, onResume, onOnline, onFriends, notice }: MenuPageProps) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const launcher = useRef<HTMLButtonElement>(null);
   const close = () => setPanel(null);
@@ -40,12 +41,12 @@ export default function MenuPage({ onStart, onResume, onOnline, notice }: MenuPa
             type="button"
             className={`menu-btn ${entry.className}${panel === entry.panel ? ' active' : ''}`}
             aria-label={entry.label}
-            aria-haspopup={entry.panel === 'amigos' && onOnline ? undefined : 'dialog'}
+            aria-haspopup={entry.panel === 'amigos' && onFriends ? undefined : 'dialog'}
             aria-controls={panel === entry.panel ? (entry.panel === 'oracle' ? 'oracle-modal' : `panel-${entry.panel}`) : undefined}
             aria-expanded={panel === entry.panel}
             onClick={(event) => {
-              if (entry.panel === 'amigos' && onOnline) {
-                onOnline();
+              if (entry.panel === 'amigos' && onFriends) {
+                onFriends();
                 return;
               }
               launcher.current = event.currentTarget;

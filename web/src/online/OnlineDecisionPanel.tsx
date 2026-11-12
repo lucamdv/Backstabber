@@ -51,11 +51,6 @@ function CollectiveDecision({ view, send, busy, window }: DecisionProps & { wind
     <p>{window.summary}</p>
     {targetId && <p>Alvo: {playerName(view, targetId)}</p>}
     <p className="online-progress" role="status">Aguardando respostas — {window.responded.length}/{window.eligible.length}</p>
-    <ul className="online-responses" aria-label="Participantes da decisão">
-      {window.eligible.map((id) => <li key={id} data-responded={window.responded.includes(id)}>
-        {playerName(view, id)} · {window.responded.includes(id) ? 'respondeu' : 'pendente'}
-      </li>)}
-    </ul>
     {viewerResponded && <p>Resposta registrada. Aguardando os outros jogadores.</p>}
     {!viewerResponded && !mayVote && <p>Acompanhe as respostas dos participantes elegíveis.</p>}
     {mayVote && <div className="online-decision-buttons">
@@ -66,6 +61,11 @@ function CollectiveDecision({ view, send, busy, window }: DecisionProps & { wind
         {voteLabel(choice, window)}
       </button>)}
     </div>}
+    <ul className="online-responses" aria-label="Participantes da decisão">
+      {window.eligible.map((id) => <li key={id} data-responded={window.responded.includes(id)}>
+        {playerName(view, id)} · {window.responded.includes(id) ? 'respondeu' : 'pendente'}
+      </li>)}
+    </ul>
   </section>;
 }
 
@@ -120,10 +120,9 @@ function TargetPicker({ view, send, busy, action, onCancel }: DecisionProps & { 
   </section>;
 }
 
-export function OnlineDecisionPanel({ view, send, busy, targetAction, onCancelTarget, onRematch, onExit }: DecisionProps & {
+export function OnlineDecisionPanel({ view, send, busy, targetAction, onCancelTarget, onExit }: DecisionProps & {
   targetAction?: Action;
   onCancelTarget: () => void;
-  onRematch: () => void;
   onExit: () => void;
 }) {
   const { phase } = view;
@@ -135,17 +134,7 @@ export function OnlineDecisionPanel({ view, send, busy, targetAction, onCancelTa
   if (phase.kind === 'loss') return <InfluenceLoss view={view} send={send} busy={busy} victimId={phase.victimId} />;
   if (phase.kind === 'negotiation') return <Negotiation key={`${view.round}-${view.revision}`} view={view} send={send}
     busy={busy} playerId={phase.playerId} keep={phase.keep} />;
-  if (phase.kind === 'finished') return <section className="overlay-content online-panel" aria-labelledby="online-victory-title">
-    <h2 id="online-victory-title">VITÓRIA</h2>
-    <p className="victory-announcement"><strong>{playerName(view, phase.winnerId)}</strong><span>Dominou a mesa.</span></p>
-    {view.viewerId === phase.winnerId && view.hand.length === 0 && <div className="hand">
-      {phase.cards.map((card) => <Card key={card.id} className="victory-card" character={card.character} />)}
-    </div>}
-    <div className="online-decision-buttons">
-      {view.canRematch && <button type="button" className="btn-victory-primary" disabled={busy} onClick={onRematch}>Jogar revanche</button>}
-      <button type="button" className="btn-pass" onClick={onExit}>Sair da arena</button>
-    </div>
-  </section>;
+  if (phase.kind === 'finished') return null;
   if (targetAction) return <TargetPicker view={view} send={send} busy={busy} action={targetAction} onCancel={onCancelTarget} />;
   return <p className="online-turn-message" role="status">{view.activeId === view.viewerId
     ? 'É a sua vez.' : `Aguardando a jogada de ${playerName(view, view.activeId)}.`}</p>;

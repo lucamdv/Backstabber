@@ -38,9 +38,9 @@
 
 .online-playmat-scroll {
   width: 100%;
-  max-height: min(54dvh, 560px);
+  max-height: 100%;
   padding: 4px;
-  overflow: auto;
+  overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
@@ -63,6 +63,7 @@
 
 .online-arena .online-panel p {
   margin: 4px 0 8px;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
 }
 
 .online-decision-buttons {
@@ -109,7 +110,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 7px;
-  margin: 0 0 8px;
+  margin: 8px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -119,6 +120,7 @@
   border: 1px solid #6d3c53;
   color: #ecc1cf;
   overflow-wrap: anywhere;
+  font-size: clamp(0.8rem, 2vw, 1rem);
 }
 
 .online-responses li[data-responded="true"] {
@@ -131,6 +133,19 @@
   outline-offset: 2px;
 }
 
+.online-arena .reaction-card-stage {
+  min-height: 0;
+  gap: clamp(5px, 2vw, 16px);
+  margin: 4px 0 8px;
+}
+
+.online-arena .declared-card {
+  min-width: 0;
+  max-width: 42%;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
 .online-arena .declared-card .carta-declarada {
   width: clamp(44px, 14vw, 78px);
   height: auto;
@@ -139,6 +154,7 @@
 
 .online-arena #loss-cards .carta,
 .online-arena #negotiation-cards .carta {
+  flex-basis: clamp(46px, 15vw, 94px);
   width: clamp(46px, 15vw, 94px);
   height: auto;
   min-height: 0;
@@ -157,6 +173,153 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
 }
 
+.online-victory .victory-single-action {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 310px;
+}
+
+.online-victory .victory-content {
+  overflow-x: hidden;
+}
+
+.online-victory .victory-announcement strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.online-victory-host-controls {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  color: #f4edf1;
+}
+
+.online-victory-host-controls button {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid #684259;
+  background: #160c16;
+  color: #f4edf1;
+  cursor: pointer;
+}
+
+.online-victory-host-controls .btn-danger {
+  border-color: #ff4a87;
+  color: #ff9bbb;
+}
+
+.online-victory-host-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (min-width: 901px) {
+  .online-arena .hud-container {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .online-arena .hud-header {
+    grid-template-columns: minmax(160px, 1fr) minmax(0, 4fr) minmax(110px, 1fr);
+    grid-template-areas: "brand status quote";
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+
+  .online-arena .header-logo {
+    max-width: 100%;
+  }
+
+  .online-arena .scoreboard-bar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    gap: 4px;
+  }
+
+  .online-arena .player-stat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    min-width: 0;
+    padding: 3px 4px;
+    border-radius: 4px;
+    font-size: clamp(0.8rem, 1vw, 1.12rem);
+    text-align: center;
+  }
+
+  .online-arena .player-stat strong {
+    max-width: 100%;
+  }
+
+  .online-arena .player-resources {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 5px;
+  }
+
+  .online-arena .hud-body {
+    grid-template-columns: clamp(145px, 15vw, 260px) minmax(0, 1fr) clamp(145px, 15vw, 260px);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "left center right";
+    gap: 12px;
+  }
+
+  .online-arena :is(.panel-left, .panel-right) {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .online-arena .panel-center {
+    --online-hand-size: clamp(122px, 21dvh, 210px);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) var(--online-hand-size) auto;
+    min-width: 0;
+    min-height: 0;
+    gap: 6px;
+  }
+
+  .online-arena .panel-center.online-no-action-bar {
+    grid-template-rows: minmax(0, 1fr) var(--online-hand-size);
+  }
+
+  .online-arena .playmat-arena {
+    min-height: 0;
+  }
+
+  .online-arena #player-hand .carta {
+    width: auto;
+    height: calc(var(--online-hand-size) - 38px);
+    aspect-ratio: 0.61;
+  }
+
+  .online-arena .actions-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .online-arena .btn-action {
+    min-height: 54px;
+    padding: 3px;
+    font-size: clamp(0.8rem, 1.2vw, 1.2rem);
+  }
+
+  .online-arena .btn-action .action-effect {
+    font-size: clamp(0.65rem, 0.9vw, 0.9rem);
+  }
+}
+
+@media (min-width: 1500px) {
+  .online-arena .actions-bar {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px), (max-height: 600px) and (pointer: coarse) {
   .online-arena .header-center {
     overflow: hidden;
@@ -167,20 +330,41 @@
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: thin;
   }
 
   .online-arena .player-stat,
   .online-arena .player-stat.active {
     display: grid;
-    flex: 0 0 115px;
+    flex: 1 1 0;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     min-height: 55px;
     gap: 2px;
     padding: 3px;
     border-radius: 0;
     font-size: 0.9rem;
+  }
+
+  .online-arena #scoreboard .player-stat:not(.active):not(.online-viewer) {
+    display: none;
+  }
+
+  .online-arena .mobile-deck-status {
+    flex: 0 0 64px;
+  }
+
+  .online-arena .mobile-table-button {
+    gap: 2px;
+    padding-inline: 2px;
+  }
+
+  .online-scoreboard-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .online-arena .player-stat.online-viewer {
@@ -229,5 +413,13 @@
     height: 100%;
     max-height: none;
     padding: 2px;
+  }
+
+  .online-victory .victory-content h2 {
+    font-size: clamp(3rem, 20vw, 5.4rem);
+  }
+
+  .online-victory .victory-emblem {
+    flex-shrink: 0;
   }
 }

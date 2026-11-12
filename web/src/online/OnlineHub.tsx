@@ -4,10 +4,12 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { onlineErrorMessage } from './api';
 import type { OnlineApi } from './api';
 import { useOnlineAuth } from './auth';
-import { FriendsPanel } from './FriendsPanel';
+import { FriendsPanel, RoomInvites } from './FriendsPanel';
 import { Lobby } from './Lobby';
 import { ProfileEditor } from './Profile';
 import { usePrivateBroadcast, useRoomRealtime } from './realtime';
+import { onlineHash } from './routes';
+import type { OnlineSection } from './routes';
 import type { Invite, Profile, ProfileInput, Room, Social } from './types';
 import './online.css';
 
@@ -24,13 +26,19 @@ export type OnlineMatchProps = {
 };
 
 type HubProps = {
+  section?: OnlineSection;
+  onNavigate?: (section: OnlineSection) => void;
   onExit: () => void;
   renderMatch: (props: OnlineMatchProps) => ReactNode;
 };
 
-function HubSurface({ onExit, onLogout, children }: {
-  onExit: () => void; onLogout?: () => void; children: ReactNode;
-}) {
+const destinations = [
+  { section: 'friends', label: 'Amigos' },
+  { section: 'rooms', label: 'Salas e partidas' },
+] as const;
+
+function HubSurface({ onExit, onLogout, section = 'rooms', onNavigate, children }:
+Pick<HubProps, 'onExit' | 'section' | 'onNavigate'> & { onLogout?: () => void; children: ReactNode }) {
   return <main className="online-hub">
     <header className="online-header">
       <div>
@@ -42,7 +50,21 @@ function HubSurface({ onExit, onLogout, children }: {
         {onLogout && <button onClick={onLogout}>Sair da conta</button>}
       </div>
     </header>
-    <div className="online-content">{children}</div>
+    <div className="online-content">
+      <nav className="online-sections" aria-label="Modo online">
+        {destinations.map(destination => (
+          <a key={destination.section} href={onlineHash(destination.section)}
+            aria-current={section === destination.section ? 'page' : undefined}
+            onClick={event => {
+              if (onNavigate && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+                event.preventDefault();
+                onNavigate(destination.section);
+              }
+            }}>{destination.label}</a>
+        ))}
+      </nav>
+      {children}
+    </div>
   </main>;
 }
 
@@ -70,10 +92,8 @@ function RoomEntry({ busy, onCreate, onJoin }: {
   </section>;
 }
 
-const emptySocial: Social = { friends: [], requests: [] };
-
 function ConnectedHub({
-  api, client, profile, editProfile, onExit, onLogout, authError, renderMatch,
+  api, client, profile, editProfile, onExit, onLogout, authError, renderMatch, section = 'rooms', onNavigate,
 }: HubProps & {
   api: OnlineApi;
   client: SupabaseClient;
@@ -86,8 +106,10 @@ function ConnectedHub({
   const [selectedRoomId, selectRoomId] = useState<string>();
   const [invitedCode, setInvitedCode] = useState(() =>
     new URLSearchParams(window.location.search).get('sala')?.trim().toUpperCase() ?? null);
-  const [social, setSocial] = useState(emptySocial);
+  const [social, setSocial] = useState<Social>();
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [socialError, setSocialError] = useState('');
+  const [roomError, setRoomError] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const [error, setError] = useState('');
@@ -106,9 +128,12 @@ function ConnectedHub({
     const generation = ++roomGeneration.current;
     try {
       const fresh = await api.request<Room[]>('/rooms');
-      if (generation === roomGeneration.current) setRooms(fresh);
+      if (generation === roomGeneration.current) {
+        setRoomError('');
+        setRooms(fresh);
+      }
     } catch (cause) {
-      if (generation === roomGeneration.current) setError(onlineErrorMessage(cause));
+      if (generation === roomGeneration.current) setRoomError(onlineErrorMessage(cause));
     }
   }, [api]);
 
@@ -119,11 +144,12 @@ function ConnectedHub({
         api.request<Social>('/friends'), api.request<Invite[]>('/invites'),
       ]);
       if (generation === socialGeneration.current) {
+        setSocialError('');
         setSocial(friends);
         setInvites(latestInvites);
       }
     } catch (cause) {
-      if (generation === socialGeneration.current) setError(onlineErrorMessage(cause));
+      if (generation === socialGeneration.current) setSocialError(onlineErrorMessage(cause));
     }
   }, [api]);
 
@@ -228,54 +254,40 @@ function ConnectedHub({
     }
   }
 
-  if (room?.status === 'started' && room.matchId) {
+  if (section === 'rooms' && room?.status === 'started' && room.matchId) {
     const connectedIds = room.members.filter(member => member.connected).map(member => member.id);
     return renderMatch({
       matchId: room.matchId, roomId: room.id, userId: profile.id, connectedIds, api, onExit, matchInvalidation,
     });
   }
 
-  return <HubSurface onExit={onExit} onLogout={onLogout}>
+  const invitePanel = <RoomInvites invites={invites} busy={busy} onRespond={(id, accept) => run(async () => {
+    try {
+      if (accept) {
+        enter(await api.request<Room>(`/invites/${id}/respond`, 'POST', { accept }));
+        onNavigate?.('rooms');
+      } else {
+        await api.request(`/invites/${id}/respond`, 'POST', { accept });
+      }
+    } finally {
+      await refreshSocial();
+    }
+  })} />;
+
+  return <HubSurface onExit={onExit} onLogout={onLogout} section={section} onNavigate={onNavigate}>
     <div className="online-profile-bar">
       <p>{profile.displayName} <small>@{profile.username}</small></p>
       <button onClick={editProfile}>Editar perfil</button>
     </div>
     {(authError || error) && <p className="online-error" role="alert">{authError || error}</p>}
     {notice && <p className="online-notice" role="status">{notice}</p>}
-    {selectedRoomId && rooms && !rooms.some(item => item.id === selectedRoomId) && !room &&
-      <p className="online-notice" role="status">A sala anterior foi encerrada ou expirou.</p>}
-    {rooms && rooms.length > 0 && <div className="online-inline">
-      <label htmlFor="active-online-room">Selecionar sala</label>
-      <select id="active-online-room" value={room?.id ?? ''} disabled={busy} onChange={event => {
-        selectRoomId(event.target.value);
-        setShareLink('');
-      }}>
-        <option value="">Criar sala ou entrar por código</option>
-        {rooms.map(item => <option value={item.id} key={item.id}>
-          {item.code}{item.status === 'started' ? ' · Partida em andamento' : ''}
-        </option>)}
-      </select>
+    {socialError && <div className="online-error">
+      <p role="alert">Não foi possível atualizar amigos e convites. {socialError}</p>
+      <button onClick={() => { void refreshSocial(); }}>Tentar novamente</button>
     </div>}
-    <div className="online-grid">
-      {!rooms && <section className="online-card"><p role="status">Buscando suas salas…</p>
-        {error && <button onClick={() => { setError(''); invalidateUser(); }}>Tentar novamente</button>}
-      </section>}
-      {rooms && !room && <RoomEntry busy={busy}
-        onCreate={capacity => run(async () => enter(await api.request<Room>('/rooms', 'POST', { capacity })))}
-        onJoin={code => run(async () => enter(await api.request<Room>('/rooms/join', 'POST', { code })))} />}
-      {room?.status === 'lobby' && <div className="online-stack">
-        <Lobby key={room.id} room={room} userId={profile.id} friends={social.friends} presence={presence} busy={busy}
-          onReady={ready => run(() => changeRoom('ready', { ready }))}
-          onStart={() => run(() => changeRoom('start'))}
-          onLeave={() => run(() => changeRoom('leave'))}
-          onClose={() => run(() => changeRoom('close'))}
-          onInvite={userId => run(() => changeRoom('invite', { userId }), 'Convite enviado.')}
-          onCopy={() => { void copyLink(room.code); }} />
-        {shareLink && <label className="online-card">Link de convite
-          <input readOnly value={shareLink} onFocus={event => event.target.select()} />
-        </label>}
-      </div>}
-      <FriendsPanel userId={profile.id} social={social} invites={invites} busy={busy}
+    {section === 'friends' ? <div className="online-stack online-social">
+      {!social && !socialError && <section className="online-card"><p role="status">Carregando amigos…</p></section>}
+      {social && <FriendsPanel userId={profile.id} social={social} busy={busy}
         onSearch={async username => {
           setError('');
           try {
@@ -296,13 +308,47 @@ function ConnectedHub({
         onRemove={id => run(async () => {
           await api.request(`/friends/${id}`, 'DELETE');
           await refreshSocial();
-        })}
-        onInviteRespond={(id, accept) => run(async () => {
-          if (accept) enter(await api.request<Room>(`/invites/${id}/respond`, 'POST', { accept }));
-          else await api.request(`/invites/${id}/respond`, 'POST', { accept });
-          await refreshSocial();
-        })} />
-    </div>
+        })} />}
+      {invitePanel}
+    </div> : <section aria-label="Salas e partidas">
+      {roomError && <div className="online-error">
+        <p role="alert">Não foi possível atualizar suas salas. {roomError}</p>
+        <button onClick={() => { void refreshRooms(); }}>Tentar novamente</button>
+      </div>}
+      {selectedRoomId && rooms && !rooms.some(item => item.id === selectedRoomId) && !room &&
+        <p className="online-notice" role="status">A sala anterior foi encerrada ou expirou.</p>}
+      {rooms && rooms.length > 0 && <div className="online-inline">
+        <label htmlFor="active-online-room">Selecionar sala</label>
+        <select id="active-online-room" value={room?.id ?? ''} disabled={busy} onChange={event => {
+          selectRoomId(event.target.value);
+          setShareLink('');
+        }}>
+          <option value="">Criar sala ou entrar por código</option>
+          {rooms.map(item => <option value={item.id} key={item.id}>
+            {item.code}{item.status === 'started' ? ' · Partida em andamento' : ''}
+          </option>)}
+        </select>
+      </div>}
+      <div className="online-grid">
+        {!rooms && !roomError && <section className="online-card"><p role="status">Buscando suas salas…</p></section>}
+        {rooms && !room && <RoomEntry busy={busy}
+          onCreate={capacity => run(async () => enter(await api.request<Room>('/rooms', 'POST', { capacity })))}
+          onJoin={code => run(async () => enter(await api.request<Room>('/rooms/join', 'POST', { code })))} />}
+        {room?.status === 'lobby' && <div className="online-stack">
+          <Lobby key={room.id} room={room} userId={profile.id} friends={social?.friends ?? []} presence={presence} busy={busy}
+            onReady={ready => run(() => changeRoom('ready', { ready }))}
+            onStart={() => run(() => changeRoom('start'))}
+            onLeave={() => run(() => changeRoom('leave'))}
+            onClose={() => run(() => changeRoom('close'))}
+            onInvite={userId => run(() => changeRoom('invite', { userId }), 'Convite enviado.')}
+            onCopy={() => { void copyLink(room.code); }} />
+          {shareLink && <label className="online-card">Link de convite
+            <input readOnly value={shareLink} onFocus={event => event.target.select()} />
+          </label>}
+        </div>}
+        {invitePanel}
+      </div>
+    </section>}
   </HubSurface>;
 }
 
@@ -344,33 +390,34 @@ function ProfileGate({ session, api, client, onLogout, authError, ...hub }: HubP
   const metadata = session.user.user_metadata;
   const displayName = typeof metadata.full_name === 'string' ? metadata.full_name.slice(0, 40) : '';
   const avatarUrl = typeof metadata.avatar_url === 'string' && metadata.avatar_url.startsWith('https://') ? metadata.avatar_url : '';
-  return <HubSurface onExit={hub.onExit} onLogout={onLogout}>
+  return <HubSurface onExit={hub.onExit} onLogout={onLogout} section={hub.section} onNavigate={hub.onNavigate}>
     {(authError || error) && <p className="online-error" role="alert">{authError || error}</p>}
     {profile === undefined
       ? error
         ? <button onClick={() => { setError(''); setReload(current => current + 1); }}>Tentar novamente</button>
         : <p role="status">Buscando seu perfil…</p>
       : <ProfileEditor profile={profile} defaults={{ displayName, avatarUrl }} busy={busy} onSave={save} />}
-    {editing && <button onClick={() => setEditing(false)} disabled={busy}>Voltar às salas</button>}
+    {editing && <button onClick={() => setEditing(false)} disabled={busy}>
+      {hub.section === 'friends' ? 'Voltar aos amigos' : 'Voltar às salas'}
+    </button>}
   </HubSurface>;
 }
 
 export function OnlineHub(props: HubProps) {
-  const { supabase, api, session, authError, signIn, signOut } = useOnlineAuth();
+  const { supabase, api, session, authError, configuration, signIn, signOut } = useOnlineAuth(props.section ?? 'rooms');
   const [signingIn, setSigningIn] = useState(false);
 
   if (session && supabase && api) return <ProfileGate {...props} key={session.user.id}
     session={session} api={api} client={supabase} authError={authError} onLogout={() => { void signOut(); }} />;
 
-  const callbackFailed = new URLSearchParams(window.location.search).has('error')
-    || new URLSearchParams(window.location.hash.slice(1)).has('error');
-  return <HubSurface onExit={props.onExit}>
+  return <HubSurface onExit={props.onExit} section={props.section} onNavigate={props.onNavigate}>
     <section className="online-card online-login">
       <h2>Acessar sua conta</h2>
       {authError && <p role="alert">{authError}</p>}
-      {callbackFailed && !authError && <p role="alert">O login Google não foi concluído. Tente novamente.</p>}
       {!supabase
-        ? <p role="status">O modo online precisa da configuração do Supabase neste ambiente.</p>
+        ? <p role="status">{configuration === 'invalid'
+          ? 'A configuração pública do Supabase está inválida. Confira a URL e a chave publicável do ambiente.'
+          : 'O modo online precisa da configuração do Supabase neste ambiente. Você pode continuar no modo local.'}</p>
         : session === undefined
           ? <p role="status">Restaurando sessão…</p>
           : <button className="online-primary" disabled={signingIn} onClick={() => {

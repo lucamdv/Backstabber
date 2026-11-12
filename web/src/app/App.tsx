@@ -10,6 +10,8 @@ import MenuPage from '../pages/MenuPage';
 import { usePerformance } from './usePerformance';
 import { OnlineHub } from '../online/OnlineHub';
 import { OnlineMatch } from '../online/OnlineMatch';
+import { clearOnlineCallback, onlineHash, readOnlineSection } from '../online/routes';
+import type { OnlineSection } from '../online/routes';
 
 const mobile = '(max-width: 900px), (max-height: 600px) and (pointer: coarse)';
 const errors: Record<CommandError, string> = {
@@ -47,17 +49,12 @@ function readSavedGame() {
   }
 }
 
-function onlineRoute() {
-  const query = new URLSearchParams(location.search);
-  return location.hash === '#/online' || query.has('online') || query.has('sala');
-}
-
 export function App() {
   usePerformance();
   const [saved, setSaved] = useState(readSavedGame);
   const [session, setSession] = useState<LocalGameAdapter | null>(null);
   const [isGameRoute, setGameRoute] = useState(location.hash === '#/partida');
-  const [isOnline, setOnline] = useState(onlineRoute);
+  const [onlineSection, setOnlineSection] = useState(() => readOnlineSection(location));
   const [storageWarning, setStorageWarning] = useState<string>();
   const inGame = Boolean(session && isGameRoute);
 
@@ -66,7 +63,7 @@ export function App() {
       const playing = location.hash === '#/partida';
       if (!playing) session?.conceal();
       setGameRoute(playing);
-      setOnline(onlineRoute());
+      setOnlineSection(readOnlineSection(location));
     };
     window.addEventListener('hashchange', navigate);
     return () => window.removeEventListener('hashchange', navigate);
@@ -94,18 +91,18 @@ export function App() {
     setGameRoute(false);
   }
 
-  function enterOnline() {
-    location.hash = '/online';
-    setOnline(true);
+  function enterOnline(section: OnlineSection) {
+    location.hash = onlineHash(section);
+    setOnlineSection(section);
   }
 
   function exitOnline() {
     const url = new URL(location.href);
-    url.searchParams.delete('online');
+    clearOnlineCallback(url);
     url.searchParams.delete('sala');
     url.hash = '/';
     history.replaceState(null, '', url);
-    setOnline(false);
+    setOnlineSection(null);
   }
 
   const stylesheet = inGame ? 'game' : 'index';
@@ -114,11 +111,13 @@ export function App() {
     <link rel="stylesheet" href={`css/style-${stylesheet}.css`} />
     <link rel="stylesheet" href="css/oracle.css" />
     <link rel="stylesheet" href={`css/mobile-${stylesheet}.css`} media={mobile} />
-    {isOnline ? <OnlineHub onExit={exitOnline} renderMatch={props => <OnlineMatch key={props.matchId} {...props} />} />
+    {onlineSection ? <OnlineHub section={onlineSection} onNavigate={enterOnline} onExit={exitOnline}
+        renderMatch={props => <OnlineMatch key={props.matchId} {...props} />} />
       : inGame && session
       ? <ActiveGame key={session.matchId} session={session} onExit={exit}
           onRematch={() => open(createGame(session.getSnapshot().players.map(player => player.name)))} />
-      : <MenuPage onOnline={enterOnline} onStart={names => open(createGame(names))}
+      : <MenuPage onOnline={() => enterOnline('rooms')} onFriends={() => enterOnline('friends')}
+          onStart={names => open(createGame(names))}
           onResume={saved.state ? () => open(saved.state!) : undefined}
           notice={storageWarning ?? saved.notice} />}
     {inGame && storageWarning && <output role="status" className="storage-warning">{storageWarning}</output>}
