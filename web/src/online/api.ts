@@ -80,7 +80,9 @@ export function createOnlineApi(options: ApiOptions): OnlineApi {
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
-        credentials: 'omit',
+        // Preserve same-origin Vercel Authentication cookies on protected previews.
+        // Cross-origin API endpoints still receive no cookies.
+        credentials: 'same-origin',
         redirect: 'error',
         cache: 'no-store',
         signal: AbortSignal.timeout(15_000),
