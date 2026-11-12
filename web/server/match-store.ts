@@ -26,7 +26,7 @@ function parseCommand(command: unknown): OnlineCommand {
     case 'select-action': {
       const action = actions.find(value => value === command.action);
       if (!action || (command.targetId !== undefined && !shortId(command.targetId))) break;
-      return { type: command.type, action, targetId: command.targetId };
+      return { type: command.type, action, targetId: command.targetId as string | undefined };
     }
     case 'lose':
       if (shortId(command.cardId)) return { type: command.type, cardId: command.cardId };
@@ -104,7 +104,7 @@ export async function matchRoute(tx: PoolClient, userId: string, method: string,
   }
   if (status !== 'started' || !hostId) throw new ApiError('INVALID_PHASE', 409);
   const next = onlineTransition(state, userId, message.command, message.expectedRevision, random);
-  if (!next.ok) throw new ApiError(next.error, next.error === 'NOT_AUTHORIZED' ? 403 : 409);
+  if (next.ok === false) throw new ApiError(next.error, next.error === 'NOT_AUTHORIZED' ? 403 : 409);
   const response = { ok: true, revision: next.state.game.revision };
   await tx.query('update public.bs_matches set state = $2 where id = $1', [id, next.state]);
   await tx.query(`insert into public.bs_match_commands (match_id, user_id, command_id, fingerprint, result)

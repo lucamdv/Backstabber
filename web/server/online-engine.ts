@@ -49,7 +49,7 @@ function openWindow(state: OnlineState, kind: OnlineWindow['kind'], summary: str
 
 function applyCore(state: OnlineState, command: GameCommand, random: Random): string | undefined {
   const result = transition(state.game, command, state.game.revision, random);
-  if (!result.ok) return result.error;
+  if (result.ok === false) return result.error;
   state.game = result.state;
 }
 
