@@ -218,11 +218,32 @@ describe('arena online', () => {
     expect(confirm).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Manter Executor' }));
     fireEvent.click(screen.getByRole('button', { name: 'Manter Broker' }));
+    update({ revision: 5, choices: [magnata, broker, sentinela, executor] });
+    expect(screen.getByRole('button', { name: 'Manter Executor' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('2/2 selecionadas')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Manter Sentinela' }));
+    expect(screen.getByRole('button', { name: 'Manter Sentinela' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Manter Broker' }));
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Manter Broker' }));
     fireEvent.click(confirm);
     expect(send).toHaveBeenCalledWith({ type: 'negotiate', keepIds: ['offer-executor', 'bia-broker'] });
     update({ viewerId: 'ana' });
     expect(screen.queryByRole('button', { name: 'Manter Executor' })).toBeNull();
     expect(screen.getByText('Aguardando a negociação de Bia.')).toBeVisible();
+  });
+
+  it('aceita a escolha de uma influência quando o servidor pede uma', () => {
+    const { send, update } = setup(fixture({
+      phase: { kind: 'negotiation', playerId: 'bia', keep: 1 }, choices: [broker, executor, sentinela],
+    }));
+    expect(screen.getByText('Escolha 1 influência para manter')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Manter Broker' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar Negociação' }));
+    expect(send).toHaveBeenCalledWith({ type: 'negotiate', keepIds: ['bia-broker'] });
+    update({ privatePlayerId: 'ana' });
+    expect(screen.queryByRole('button', { name: /Manter / })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Confirmar Negociação' })).toBeNull();
   });
 
   it('só oferece revanche ao anfitrião autorizado e separa saída de encerramento', () => {

@@ -166,25 +166,12 @@
   padding: 4px;
   overflow: visible;
 }
-.online-arena #loss-cards .carta, .online-arena #negotiation-cards .carta {
+.online-arena #loss-cards .carta {
   width: min(128px, 32cqh, 34cqw);
   height: auto;
   min-height: 0;
   aspect-ratio: .61;
   flex: 0 0 auto;
-}
-.online-arena #negotiation-cards {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(100%, 500px);
-  justify-items: center;
-}
-.online-arena #negotiation-cards .carta { width: min(100%, 116px, 28cqh); }
-.online-arena #negotiation-cards .carta[aria-pressed="true"] {
-  outline: 2px solid #9cffb5;
-  outline-offset: 1px;
-  box-shadow: 0 0 14px #6bffa0a1;
-  transform: translateY(-3px);
 }
 .online-arena .online-target-list {
   display: grid;
@@ -192,6 +179,112 @@
   gap: 4px;
 }
 .online-arena .online-target-list button { min-width: 0; overflow-wrap: anywhere; }
+
+.online-arena .online-broker-stage {
+  --broker-rows: 1;
+  --broker-reserve: 132px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  color: var(--net-text);
+  text-align: center;
+}
+.online-arena .online-stage:has(.online-error, .online-arena-busy) .online-broker-stage {
+  --broker-status-space: 42px;
+}
+.online-broker-stage h2 {
+  margin: 0;
+  color: #bdf8ff;
+  font: 400 clamp(1.4rem, 7cqh, 2.55rem)/.9 var(--net-display);
+  text-shadow: 0 0 16px #68edff6b;
+  text-transform: uppercase;
+}
+.online-broker-stage p {
+  margin: 0;
+  color: #deeeff;
+  font-size: clamp(1rem, 3.4cqh, 1.25rem);
+  line-height: 1;
+}
+#online-broker-instructions { text-transform: uppercase; }
+.online-broker-offer {
+  --broker-columns: var(--broker-offer-count);
+  --broker-gap: clamp(7px, 1.4cqw, 18px);
+  --broker-card-width: min(248px,
+    calc((100cqh - var(--broker-reserve) - var(--broker-status-space, 0px)) / var(--broker-rows) * .61),
+    calc((100cqw - 30px - (var(--broker-columns) - 1) * var(--broker-gap)) / var(--broker-columns)));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--broker-gap);
+  width: calc(var(--broker-card-width) * var(--broker-columns) + var(--broker-gap) * (var(--broker-columns) - 1));
+  max-width: 100%;
+  margin: 6px auto 4px;
+}
+.online-arena .online-broker-offer .carta {
+  flex: 0 0 var(--broker-card-width);
+  width: var(--broker-card-width);
+  height: auto;
+  aspect-ratio: .61;
+  outline: 1px solid #6be6f0aa;
+  box-shadow: 0 4px 15px #26d8e64a;
+  transition: transform 170ms var(--net-ease), outline-color 170ms, box-shadow 170ms;
+}
+.online-arena .online-broker-offer .carta::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(transparent 0 5px, #93ecff13 6px 7px);
+  pointer-events: none;
+}
+.online-arena .online-broker-offer .carta[aria-pressed="false"]:hover:not(:disabled) { transform: translateY(-3px); }
+.online-arena .online-broker-offer .carta[aria-pressed="true"] {
+  z-index: 1;
+  outline: 2px solid #8cffb6;
+  box-shadow: 0 0 20px #6bffb1b5, 0 9px 18px #0009;
+  transform: translateY(-5px);
+}
+.online-arena .online-broker-offer .carta[aria-pressed="true"]::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 6px 6px auto auto;
+  width: 9px;
+  height: 5px;
+  border: solid #b5ffce;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+  box-shadow: -2px 2px 5px #0b382d;
+}
+.online-arena .online-broker-offer .carta:focus-visible { outline: 2px dashed #fff; outline-offset: 4px; }
+.online-broker-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.online-broker-controls output { color: #a2ffcb; font-size: 1.1rem; }
+.online-broker-controls button {
+  min-height: 44px;
+  padding: 4px 14px;
+  border: 1px solid #70f4bc;
+  background: linear-gradient(150deg, #214838, #101e24);
+  color: #eefff6;
+  font-size: 1.15rem;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.online-broker-controls button:disabled { opacity: .55; cursor: not-allowed; }
+
+@container (max-width: 520px) and (min-height: 410px) {
+  .online-arena .online-broker-stage { --broker-rows: 2; --broker-reserve: 146px; }
+  .online-broker-offer { --broker-columns: 2; }
+}
 
 @media (max-width: 590px) {
   .online-arena .online-hologram { grid-template-columns: minmax(0, 1fr); gap: 6px; }

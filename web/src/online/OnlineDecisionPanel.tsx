@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Card } from '../components/game/Card';
 import { actions, characterName, playerName } from '../components/game/gameDisplay';
 import { Claims } from '../components/modals/ArenaDecisions';
@@ -109,22 +110,27 @@ function BrokerChoice({ view, send, busy, keep }: DecisionProps & { keep: number
       : current.length < keep ? [...current, id] : current);
   }
   return <>
-    <p>Selecione {keep} {keep === 1 ? 'carta' : 'cartas'} para <strong>MANTER</strong>.</p>
-    <div id="negotiation-cards" className="hand">
+    <p id="online-broker-instructions">Escolha {keep} {keep === 1 ? 'influência' : 'influências'} para manter</p>
+    <div className="online-broker-offer" role="group" aria-labelledby="online-broker-instructions"
+      style={{ '--broker-offer-count': view.choices.length || 1 } as CSSProperties}>
       {view.choices.map((card) => <Card key={card.id} character={card.character} selected={selected.includes(card.id)}
-        className={selected.includes(card.id) ? 'selected' : ''} label={`Manter ${characterName[card.character]}`}
+        label={`Manter ${characterName[card.character]}`}
         disabled={busy} onSelect={() => toggle(card.id)} />)}
     </div>
-    <button type="button" className="btn-pass" disabled={busy || selected.length !== keep}
-      onClick={() => send({ type: 'negotiate', keepIds: selected })}>Confirmar Negociação</button>
+    <div className="online-broker-controls">
+      <output>{selected.length}/{keep} selecionadas</output>
+      <button type="button" disabled={busy || selected.length !== keep}
+        onClick={() => send({ type: 'negotiate', keepIds: selected })}>Confirmar Negociação</button>
+    </div>
   </>;
 }
 
 function Negotiation({ view, send, busy, playerId, keep }: DecisionProps & { playerId: string; keep: number }) {
   const isBroker = playerId === view.viewerId && view.privatePlayerId === view.viewerId;
-  return <section className="overlay-content online-panel online-private-stage" aria-labelledby="online-broker-title">
+  return <section className="online-broker-stage" aria-labelledby="online-broker-title">
     <h2 id="online-broker-title">Negociação do Broker</h2>
-    {isBroker ? <BrokerChoice view={view} send={send} busy={busy} keep={keep} />
+    {isBroker ? <BrokerChoice key={JSON.stringify([view.round, playerId, keep, view.choices.map(card => card.id).sort()])}
+      view={view} send={send} busy={busy} keep={keep} />
       : <p>Aguardando a negociação de {playerName(view, playerId)}.</p>}
   </section>;
 }
@@ -152,7 +158,7 @@ export function OnlineDecisionPanel({ view, send, busy, targetAction, onCancelTa
   </section>;
   if (view.window) return <CollectiveDecision view={view} send={send} busy={busy} window={view.window} />;
   if (phase.kind === 'loss') return <InfluenceLoss view={view} send={send} busy={busy} victimId={phase.victimId} />;
-  if (phase.kind === 'negotiation') return <Negotiation key={`${view.round}-${view.revision}`} view={view} send={send}
+  if (phase.kind === 'negotiation') return <Negotiation view={view} send={send}
     busy={busy} playerId={phase.playerId} keep={phase.keep} />;
   if (phase.kind === 'finished') return null;
   if (targetAction) return <TargetPicker view={view} send={send} busy={busy} action={targetAction} onCancel={onCancelTarget} />;

@@ -25,6 +25,50 @@ test.describe('identidade online', () => {
     await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
   });
 
+  for (const [width, height, minimum, rows] of [[1920, 1080, 175, 1], [1366, 768, 136, 1], [800, 720, 130, 1],
+    [390, 844, 100, 2], [360, 800, 95, 2], [667, 375, 76, 1]]) {
+    test(`Broker no palco em ${width}×${height}`, async ({ page }) => {
+      test.skip(baseline);
+      await page.setViewportSize({ width, height });
+      await openScene(page, 'negotiation');
+      const stage = page.getByRole('region', { name: 'Negociação do Broker' });
+      const cards = stage.getByRole('button', { name: /^Manter / });
+      const confirm = stage.getByRole('button', { name: 'Confirmar Negociação' });
+      await expect(cards).toHaveCount(4);
+      await expect(stage.getByRole('dialog')).toHaveCount(0);
+      await expect(confirm).toBeInViewport({ ratio: 1 });
+      await expect(confirm).toBeDisabled();
+      const geometry = await cards.evaluateAll(elements => elements.map(card => card.getBoundingClientRect().toJSON()));
+      expect(new Set(geometry.map(card => Math.round(card.top))).size).toBe(rows);
+      expect(Math.min(...geometry.map(card => card.width))).toBeGreaterThanOrEqual(minimum);
+      for (const card of await cards.all()) await expect(card).toBeInViewport({ ratio: 1 });
+      await cards.nth(0).click();
+      await cards.nth(1).click();
+      await cards.nth(2).click();
+      await expect(cards.nth(2)).toHaveAttribute('aria-pressed', 'false');
+      await cards.nth(0).click();
+      await expect(confirm).toBeDisabled();
+      await cards.nth(2).click();
+      await expect(stage.getByText('2/2 selecionadas')).toBeVisible();
+      await expect(cards.nth(2)).toHaveCSS('outline-color', 'rgb(140, 255, 182)');
+      await expect(confirm).toBeInViewport({ ratio: 1 });
+      const bounds = await stage.evaluate(section => {
+        const mat = section.closest('.playmat-arena')!.getBoundingClientRect();
+        const broker = section.getBoundingClientRect();
+        return { top: broker.top - mat.top, bottom: mat.bottom - broker.bottom };
+      });
+      expect(bounds.top).toBeGreaterThanOrEqual(4);
+      expect(bounds.bottom).toBeGreaterThanOrEqual(4);
+      await expect.poll(() => page.evaluate(() => [document.documentElement.scrollWidth - innerWidth,
+        document.documentElement.scrollHeight - innerHeight, scrollX, scrollY])).toEqual([0, 0, 0, 0]);
+      if (output) {
+        await page.screenshot({ path: `${output}/broker-${width}x${height}.png`, animations: 'disabled' });
+      }
+      await confirm.click();
+      await expect(page.locator('#fixture')).toHaveAttribute('data-command', 'negotiate');
+    });
+  }
+
   test('geometria base nas dez resoluções', async ({ page }) => {
     test.skip(baseline);
     test.setTimeout(90_000);
