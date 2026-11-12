@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { GameCommand, GameView } from '../game/application/contracts';
 import { ArenaBoard } from '../components/game/ArenaBoard';
 import { playerName } from '../components/game/gameDisplay';
@@ -9,6 +10,7 @@ import {
 import { ArenaCinematic, ArenaIntro, VictoryDialog } from '../components/modals/ArenaCinematics';
 import { Oracle } from '../components/shared/Oracle';
 import '../components/game/arena.css';
+import '../components/game/arena-local.css';
 
 interface GamePageProps {
   view: GameView;
@@ -19,6 +21,12 @@ interface GamePageProps {
   onRematch: () => void;
   error?: string;
   showIntro?: boolean;
+}
+
+interface PhasePresentation {
+  overlay?: ReactNode;
+  stage?: ReactNode;
+  concealedHand?: boolean;
 }
 
 export default function GamePage({
@@ -50,48 +58,51 @@ export default function GamePage({
     onExit();
   }
 
-  function renderPhase() {
-    if (intro) return <ArenaIntro onComplete={endIntro} />;
-    if (cinematic) return <ArenaCinematic view={view} event={cinematic} onComplete={endEvent} />;
-    if (event?.kind === 'income') return <IncomeDialog view={view} playerId={event.playerId} onContinue={endEvent} />;
-    if (utility === 'pause') return <PauseDialog onClose={() => setUtility(null)} onExit={exit} />;
-    if (utility === 'oracle') return <Oracle onClose={() => setUtility(null)} />;
+  function handoff(name: string, initial = false): PhasePresentation {
+    return { overlay: <Handoff name={name} initial={initial} onReveal={reveal} />, concealedHand: !view.revealed };
+  }
+
+  function renderPhase(): PhasePresentation {
+    if (intro) return { overlay: <ArenaIntro onComplete={endIntro} /> };
+    if (cinematic) return { overlay: <ArenaCinematic view={view} event={cinematic} onComplete={endEvent} /> };
+    if (event?.kind === 'income') return { stage: <IncomeDialog view={view} playerId={event.playerId} onContinue={endEvent} /> };
+    if (utility === 'pause') return { overlay: <PauseDialog onClose={() => setUtility(null)} onExit={exit} /> };
+    if (utility === 'oracle') return { overlay: <Oracle onClose={() => setUtility(null)} /> };
 
     switch (phase.kind) {
       case 'action':
-        return activePlayerReady ? null : <Handoff initial={view.revision === 0}
-          name={playerName(view, view.privatePlayerId ?? view.activeId)} onReveal={reveal} />;
+        return activePlayerReady ? {} : handoff(playerName(view, view.privatePlayerId ?? view.activeId), view.revision === 0);
       case 'target':
-        return activePlayerReady ? <TargetDialog view={view} send={send} />
-          : <Handoff name={playerName(view, view.activeId)} onReveal={reveal} />;
+        return activePlayerReady ? { stage: <TargetDialog view={view} send={send} /> }
+          : handoff(playerName(view, view.activeId));
       case 'reaction':
       case 'block-reaction':
-        return <ReactionDialog key={phase.kind} view={view} send={send} />;
+        return { stage: <ReactionDialog key={phase.kind} view={view} send={send} /> };
       case 'loss':
-        return phase.challenge && dismissedChallenge !== view.revision
+        return { stage: phase.challenge && dismissedChallenge !== view.revision
           ? <ChallengeResult key={view.revision} view={view} challenge={phase.challenge}
             onContinue={() => setDismissedChallenge(view.revision)} />
-          : <LossDialog view={view} phase={phase} send={send} onReveal={reveal} />;
+          : <LossDialog view={view} phase={phase} send={send} onReveal={reveal} /> };
       case 'negotiation':
         return view.revealed && view.privatePlayerId === phase.playerId
-          ? <NegotiationDialog key={view.revision} view={view} phase={phase} send={send} />
-          : <Handoff name={playerName(view, phase.playerId)} onReveal={reveal} />;
+          ? { stage: <NegotiationDialog key={view.revision} view={view} phase={phase} send={send} /> }
+          : handoff(playerName(view, phase.playerId));
       case 'finished':
-        return <VictoryDialog view={view} onRematch={onRematch} onExit={exit} />;
+        return { overlay: <VictoryDialog view={view} onRematch={onRematch} onExit={exit} /> };
     }
   }
 
-  const overlay = renderPhase();
-  return <div className={`arena-root${cinematic?.kind === 'backstab' ? ' arena-backstab-impact' : ''}`}>
-    <ArenaBoard view={view} blocked={overlay !== null} hideHand={overlay !== null}
+  const { overlay, stage, concealedHand } = renderPhase();
+  const owner = view.players.find(player => player.id === (view.privatePlayerId ?? view.activeId));
+  return <div className={`arena-root local-arena${cinematic?.kind === 'backstab' ? ' arena-backstab-impact' : ''}`}>
+    <ArenaBoard view={view} blocked={Boolean(overlay)} hideHand={Boolean(overlay || stage)}
+      local={{ concealedHandCount: concealedHand ? owner?.influence ?? 0 : 0,
+        stage: stage && <div className="online-stage local-decision-stage">
+          <div className="online-stage-content">{stage}</div>
+        </div> }}
       onAction={(action) => send({ type: 'select-action', playerId: view.activeId, action })}
       onOracle={() => setUtility('oracle')} onPause={() => setUtility('pause')} />
     {overlay}
     {error && <p className="arena-error" role="alert">{error}</p>}
-    <div className="portrait-lock" role="status" aria-live="polite">
-      <img src="images/isotipo.png" alt="" />
-      <strong>GIRE O DISPOSITIVO</strong>
-      <span>A mesa do Backstabber foi projetada para o modo retrato.</span>
-    </div>
   </div>;
 }

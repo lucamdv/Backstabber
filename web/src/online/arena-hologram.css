@@ -1,4 +1,4 @@
-.online-arena .online-stage {
+:is(.online-arena, .local-arena) .online-stage {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
@@ -6,7 +6,7 @@
   min-height: 0;
   padding: clamp(5px, 1cqw, 14px);
 }
-.online-arena .online-stage-content {
+:is(.online-arena, .local-arena) .online-stage-content {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   place-items: center;
@@ -14,7 +14,7 @@
   min-height: 0;
 }
 
-.online-arena .online-hologram {
+:is(.online-arena, .local-arena) .online-hologram {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   align-items: center;
@@ -23,10 +23,10 @@
   min-width: 0;
   margin-inline: auto;
 }
-.online-arena .online-hologram:has(.online-projection:empty) { grid-template-columns: minmax(0, 1fr); }
-.online-arena .online-hologram .online-projection:empty { display: none; }
-.online-arena .online-projection { min-width: 0; }
-.online-arena .online-hologram .reaction-card-stage {
+:is(.online-arena, .local-arena) .online-hologram:has(.online-projection:empty) { grid-template-columns: minmax(0, 1fr); }
+:is(.online-arena, .local-arena) .online-hologram .online-projection:empty { display: none; }
+:is(.online-arena, .local-arena) .online-projection { min-width: 0; }
+:is(.online-arena, .local-arena) .online-hologram .reaction-card-stage {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -35,7 +35,7 @@
   margin: 0;
   overflow: visible;
 }
-.online-arena .online-hologram .declared-card {
+:is(.online-arena, .local-arena) .online-hologram .declared-card {
   display: grid;
   justify-items: center;
   gap: 2px;
@@ -45,7 +45,7 @@
   text-align: center;
   line-height: 1;
 }
-.online-arena .online-hologram .declared-card .carta-declarada {
+:is(.online-arena, .local-arena) .online-hologram .declared-card .carta-declarada {
   --projection-size: min(225px, 43cqh, 25cqw);
   position: relative;
   width: var(--projection-size);
@@ -56,29 +56,29 @@
   box-shadow: 0 0 18px #4be8f56b, 0 8px 13px #0008;
   animation: online-hologram-materialize 390ms var(--net-ease) both;
 }
-.online-arena .online-hologram .declared-card.is-truth .carta-declarada {
+:is(.online-arena, .local-arena) .online-hologram .declared-card.is-truth .carta-declarada {
   --verdict-light: #70ff9e;
   --verdict-film: #31ff681e;
   animation: online-hologram-proof 520ms var(--net-ease) both;
 }
-.online-arena .online-hologram .declared-card.is-lie .carta-declarada {
+:is(.online-arena, .local-arena) .online-hologram .declared-card.is-lie .carta-declarada {
   --verdict-light: #ff6576;
   --verdict-film: #ff24352e;
   animation: online-hologram-fault 570ms var(--net-ease) both;
 }
-.online-arena .online-hologram .declared-card:is(.is-truth, .is-lie) .carta-declarada {
+:is(.online-arena, .local-arena) .online-hologram .declared-card:is(.is-truth, .is-lie) .carta-declarada {
   outline-color: var(--verdict-light);
   box-shadow: 0 0 22px var(--verdict-light);
   filter: none;
 }
-.online-arena .online-hologram .declared-card:is(.is-truth, .is-lie) .carta-declarada::after {
+:is(.online-arena, .local-arena) .online-hologram .declared-card:is(.is-truth, .is-lie) .carta-declarada::after {
   background: repeating-linear-gradient(transparent 0 4px, var(--verdict-film) 5px 7px);
 }
-.online-arena .online-hologram .declared-card[data-slot="bloqueio"]:not(.is-truth, .is-lie) .carta-declarada {
+:is(.online-arena, .local-arena) .online-hologram .declared-card[data-slot="bloqueio"]:not(.is-truth, .is-lie) .carta-declarada {
   outline-color: #c7a2ff;
   box-shadow: 0 0 16px #aa63fa6b;
 }
-.online-arena .online-hologram .declared-card .carta-declarada::after {
+:is(.online-arena, .local-arena) .online-hologram .declared-card .carta-declarada::after {
   content: '';
   display: block;
   position: absolute;
@@ -86,8 +86,8 @@
   background: repeating-linear-gradient(transparent 0 5px, #a6ffff17 6px 7px);
   pointer-events: none;
 }
-.online-arena .online-hologram .declared-card strong { max-width: 100%; overflow-wrap: anywhere; }
-.online-arena .online-hologram .declaration-versus { flex: none; color: #ff8db7; font-size: clamp(1rem, 4cqw, 1.7rem); }
+:is(.online-arena, .local-arena) .online-hologram .declared-card strong { max-width: 100%; overflow-wrap: anywhere; }
+:is(.online-arena, .local-arena) .online-hologram .declaration-versus { flex: none; color: #ff8db7; font-size: clamp(1rem, 4cqw, 1.7rem); }
 
 @keyframes online-hologram-materialize {
   0% { opacity: .25; clip-path: inset(45% 0 45% 0); transform: translateY(7px); }
@@ -105,7 +105,7 @@
   100% { opacity: 1; transform: none; clip-path: inset(-24px); }
 }
 
-.online-arena .online-reaction-controls {
+:is(.online-arena, .local-arena) .online-reaction-controls {
   display: grid;
   align-content: center;
   justify-items: start;
@@ -120,17 +120,17 @@
   font-size: clamp(.95rem, 2.7cqh, 1.2rem);
   line-height: 1.05;
 }
-.online-arena [data-window-kind="block-reaction"] .online-reaction-controls { border-color: #ad8fdd; }
-.online-arena [data-outcome="proved"] .online-reaction-controls { border-color: #70ff9e; }
-.online-arena [data-outcome="bluff"] .online-reaction-controls { border-color: #ff6576; }
-.online-arena .online-reaction-controls h2 {
+:is(.online-arena, .local-arena) [data-window-kind="block-reaction"] .online-reaction-controls { border-color: #ad8fdd; }
+:is(.online-arena, .local-arena) [data-outcome="proved"] .online-reaction-controls { border-color: #70ff9e; }
+:is(.online-arena, .local-arena) [data-outcome="bluff"] .online-reaction-controls { border-color: #ff6576; }
+:is(.online-arena, .local-arena) .online-reaction-controls h2 {
   margin: 0;
   font: 400 clamp(1.25rem, 4.7cqh, 2rem)/.95 var(--net-display);
 }
-.online-arena .online-reaction-controls p { margin: 0; overflow-wrap: anywhere; }
+:is(.online-arena, .local-arena) .online-reaction-controls p { margin: 0; overflow-wrap: anywhere; }
 .online-arena .online-reaction-controls .online-vote-meter { width: min(100%, 180px); height: 5px; margin: 0; }
-.online-arena .online-reaction-controls .online-decision-buttons { justify-content: start; gap: 4px; }
-.online-arena .online-reaction-controls button {
+:is(.online-arena, .local-arena) .online-reaction-controls .online-decision-buttons { justify-content: start; gap: 4px; }
+:is(.online-arena, .local-arena) .online-reaction-controls button {
   min-height: 42px;
   padding: 4px 8px;
   border: 1px solid #7498a6;
@@ -139,9 +139,9 @@
   line-height: 1;
   cursor: pointer;
 }
-.online-arena .online-reaction-controls .btn-challenge { border-color: #fa6399; background: #591535; }
-.online-arena .online-reaction-controls .btn-block { border-color: #9bd7fa; background: #203854; }
-.online-arena .online-reaction-controls button:disabled { opacity: .6; cursor: not-allowed; }
+:is(.online-arena, .local-arena) .online-reaction-controls .btn-challenge { border-color: #fa6399; background: #591535; }
+:is(.online-arena, .local-arena) .online-reaction-controls .btn-block { border-color: #9bd7fa; background: #203854; }
+:is(.online-arena, .local-arena) .online-reaction-controls button:disabled { opacity: .6; cursor: not-allowed; }
 .online-arena .online-response-list { position: relative; }
 .online-arena .online-response-list summary { cursor: pointer; color: #a7f5fa; }
 .online-arena .online-response-list .online-responses {
@@ -157,7 +157,7 @@
 }
 
 .online-arena .online-panel.online-private-stage { margin: 0; padding: clamp(5px, 2cqh, 16px); }
-.online-arena .online-private-stage .hand {
+:is(.online-arena, .local-arena) .online-private-stage .hand {
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
@@ -166,7 +166,7 @@
   padding: 4px;
   overflow: visible;
 }
-.online-arena #loss-cards .carta {
+:is(.online-arena, .local-arena) #loss-cards .carta {
   width: min(128px, 32cqh, 34cqw);
   height: auto;
   min-height: 0;
@@ -180,7 +180,7 @@
 }
 .online-arena .online-target-list button { min-width: 0; overflow-wrap: anywhere; }
 
-.online-arena .online-broker-stage {
+:is(.online-arena, .local-arena) .online-broker-stage {
   --broker-rows: 1;
   --broker-reserve: 132px;
   display: grid;
@@ -223,7 +223,7 @@
   max-width: 100%;
   margin: 6px auto 4px;
 }
-.online-arena .online-broker-offer .carta {
+:is(.online-arena, .local-arena) .online-broker-offer .carta {
   flex: 0 0 var(--broker-card-width);
   width: var(--broker-card-width);
   height: auto;
@@ -232,7 +232,7 @@
   box-shadow: 0 4px 15px #26d8e64a;
   transition: transform 170ms var(--net-ease), outline-color 170ms, box-shadow 170ms;
 }
-.online-arena .online-broker-offer .carta::after {
+:is(.online-arena, .local-arena) .online-broker-offer .carta::after {
   content: '';
   display: block;
   position: absolute;
@@ -240,14 +240,14 @@
   background: repeating-linear-gradient(transparent 0 5px, #93ecff13 6px 7px);
   pointer-events: none;
 }
-.online-arena .online-broker-offer .carta[aria-pressed="false"]:hover:not(:disabled) { transform: translateY(-3px); }
-.online-arena .online-broker-offer .carta[aria-pressed="true"] {
+:is(.online-arena, .local-arena) .online-broker-offer .carta[aria-pressed="false"]:hover:not(:disabled) { transform: translateY(-3px); }
+:is(.online-arena, .local-arena) .online-broker-offer .carta[aria-pressed="true"] {
   z-index: 1;
   outline: 2px solid #8cffb6;
   box-shadow: 0 0 20px #6bffb1b5, 0 9px 18px #0009;
   transform: translateY(-5px);
 }
-.online-arena .online-broker-offer .carta[aria-pressed="true"]::before {
+:is(.online-arena, .local-arena) .online-broker-offer .carta[aria-pressed="true"]::before {
   content: '';
   position: absolute;
   z-index: 1;
@@ -259,7 +259,7 @@
   transform: rotate(-45deg);
   box-shadow: -2px 2px 5px #0b382d;
 }
-.online-arena .online-broker-offer .carta:focus-visible { outline: 2px dashed #fff; outline-offset: 4px; }
+:is(.online-arena, .local-arena) .online-broker-offer .carta:focus-visible { outline: 2px dashed #fff; outline-offset: 4px; }
 .online-broker-controls {
   display: flex;
   align-items: center;
@@ -282,28 +282,28 @@
 .online-broker-controls button:disabled { opacity: .55; cursor: not-allowed; }
 
 @container (max-width: 520px) and (min-height: 410px) {
-  .online-arena .online-broker-stage { --broker-rows: 2; --broker-reserve: 146px; }
+  :is(.online-arena, .local-arena) .online-broker-stage { --broker-rows: 2; --broker-reserve: 146px; }
   .online-broker-offer { --broker-columns: 2; }
 }
 
 @media (max-width: 590px) {
-  .online-arena .online-hologram { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .online-arena .online-hologram .declared-card .carta-declarada { --projection-size: min(111px, 30cqh, 24cqw); }
-  .online-arena .online-reaction-controls {
+  :is(.online-arena, .local-arena) .online-hologram { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  :is(.online-arena, .local-arena) .online-hologram .declared-card .carta-declarada { --projection-size: min(111px, 30cqh, 24cqw); }
+  :is(.online-arena, .local-arena) .online-reaction-controls {
     justify-items: center;
     text-align: center;
     border-inline-start: 0;
     border-block-start: 1px solid #97577f;
     background: linear-gradient(180deg, #0e0b1bd9, transparent);
   }
-  .online-arena .online-reaction-controls .online-decision-buttons { justify-content: center; }
+  :is(.online-arena, .local-arena) .online-reaction-controls .online-decision-buttons { justify-content: center; }
   .online-arena .online-response-list .online-responses { left: 50%; transform: translateX(-50%); }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
-  .online-arena .online-hologram .declared-card .carta-declarada { --projection-size: min(112px, 35cqh, 20cqw); }
-  .online-arena .online-reaction-controls { gap: 3px; }
-  .online-arena .online-reaction-controls button { min-height: 34px; }
+  :is(.online-arena, .local-arena) .online-hologram .declared-card .carta-declarada { --projection-size: min(112px, 35cqh, 20cqw); }
+  :is(.online-arena, .local-arena) .online-reaction-controls { gap: 3px; }
+  :is(.online-arena, .local-arena) .online-reaction-controls button { min-height: 34px; }
   .online-arena .online-panel.online-private-stage button:not(.carta) { min-height: 34px; }
   .online-arena .online-panel.online-private-stage p { margin-block: 2px 4px; }
 }

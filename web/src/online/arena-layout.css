@@ -1,10 +1,10 @@
-body:has(.online-arena) {
+body:has(:is(.online-arena, .local-arena)) {
   margin: 0;
   min-height: 0;
   background: #080611;
 }
 
-.online-arena {
+:is(.online-arena, .local-arena) {
   --table-gap: clamp(4px, .9vw, 13px);
   --hand-card-height: clamp(148px, 24dvh, 258px);
   width: 100%;
@@ -13,7 +13,7 @@ body:has(.online-arena) {
   background: radial-gradient(ellipse at 50% 47%, #21132e, #080611 72%);
 }
 
-.online-arena .hud-container {
+:is(.online-arena, .local-arena) .hud-container {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--table-gap);
@@ -26,7 +26,7 @@ body:has(.online-arena) {
   background: transparent;
 }
 
-.online-arena .hud-header {
+:is(.online-arena, .local-arena) .hud-header {
   grid-template-columns: clamp(110px, 15vw, 220px) minmax(0, 1fr) auto;
   grid-template-areas: "brand status quote";
   grid-template-rows: auto;
@@ -36,19 +36,19 @@ body:has(.online-arena) {
   margin: 0;
   padding: 4px 6px;
 }
-.online-arena .header-logo { min-width: 0; max-width: 100%; }
-.online-arena .header-right p { display: none; }
-.online-arena .header-tools { display: flex; gap: 4px; }
-.online-arena .header-tool-btn { width: 44px; height: 44px; }
-.online-arena .header-center { min-width: 0; }
-.online-arena .scoreboard-bar {
+:is(.online-arena, .local-arena) .header-logo { min-width: 0; max-width: 100%; }
+:is(.online-arena, .local-arena) .header-right p { display: none; }
+:is(.online-arena, .local-arena) .header-tools { display: flex; gap: 4px; }
+:is(.online-arena, .local-arena) .header-tool-btn { width: 44px; height: 44px; }
+:is(.online-arena, .local-arena) .header-center { min-width: 0; }
+:is(.online-arena, .local-arena) .scoreboard-bar {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   width: 100%;
 }
-.online-arena .scoreboard-bar:not(:has(.player-stat:nth-child(6))) { display: flex; }
-.online-arena .player-stat {
+:is(.online-arena, .local-arena) .scoreboard-bar:not(:has(.player-stat:nth-child(6))) { display: flex; }
+:is(.online-arena, .local-arena) .player-stat {
   display: grid;
   flex: 1 1 0;
   gap: 1px;
@@ -57,16 +57,16 @@ body:has(.online-arena) {
   text-align: center;
   font-size: 1rem;
 }
-.online-arena .player-stat strong {
+:is(.online-arena, .local-arena) .player-stat strong {
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.online-arena .player-resources { justify-content: center; flex-wrap: wrap; gap: 2px 4px; }
+:is(.online-arena, .local-arena) .player-resources { justify-content: center; flex-wrap: wrap; gap: 2px 4px; }
 
-.online-arena .hud-body {
+:is(.online-arena, .local-arena) .hud-body {
   display: grid;
   grid-template-columns: clamp(124px, 14vw, 240px) minmax(0, 1fr) clamp(124px, 14vw, 240px);
   grid-template-rows: minmax(0, 1fr);
@@ -75,8 +75,8 @@ body:has(.online-arena) {
   min-height: 0;
   gap: var(--table-gap);
 }
-.online-arena .hud-body > :is(.panel-left, .panel-right) { min-width: 0; min-height: 0; overflow: auto; }
-.online-arena .panel-center {
+:is(.online-arena, .local-arena) .hud-body > :is(.panel-left, .panel-right) { min-width: 0; min-height: 0; overflow: auto; }
+:is(.online-arena, .local-arena) .panel-center {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto;
@@ -84,8 +84,8 @@ body:has(.online-arena) {
   min-width: 0;
   min-height: 0;
 }
-.online-arena .panel-center.online-no-action-bar { grid-template-rows: minmax(0, 1fr) auto; }
-.online-arena .playmat-arena {
+:is(.online-arena, .local-arena) .panel-center.online-no-action-bar { grid-template-rows: minmax(0, 1fr) auto; }
+:is(.online-arena, .local-arena) .playmat-arena {
   display: grid;
   place-items: stretch;
   position: relative;
@@ -98,7 +98,7 @@ body:has(.online-arena) {
   box-shadow: inset 0 0 0 4px #9c44831f;
   background: radial-gradient(ellipse at center, #241733, #0b0a18 75%);
 }
-.online-arena .online-playmat-art {
+:is(.online-arena, .local-arena) .online-playmat-art {
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -108,7 +108,7 @@ body:has(.online-arena) {
   opacity: .25;
   pointer-events: none;
 }
-.online-arena .player-hand-container {
+:is(.online-arena, .local-arena) .player-hand-container {
   display: grid;
   justify-items: center;
   align-content: start;
@@ -116,7 +116,7 @@ body:has(.online-arena) {
   min-width: 0;
   margin: 0;
 }
-.online-arena .turn-indicator {
+:is(.online-arena, .local-arena) .turn-indicator {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -127,7 +127,7 @@ body:has(.online-arena) {
   margin: 0;
   padding: 2px 8px;
 }
-.online-arena #current-player-name {
+:is(.online-arena, .local-arena) #current-player-name {
   max-width: 24ch;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -135,19 +135,19 @@ body:has(.online-arena) {
   font-size: clamp(1rem, 2.2vw, 1.45rem);
   line-height: 1;
 }
-.online-arena #player-hand { justify-content: center; flex-wrap: nowrap; margin: 0; }
-.online-arena #player-hand .carta {
+:is(.online-arena, .local-arena) #player-hand { justify-content: center; flex-wrap: nowrap; margin: 0; }
+:is(.online-arena, .local-arena) #player-hand .carta {
   width: auto;
   height: var(--hand-card-height);
   aspect-ratio: .61;
   flex: 0 0 auto;
 }
-.online-arena .actions-bar {
+:is(.online-arena, .local-arena) .actions-bar {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
 }
-.online-arena .btn-action {
+:is(.online-arena, .local-arena) .btn-action {
   min-width: 0;
   min-height: 48px;
   margin: 0;
@@ -155,28 +155,28 @@ body:has(.online-arena) {
   overflow-wrap: anywhere;
   font-size: clamp(.95rem, 1.5vw, 1.4rem);
 }
-.online-arena .btn-action .action-effect { font-size: clamp(.76rem, 1vw, 1.02rem); }
+:is(.online-arena, .local-arena) .btn-action .action-effect { font-size: clamp(.76rem, 1vw, 1.02rem); }
 
 @media (max-width: 1050px) {
-  .online-arena { --hand-card-height: clamp(90px, 17dvh, 180px); }
-  .online-arena .hud-header { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .online-arena .header-logo .brand-isologo-frame, .online-arena .turn-label { display: none; }
-  .online-arena .header-logo { height: 44px; }
-  .online-arena .header-logo .brand-isotipo { width: 38px; height: 38px; }
-  .online-arena .scoreboard-bar { display: flex; }
+  :is(.online-arena, .local-arena) { --hand-card-height: clamp(90px, 17dvh, 180px); }
+  :is(.online-arena, .local-arena) .hud-header { grid-template-columns: auto minmax(0, 1fr) auto; }
+  :is(.online-arena, .local-arena) .header-logo .brand-isologo-frame, :is(.online-arena, .local-arena) .turn-label { display: none; }
+  :is(.online-arena, .local-arena) .header-logo { height: 44px; }
+  :is(.online-arena, .local-arena) .header-logo .brand-isotipo { width: 38px; height: 38px; }
+  :is(.online-arena, .local-arena) .scoreboard-bar { display: flex; }
   .online-arena #scoreboard .player-stat:not(.active):not(.online-viewer) { display: none; }
-  .online-arena .hud-body {
+  :is(.online-arena, .local-arena) .hud-body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas: "table-nav" "center";
   }
-  .online-arena .mobile-table-nav {
+  :is(.online-arena, .local-arena) .mobile-table-nav {
     grid-area: table-nav;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
   }
-  .online-arena .mobile-table-button, .online-arena .mobile-deck-status {
+  :is(.online-arena, .local-arena) .mobile-table-button, :is(.online-arena, .local-arena) .mobile-deck-status {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -188,9 +188,9 @@ body:has(.online-arena) {
     color: var(--net-text);
     background: #160c23;
   }
-  .online-arena .mobile-deck-status img { width: 14px; height: auto; }
-  .online-arena .hud-body > :is(.panel-left, .panel-right) { display: none; }
-  .online-arena .hud-body > .is-mobile-open {
+  :is(.online-arena, .local-arena) .mobile-deck-status img { width: 14px; height: auto; }
+  :is(.online-arena, .local-arena) .hud-body > :is(.panel-left, .panel-right) { display: none; }
+  :is(.online-arena, .local-arena) .hud-body > .is-mobile-open {
     display: block;
     position: fixed;
     inset: auto max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
@@ -200,27 +200,27 @@ body:has(.online-arena) {
     border: 1px solid #9a5180;
     background: #100b1c;
   }
-  .online-arena .mobile-panel-close { display: block; margin-inline-start: auto; min-width: 44px; min-height: 44px; }
+  :is(.online-arena, .local-arena) .mobile-panel-close { display: block; margin-inline-start: auto; min-width: 44px; min-height: 44px; }
   .online-arena .online-scoreboard-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-  .online-arena .mobile-drawer-scrim { display: block; position: fixed; inset: 0; z-index: 240; background: #05030bb0; }
+  :is(.online-arena, .local-arena) .mobile-drawer-scrim { display: block; position: fixed; inset: 0; z-index: 240; background: #05030bb0; }
 }
 
 @media (max-width: 600px) {
-  .online-arena .actions-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .online-arena .btn-action small { display: none; }
+  :is(.online-arena, .local-arena) .actions-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  :is(.online-arena, .local-arena) .btn-action small { display: none; }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
-  .online-arena { --hand-card-height: clamp(72px, 27dvh, 125px); --table-gap: 4px; }
-  .online-arena .hud-header { padding-block: 0; }
-  .online-arena .mobile-table-button, .online-arena .mobile-deck-status { min-height: 28px; }
-  .online-arena .panel-center, .online-arena .panel-center.online-no-action-bar {
+  :is(.online-arena, .local-arena) { --hand-card-height: clamp(72px, 27dvh, 125px); --table-gap: 4px; }
+  :is(.online-arena, .local-arena) .hud-header { padding-block: 0; }
+  :is(.online-arena, .local-arena) .mobile-table-button, :is(.online-arena, .local-arena) .mobile-deck-status { min-height: 28px; }
+  :is(.online-arena, .local-arena) .panel-center, :is(.online-arena, .local-arena) .panel-center.online-no-action-bar {
     grid-template-columns: minmax(0, 1fr) minmax(112px, 23%);
     grid-template-rows: minmax(0, 1fr) auto;
   }
-  .online-arena .playmat-arena { grid-column: 1; grid-row: 1; }
-  .online-arena .player-hand-container { grid-column: 2; grid-row: 1; align-content: center; }
-  .online-arena .actions-bar { grid-column: 1 / -1; grid-row: 2; }
-  .online-arena .btn-action { min-height: 40px; }
-  .online-arena .btn-action small { display: none; }
+  :is(.online-arena, .local-arena) .playmat-arena { grid-column: 1; grid-row: 1; }
+  :is(.online-arena, .local-arena) .player-hand-container { grid-column: 2; grid-row: 1; align-content: center; }
+  :is(.online-arena, .local-arena) .actions-bar { grid-column: 1 / -1; grid-row: 2; }
+  :is(.online-arena, .local-arena) .btn-action { min-height: 40px; }
+  :is(.online-arena, .local-arena) .btn-action small { display: none; }
 }

@@ -1,6 +1,4 @@
 @import './online-theme.css';
-@import './arena-layout.css';
-@import './arena-hologram.css';
 
 .online-arena :where(*) {
   font-family: var(--net-display);
@@ -301,12 +299,12 @@
 .online-arena .player-stat.active.online-viewer { border-color: var(--net-cold); }
 .online-arena .player-resource b { display: inline-block; animation: online-resource 380ms var(--net-ease) backwards; }
 
-.online-arena #cemetery-list li .cemetery-card-art {
+:is(.online-arena, .local-arena) #cemetery-list li .cemetery-card-art {
   width: min(100%, 74px);
   height: auto;
   aspect-ratio: .61;
 }
-.online-arena .cemetery-card-name { font-size: clamp(.72rem, 1vw, .95rem); }
+:is(.online-arena, .local-arena) .cemetery-card-name { font-size: clamp(.72rem, 1vw, .95rem); }
 
 @keyframes online-resource {
   from { transform: scale(1.24); }

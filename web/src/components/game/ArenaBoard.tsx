@@ -4,6 +4,8 @@ import type { Action, GameView } from '../../game/application/contracts';
 import { SignalIcon } from '../../online/OnlinePresence';
 import { Card } from './Card';
 import { actions, characterName, playerName } from './gameDisplay';
+import '../../online/arena-layout.css';
+import '../../online/arena-hologram.css';
 
 type Drawer = 'tribunal' | 'cemetery' | 'scoreboard';
 
@@ -14,6 +16,10 @@ interface ArenaBoardProps {
   onAction: (action: Action) => void;
   onOracle: () => void;
   onPause: () => void;
+  local?: {
+    stage?: ReactNode;
+    concealedHandCount: number;
+  };
   online?: {
     viewerId: string;
     connectedIds: string[];
@@ -50,10 +56,11 @@ function PlayerStats({ view, online }: Pick<ArenaBoardProps, 'view' | 'online'>)
   });
 }
 
-function Scoreboard({ view, onOracle, onPause, online, presenceButton }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'> & {
+function Scoreboard({ view, onOracle, onPause, online, presenceButton, locked }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'> & {
   presenceButton?: ReactNode;
+  locked?: boolean;
 }) {
-  return <header className="hud-header">
+  return <header className="hud-header" inert={locked || undefined}>
     <div className="header-logo" role="img" aria-label="Backstabber">
       <img className="brand-isotipo" src="images/isotipo.png" alt="" />
       <span className="brand-isologo-frame" aria-hidden="true">
@@ -83,22 +90,15 @@ function Scoreboard({ view, onOracle, onPause, online, presenceButton }: Pick<Ar
 
 function Playmat({ children, online }: { children?: ReactNode; online?: boolean }) {
   return <div className="playmat-arena" aria-hidden={online || children ? undefined : true}>
-    {online && <img className="online-playmat-art" src="images/playmat.png" alt="" />}
-    {online ? children : children ?? <>
-      <div className="crosshair top-left">+</div>
-      <div className="crosshair top-right">+</div>
-      <div className="crosshair bottom-left">+</div>
-      <div className="crosshair bottom-right">+</div>
-      <div className="arena-center-logo">👑</div>
-      <div className="arena-border-label top">SISTEMA ONLINE</div>
-      <div className="arena-border-label bottom">LADO ATIVO</div>
-    </>}
+    <img className="online-playmat-art" src="images/playmat.png" alt="" />
+    {children}
   </div>;
 }
 
-export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPause, online }: ArenaBoardProps) {
+export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPause, local, online }: ArenaBoardProps) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
-  const openDrawer = blocked ? null : drawer;
+  const localDecision = Boolean(local?.stage);
+  const openDrawer = blocked || localDecision ? null : drawer;
   const tribunalTrigger = useRef<HTMLButtonElement>(null);
   const cemeteryTrigger = useRef<HTMLButtonElement>(null);
   const scoreboardTrigger = useRef<HTMLButtonElement>(null);
@@ -109,7 +109,10 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   const activeClose = openDrawer === 'tribunal' ? closeTribunal : openDrawer === 'cemetery' ? closeCemetery : closeScoreboard;
   const currentPlayer = playerName(view, view.activeId);
   const handOwner = online?.viewerId ?? view.activeId;
-  const handLabel = online ? 'Minhas influências' : `Influências de ${currentPlayer}`;
+  const concealedHandCount = local?.concealedHandCount ?? 0;
+  const handLabel = online ? 'Minhas influências' : concealedHandCount ? 'Influências protegidas' : `Influências de ${currentPlayer}`;
+  const showHand = !hideHand && view.revealed && view.privatePlayerId === handOwner;
+  const localHand = concealedHandCount > 0 ? ' local-hand-concealed' : local && showHand ? ' local-hand-revealed' : '';
   const offlineCount = online ? view.players.filter(player =>
     (!online.memberIds || online.memberIds.includes(player.id)) && !online.connectedIds.includes(player.id)).length : 0;
   const offlineLabel = offlineCount === 1 ? '1 jogador fora da rede' : `${offlineCount} jogadores fora da rede`;
@@ -136,7 +139,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   }, [activeClose, activeTrigger, openDrawer]);
 
   return <div className="hud-container" inert={blocked || undefined}>
-    <Scoreboard view={view} online={online} onOracle={() => { setDrawer(null); onOracle(); }}
+    <Scoreboard view={view} online={online} locked={localDecision} onOracle={() => { setDrawer(null); onOracle(); }}
       onPause={() => { setDrawer(null); onPause(); }}
       presenceButton={offlineCount > 0 && <button type="button" className="online-offline-count"
         aria-label={offlineLabel} title={offlineLabel} aria-controls="mobile-scoreboard-panel"
@@ -147,7 +150,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
         <SignalIcon /><span aria-hidden="true">{offlineCount}<small> fora da rede</small></span>
       </button>} />
     <main className="hud-body">
-      <nav className="mobile-table-nav mobile-only" aria-label="Informações da mesa">
+      <nav className="mobile-table-nav mobile-only" aria-label="Informações da mesa" inert={localDecision || undefined}>
         <button type="button" ref={tribunalTrigger} id="btn-mobile-tribunal" className="mobile-table-button"
           aria-controls="mobile-tribunal-panel" aria-expanded={openDrawer === 'tribunal'} onClick={() => toggleDrawer('tribunal')}>
           <span aria-hidden="true">▤</span><small>REGISTRO</small>
@@ -171,7 +174,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
         </button>}
       </nav>
       <aside className={`panel-left${openDrawer === 'tribunal' ? ' is-mobile-open' : ''}`}
-        id="mobile-tribunal-panel" aria-label="Registro da mesa">
+        id="mobile-tribunal-panel" aria-label="Registro da mesa" inert={localDecision || undefined}>
         <button type="button" className="mobile-panel-close mobile-only" aria-label="Fechar registro"
           ref={closeTribunal} tabIndex={openDrawer === 'tribunal' ? 0 : -1} onClick={closeDrawer}>✕</button>
         <div className="hud-box tribunal-box">
@@ -198,21 +201,22 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
           <PlayerStats view={view} online={online} />
         </div>
       </aside>}
-      <section className={`panel-center${online && !online.showActions ? ' online-no-action-bar' : ''}`}>
-        <Playmat online={Boolean(online)}>{online?.panel}</Playmat>
+      <section className={`panel-center${localDecision || (online && !online.showActions) ? ' online-no-action-bar' : ''}`}>
+        <Playmat online={Boolean(online)}>{online ? online.panel : local?.stage}</Playmat>
         <div className="player-hand-container">
           <div className="turn-indicator"><span>{online ? 'JOGADOR ATIVO' : 'TERMINAL ATIVO'}</span><h2 id="current-player-name" key={online ? view.activeId : undefined} aria-live="polite">{currentPlayer}</h2></div>
           {online && !hideHand && <span className="online-hand-caption">SUAS INFLUÊNCIAS</span>}
-          <div className="hand" id="player-hand" role={online ? 'group' : undefined} aria-live="polite" aria-label={handLabel}>
-            {!hideHand && view.revealed && view.privatePlayerId === handOwner
-              && view.hand.map((card) => <Card key={card.id} character={card.character} />)}
+          {localHand && <span className="local-hand-caption">{concealedHandCount ? 'INFLUÊNCIAS PROTEGIDAS' : 'SUAS INFLUÊNCIAS'}</span>}
+          <div className={`hand${localHand}`} id="player-hand" role={online || local ? 'group' : undefined} aria-live="polite" aria-label={handLabel}>
+            {showHand && view.hand.map((card) => <Card key={card.id} character={card.character} />)}
+            {Array.from({ length: concealedHandCount }, (_, index) => <Card key={`back-${index}`} />)}
           </div>
         </div>
-        {(!online || online.showActions) && <div className="actions-bar" id="action-panel">
+        {(!online || online.showActions) && <div className="actions-bar" id="action-panel" hidden={localDecision || undefined}>
           {(Object.keys(actions) as Action[]).map((action) => {
             const display = actions[action];
             return <button key={action} type="button" className="btn-action" id={`btn-${action}`}
-              data-action={action} disabled={blocked || online?.actionsDisabled || !view.availableActions.includes(action)} onClick={() => onAction(action)}>
+              data-action={action} disabled={blocked || localDecision || online?.actionsDisabled || !view.availableActions.includes(action)} onClick={() => onAction(action)}>
               {display.title}<span className="action-effect">{display.effect}</span>
               <small aria-hidden="true" data-mobile={display.mobile}>{display.note}</small>
               <span className="arena-sr-only">{display.note}</span>
@@ -221,7 +225,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
         </div>}
       </section>
       <aside className={`panel-right${openDrawer === 'cemetery' ? ' is-mobile-open' : ''}`}
-        id="mobile-cemetery-panel" aria-label="Cartas descartadas">
+        id="mobile-cemetery-panel" aria-label="Cartas descartadas" inert={localDecision || undefined}>
         <button type="button" className="mobile-panel-close mobile-only" aria-label="Fechar cemitério"
           ref={closeCemetery} tabIndex={openDrawer === 'cemetery' ? 0 : -1} onClick={closeDrawer}>✕</button>
         <div className="hud-box cemetery-box">

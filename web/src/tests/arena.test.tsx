@@ -34,11 +34,13 @@ describe('Arena React', () => {
   it('protege a mão até o jogador assumir o terminal e habilita apenas as ações disponíveis', () => {
     const { onReveal, update } = arena({ hand: [magnata, executor] });
     expect(screen.queryByRole('img', { name: 'Magnata' })).toBeNull();
+    expect(document.querySelectorAll('#player-hand .carta-verso')).toHaveLength(2);
     expect(screen.getByText('11 RESTANTES')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'ACESSAR TERMINAL' }));
     expect(onReveal).toHaveBeenCalledTimes(1);
     update({ revealed: true });
     expect(screen.getByRole('img', { name: 'Magnata' })).toBeTruthy();
+    expect(document.querySelectorAll('#player-hand .carta-verso')).toHaveLength(0);
     expect(screen.getByText('Ana', { selector: '#scoreboard strong' })).toBeTruthy();
     expect((screen.getByRole('button', { name: /RENDA/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole('button', { name: /^BACKSTAB/ }) as HTMLButtonElement).disabled).toBe(true);
@@ -49,11 +51,12 @@ describe('Arena React', () => {
 
   it('envia a escolha de alvo, preserva o cancelamento e mostra apenas os alvos elegíveis', () => {
     const { send } = arena({ revealed: true, phase: { kind: 'target', action: 'steal' }, targets: ['bia'] });
-    const modal = screen.getByRole('dialog', { name: /Alvo para/ });
-    expect(within(modal).queryByRole('button', { name: 'Alvo: Ana' })).toBeNull();
-    fireEvent.click(within(modal).getByRole('button', { name: 'Alvo: Bia' }));
+    const stage = screen.getByRole('region', { name: /Alvo para/ });
+    expect(stage.closest('.playmat-arena')).toBeTruthy();
+    expect(within(stage).queryByRole('button', { name: 'Alvo: Ana' })).toBeNull();
+    fireEvent.click(within(stage).getByRole('button', { name: 'Alvo: Bia' }));
     expect(send).toHaveBeenCalledWith({ type: 'select-target', playerId: 'ana', targetId: 'bia' });
-    fireEvent.click(within(modal).getByRole('button', { name: /Cancelar/ }));
+    fireEvent.click(within(stage).getByRole('button', { name: /Cancelar/ }));
     expect(send).toHaveBeenLastCalledWith({ type: 'cancel-target', playerId: 'ana' });
   });
 
@@ -72,11 +75,11 @@ describe('Arena React', () => {
       phase: { kind: 'reaction', declaration: { action: 'assassinate', playerId: 'ana', targetId: 'bia' } },
       challenges: ['bia'], blocks: [{ playerId: 'bia', character: 'sentinela' }],
     });
-    const modal = screen.getByRole('dialog', { name: 'Momento de Reação!' });
-    expect(within(modal).getByRole('img', { name: 'Executor' })).toBeTruthy();
-    fireEvent.click(within(modal).getByRole('button', { name: /Bia - Bloquear/ }));
+    const stage = screen.getByRole('region', { name: 'Momento de Reação!' });
+    expect(within(stage).getByRole('img', { name: 'Executor' })).toBeTruthy();
+    fireEvent.click(within(stage).getByRole('button', { name: /Bia - Bloquear/ }));
     expect(send).toHaveBeenCalledWith({ type: 'block', playerId: 'bia', character: 'sentinela' });
-    fireEvent.click(within(modal).getByRole('button', { name: /Bia - Contestar/ }));
+    fireEvent.click(within(stage).getByRole('button', { name: /Bia - Contestar/ }));
     expect(send).toHaveBeenLastCalledWith({ type: 'challenge', playerId: 'bia' });
   });
 
@@ -85,10 +88,10 @@ describe('Arena React', () => {
       phase: { kind: 'loss', victimId: 'bia', reason: 'execution' },
       privatePlayerId: 'bia', choices: [sentinela, broker],
     });
-    const modal = screen.getByRole('dialog', { name: 'Bia, proteja sua mão' });
-    expect(within(modal).queryByRole('button', { name: 'Perder Broker' })).toBeNull();
-    expect(within(modal).getAllByRole('img', { name: 'Influência virada para baixo' })).toHaveLength(2);
-    fireEvent.click(within(modal).getByRole('button', { name: 'VIRAR MINHAS CARTAS' }));
+    const stage = screen.getByRole('region', { name: 'Bia, proteja sua mão' });
+    expect(within(stage).queryByRole('button', { name: 'Perder Broker' })).toBeNull();
+    expect(within(stage).getAllByRole('img', { name: 'Influência virada para baixo' })).toHaveLength(2);
+    fireEvent.click(within(stage).getByRole('button', { name: 'VIRAR MINHAS CARTAS' }));
     expect(onReveal).toHaveBeenCalledTimes(1);
     update({ revealed: true });
     fireEvent.click(screen.getByRole('button', { name: 'Perder Broker' }));
@@ -149,10 +152,10 @@ describe('Arena React', () => {
       } },
       privatePlayerId: 'bia',
     });
-    const modal = screen.getByRole('dialog', { name: 'Carta confirmada!' });
-    expect(within(modal).getByRole('img', { name: 'Magnata' }).closest('.is-truth')).toBeTruthy();
-    fireEvent.click(within(modal).getByRole('button', { name: 'Aplicar resultado' }));
-    expect(screen.getByRole('dialog', { name: 'Bia, proteja sua mão' })).toBeTruthy();
+    const stage = screen.getByRole('region', { name: 'Carta confirmada!' });
+    expect(within(stage).getByRole('img', { name: 'Magnata' }).closest('.is-truth')).toBeTruthy();
+    fireEvent.click(within(stage).getByRole('button', { name: 'Aplicar resultado' }));
+    expect(screen.getByRole('region', { name: 'Bia, proteja sua mão' })).toBeTruthy();
     update({ revealed: true, choices: [sentinela, broker] });
     expect(screen.getByRole('button', { name: 'Perder Broker' })).toBeTruthy();
   });

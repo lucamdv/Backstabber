@@ -5,11 +5,12 @@ interface ArenaDialogProps {
   id: string;
   titleId: string;
   className?: string;
+  placement?: 'stage';
   children: ReactNode;
   onEscape?: () => void;
 }
 
-export function ArenaDialog({ id, titleId, className = '', children, onEscape }: ArenaDialogProps) {
+export function ArenaDialog({ id, titleId, className = '', placement, children, onEscape }: ArenaDialogProps) {
   const dialog = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +24,9 @@ export function ArenaDialog({ id, titleId, className = '', children, onEscape }:
     };
   }, []);
 
-  return <div id={id} ref={dialog} className={`overlay active ${className}`} role="dialog" aria-modal="true"
+  const inStage = placement === 'stage';
+  return <div id={id} ref={dialog} className={inStage ? className : `overlay active ${className}`}
+    role={inStage ? 'region' : 'dialog'} aria-modal={inStage ? undefined : true}
     aria-labelledby={titleId} onKeyDown={(event) => {
       if (event.key === 'Escape' && onEscape) {
         event.preventDefault();
