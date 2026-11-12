@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { ArenaOnline } from '../../src/online/ArenaOnline';
 import { OnlineHub } from '../../src/online/OnlineHub';
+import { OnlineAtmosphere } from '../../src/online/OnlineAtmosphere';
 import { Lobby } from '../../src/online/Lobby';
 import { FriendsPanel } from '../../src/online/FriendsPanel';
 import { ProfileEditor } from '../../src/online/Profile';
@@ -24,6 +25,7 @@ if (scene === 'login') {
     members: people.map((profile, index) => ({ ...profile, connected: index < 2, ready: index === 1 })),
   };
   root.render(<main className="online-hub">
+    <OnlineAtmosphere />
     <header className="online-header"><div><img src="images/isotipo.png" alt="" /><h1>Backstabber <span>Online</span></h1></div></header>
     <div className="online-content">
       {scene === 'lobby' && <Lobby room={room} userId="ada" friends={[]} onReady={noop}
@@ -54,11 +56,24 @@ if (scene === 'login') {
     view.window = { id: '1:3', kind: 'block-reaction', eligible: ['ada', 'bia'], responded: ['bia'],
       options: [{ kind: 'accept' }, { kind: 'challenge' }], summary: 'Reaja ao bloqueio.' };
   }
+  if (scene === 'deal') {
+    view.history = [];
+  }
+  if (scene === 'income' || scene === 'backstab') {
+    const backstab = scene === 'backstab';
+    view.activeId = 'bia';
+    view.lastEvent = { kind: scene, playerId: 'bia', targetId: backstab ? 'caio' : undefined };
+    if (backstab) view.phase = { kind: 'loss', victimId: 'caio', reason: 'backstab' };
+    view.window = { id: '1:4', kind: 'acknowledge', eligible: ['ada', 'bia', 'caio'], responded: ['bia'],
+      options: [{ kind: 'acknowledge' }], summary: backstab ? 'Backstab declarado.' : 'Bia recebeu 1 crédito.' };
+  }
   if (scene === 'victory' || scene === 'defeat') {
     view.phase = { kind: 'finished', winnerId: scene === 'victory' ? 'ada' : 'bia', cards: scene === 'victory' ? [...hand] : [] };
     view.canRematch = scene === 'victory';
     view.canClose = scene === 'victory';
   }
-  root.render(<ArenaOnline view={view} send={noop} connectedIds={['ada', 'bia']} busy={false}
+  root.render(<ArenaOnline view={view} send={command => {
+    document.querySelector('#fixture')?.setAttribute('data-command', command.type);
+  }} connectedIds={['ada', 'bia']} busy={false}
     onCloseMatch={noop} onExit={noop} onRematch={noop} />);
 }

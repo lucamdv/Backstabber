@@ -6,6 +6,7 @@ import { OraclePanel } from '../components/shared/Oracle';
 import type { Action } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView } from '../game/application/online-contracts';
 import { OnlineDecisionPanel } from './OnlineDecisionPanel';
+import { OnlineDeal } from './OnlineCinematics';
 import '../components/game/arena.css';
 import './arena-online.css';
 
@@ -66,7 +67,7 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
   }
 
   const panel = !showResult && <div className="online-playmat-scroll" ref={panelScroll} tabIndex={0} role="region" aria-label="Decisões da partida">
-    {view.history.length === 0 && view.phase.kind === 'action' && !view.window && !view.closed && <span key={view.round} className="online-round-entry" aria-hidden="true">MESA ABERTA</span>}
+    {view.history.length === 0 && view.phase.kind === 'action' && !view.window && !view.closed && <OnlineDeal key={view.round} />}
     {activeUtility === 'oracle' && view.window && <div className="overlay-content online-panel">
       <button type="button" className="btn-pass" onClick={() => setUtility(null)}>Voltar à decisão coletiva</button>
     </div>}

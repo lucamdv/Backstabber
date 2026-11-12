@@ -31,6 +31,18 @@ function setup(view: OnlineView) {
 }
 
 describe('arena online', () => {
+  it('mantém o embaralhamento decorativo na rodada sem bloquear a primeira ação', () => {
+    const { send, update } = setup(fixture({ activeId: 'bia', availableActions: ['income'] }));
+    const deal = screen.getByTestId('online-deal');
+    expect(deal).toHaveAttribute('aria-hidden', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /RENDA/ }));
+    expect(send).toHaveBeenCalledWith({ type: 'select-action', action: 'income' });
+    update({ revision: 5 });
+    expect(screen.getByTestId('online-deal')).toBe(deal);
+    update({ history: [{ player: 'Ana', text: 'Renda' }] });
+    expect(screen.queryByTestId('online-deal')).toBeNull();
+  });
+
   it('abre o placar completo pela barra mobile e devolve o foco ao fechar', () => {
     setup(fixture());
     const toggle = screen.getByRole('button', { name: 'Mesa' });
@@ -89,13 +101,17 @@ describe('arena online', () => {
   it('prioriza ciência coletiva sobre a decisão privada de perda de influência', () => {
     const { send, update } = setup(fixture({
       phase: { kind: 'loss', victimId: 'bia', reason: 'backstab' }, choices: [broker],
+      lastEvent: { kind: 'backstab', playerId: 'ana', targetId: 'bia' },
       window: { id: 'ack', kind: 'acknowledge', eligible: ['ana', 'bia'], responded: ['ana'],
         options: [{ kind: 'acknowledge' }], summary: 'Backstab em Bia' },
     }));
+    const impact = screen.getByTestId('online-backstab');
+    expect(within(impact).getByText('BACKSTAB')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Perder Broker' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ciente / Continuar' }));
     expect(send).toHaveBeenCalledWith({ type: 'vote', windowId: 'ack', choice: { kind: 'acknowledge' } });
     update({ window: undefined });
+    expect(screen.queryByTestId('online-backstab')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Perder Broker' }));
     expect(send).toHaveBeenLastCalledWith({ type: 'lose', cardId: 'bia-broker' });
     update({ window: undefined, viewerId: 'ana' });

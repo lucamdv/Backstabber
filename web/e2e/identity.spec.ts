@@ -2,29 +2,15 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const widths = [[1920, 1080], [1366, 768], [800, 720], [768, 1024], [390, 844], [360, 800]];
-const scenes = ['login', 'lobby', 'friends', 'profile', 'arena', 'reaction', 'victory', 'defeat'];
 const baseline = process.env.BACKSTABBER_VISUAL_BASELINE === '1';
+const socialScenes = ['login', 'lobby', 'friends', 'profile'];
+const arenaScenes = ['arena', 'reaction', 'victory', 'defeat', ...(baseline ? [] : ['deal', 'income', 'backstab'])];
+const scenes = [...socialScenes, ...arenaScenes];
 const output = process.env.BACKSTABBER_VISUAL_OUTPUT;
 
 async function openScene(page: Page, scene: string) {
-  await page.route('**/__identity-fixture?*', route => route.fulfill({
-    contentType: 'text/html',
-    body: `<!doctype html><html lang="pt-BR"><meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/css/style-index.css">
-      ${['arena', 'reaction', 'victory', 'defeat'].includes(scene) ? `
-        <link rel="stylesheet" href="/css/style-game.css">
-        <link rel="stylesheet" href="/css/mobile-game.css" media="(max-width: 900px), (max-height: 600px) and (pointer: coarse)">` : ''}
-      <div id="fixture"></div><script type="module" src="/@vite/client"></script>
-      <script type="module">import RefreshRuntime from '/@react-refresh';
-      RefreshRuntime.injectIntoGlobalHook(window);
-      window.$RefreshReg$ = () => {};
-      window.$RefreshSig$ = () => type => type;
-      window.__vite_plugin_react_preamble_installed__ = true;</script>
-      <script type="module" src="/e2e/fixtures/identity.tsx"></script>`,
-  }));
-  await page.goto(`/__identity-fixture?scene=${scene}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.online-hub, .online-arena')).toBeVisible();
+  await page.goto(`/e2e/fixtures/identity.html?scene=${scene}`, { waitUntil: 'commit' });
+  await expect(page.locator('.online-hub, .online-arena')).toBeVisible({ timeout: 20_000 });
 }
 
 test.describe('identidade online', () => {
@@ -45,9 +31,36 @@ test.describe('identidade online', () => {
         await openScene(page, scene);
         await expect.poll(() => page.evaluate(() => Math.max(document.documentElement.scrollWidth,
           document.querySelector('.online-hub')?.scrollWidth ?? 0) - innerWidth)).toBe(0);
-        if (scene === 'login') await expect(page.getByRole('button', { name: 'Entrar com Google' })).toBeVisible();
+        if (scene === 'login') {
+          await expect(page.getByRole('button', { name: 'Entrar com Google' })).toBeVisible();
+          if (!baseline) {
+            expect(await page.evaluate(async () => {
+              const fonts = await document.fonts.load('28px "Backstabber Pixel"', 'Créditos');
+              return fonts.some(font => font.status === 'loaded');
+            })).toBe(true);
+          }
+        }
         if (!baseline) {
-          if (scene === 'arena') await expect(page.locator('#btn-income')).toBeInViewport();
+          if (scene === 'arena') {
+            await expect(page.locator('#btn-income')).toBeInViewport();
+            if (width >= 1366) {
+              const hand = await page.locator('#player-hand .carta').first().boundingBox();
+              expect(hand?.height).toBeGreaterThan(155);
+            }
+          }
+          if (scene === 'backstab' || scene === 'income') {
+            if (scene === 'backstab') await expect(page.getByTestId('online-backstab')).toBeVisible();
+            const acknowledge = page.getByRole('button', { name: 'Ciente / Continuar' });
+            await expect(acknowledge).toBeInViewport();
+            await acknowledge.click();
+            await expect(page.locator('#fixture')).toHaveAttribute('data-command', 'vote');
+          }
+          if (scene === 'deal') {
+            const income = page.locator('#btn-income');
+            await expect(income).toBeInViewport();
+            await income.click();
+            await expect(page.locator('#fixture')).toHaveAttribute('data-command', 'select-action');
+          }
           if (scene === 'reaction') {
             await expect(page.getByRole('button', { name: 'Contestar bloqueio' })).toBeInViewport();
             await expect(page.locator('#current-player-name')).toBeInViewport({ ratio: 1 });
@@ -64,7 +77,7 @@ test.describe('identidade online', () => {
         }
         if (output && [1366, 390].includes(width)) {
           await page.evaluate(async () => {
-            const elements = document.querySelectorAll('.online-login-art, .carta, img');
+            const elements = document.querySelectorAll('.carta, img');
             const urls = [...elements].flatMap(element => {
               if (element instanceof HTMLImageElement) return element.src;
               return [...getComputedStyle(element).backgroundImage.matchAll(/url\("([^"]+)"\)/g)].map(match => match[1]);

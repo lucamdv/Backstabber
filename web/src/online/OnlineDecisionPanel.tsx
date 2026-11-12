@@ -4,6 +4,7 @@ import { actions, characterName, playerName } from '../components/game/gameDispl
 import { Claims } from '../components/modals/ArenaDecisions';
 import type { Action } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../game/application/online-contracts';
+import { OnlineBackstab } from './OnlineCinematics';
 
 interface DecisionProps {
   view: OnlineView;
@@ -30,7 +31,7 @@ function WindowClaims({ view }: { view: OnlineView }) {
     return <Claims view={view} declaration={declaration} block={block}
       result={{ truthful, on: block ? 'bloqueio' : 'acao' }} />;
   }
-  if (view.lastEvent?.kind === 'backstab' || view.lastEvent?.kind === 'income') {
+  if (view.lastEvent?.kind === 'income') {
     return <Claims view={view} declaration={{ action: view.lastEvent.kind, playerId: view.lastEvent.playerId,
       targetId: view.lastEvent.targetId ?? null }} />;
   }
@@ -49,15 +50,16 @@ function CollectiveDecision({ view, send, busy, window }: DecisionProps & { wind
     : view.lastEvent?.kind === 'eliminated' ? 'eliminated' : undefined;
   const heading = window.kind === 'reaction' ? 'A mesa exige uma resposta'
     : window.kind === 'block-reaction' ? 'Contestar defesa' : 'Resultado da jogada';
-  return <section className="overlay-content online-panel online-collective" data-outcome={outcome} aria-labelledby="online-decision-title">
-    {outcome && <div className="online-outcome">
-      {outcome === 'backstab' && <img src="images/isologo.png" alt="" />}
+  return <section className="overlay-content online-panel online-collective" data-outcome={outcome}
+    data-window-kind={window.kind} aria-labelledby="online-decision-title">
+    {outcome === 'backstab' ? <OnlineBackstab /> : outcome && <div className="online-outcome">
       <strong>{outcome === 'proved' ? 'Defesa validada' : outcome === 'bluff' ? 'Blefe descoberto'
-        : outcome === 'backstab' ? 'BACKSTAB' : 'Operador eliminado'}</strong>
+        : 'Operador eliminado'}</strong>
     </div>}
     <h2 id="online-decision-title">{heading}</h2>
     <WindowClaims view={view} />
     <p className="online-declaration-summary">{window.summary}</p>
+    {outcome === 'backstab' && view.lastEvent && <p>Jogada de {playerName(view, view.lastEvent.playerId)}</p>}
     {targetId && <p>Alvo: {playerName(view, targetId)}</p>}
     <p className="online-progress" role="status">Aguardando respostas — {window.responded.length}/{window.eligible.length}</p>
     <progress className="online-vote-meter" aria-label="Progresso das respostas" max={Math.max(1, window.eligible.length)} value={window.responded.length} />

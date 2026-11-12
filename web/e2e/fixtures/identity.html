@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/">
+    <title>Backstabber Online · Teste visual</title>
+    <link rel="stylesheet" href="/css/style-index.css">
+    <link rel="stylesheet" href="/css/style-game.css" id="game-style" media="not all">
+    <link rel="stylesheet" href="/css/mobile-game.css" id="mobile-game-style" media="not all">
+    <script>
+      const scene = new URLSearchParams(location.search).get('scene');
+      if (!['login', 'lobby', 'friends', 'profile'].includes(scene)) {
+        document.querySelector('#game-style').media = 'all';
+        document.querySelector('#mobile-game-style').media = '(max-width: 900px), (max-height: 600px) and (pointer: coarse)';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="fixture"></div>
+    <script type="module" src="/e2e/fixtures/identity.tsx"></script>
+  </body>
+</html>
