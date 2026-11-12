@@ -67,9 +67,10 @@ function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, '
   </header>;
 }
 
-function Playmat({ children }: { children?: ReactNode }) {
-  return <div className="playmat-arena" aria-hidden={children ? undefined : true}>
-    {children ?? <>
+function Playmat({ children, online }: { children?: ReactNode; online?: boolean }) {
+  return <div className="playmat-arena" aria-hidden={online || children ? undefined : true}>
+    {online && <img className="online-playmat-art" src="images/playmat.png" alt="" />}
+    {online ? children : children ?? <>
       <div className="crosshair top-left">+</div>
       <div className="crosshair top-right">+</div>
       <div className="crosshair bottom-left">+</div>
@@ -168,7 +169,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
         </div>
       </aside>}
       <section className={`panel-center${online && !online.showActions ? ' online-no-action-bar' : ''}`}>
-        <Playmat>{online?.panel}</Playmat>
+        <Playmat online={Boolean(online)}>{online?.panel}</Playmat>
         <div className="player-hand-container">
           <div className="turn-indicator"><span>{online ? 'JOGADOR ATIVO' : 'TERMINAL ATIVO'}</span><h2 id="current-player-name" key={online ? view.activeId : undefined} aria-live="polite">{currentPlayer}</h2></div>
           {online && !hideHand && <span className="online-hand-caption">SUAS INFLUÊNCIAS</span>}

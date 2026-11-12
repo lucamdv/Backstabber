@@ -24,6 +24,7 @@ export type OnlineMatchProps = {
   api: OnlineApi;
   onExit: () => void;
   matchInvalidation: number;
+  startedFromLobby?: boolean;
 };
 
 type HubProps = {
@@ -126,6 +127,11 @@ function ConnectedHub({
     : (rooms?.find(item => item.id === selectedRoomId)
       ?? (invitedCode ? rooms?.find(item => item.code === invitedCode) : rooms?.[0]));
   const roomId = room?.id;
+  const roomStatus = room?.status;
+  const observedLobby = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    observedLobby.current = roomStatus === 'lobby' ? roomId : undefined;
+  }, [roomId, roomStatus]);
 
   const refreshRooms = useCallback(async () => {
     const generation = ++roomGeneration.current;
@@ -261,6 +267,7 @@ function ConnectedHub({
     const connectedIds = room.members.filter(member => member.connected).map(member => member.id);
     return renderMatch({
       matchId: room.matchId, roomId: room.id, userId: profile.id, connectedIds, api, onExit, matchInvalidation,
+      startedFromLobby: observedLobby.current === room.id,
     });
   }
 

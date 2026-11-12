@@ -1,15 +1,27 @@
-export function OnlineDeal() {
-  return <div className="online-deal" data-testid="online-deal" aria-hidden="true">
-    <div className="online-deal-stack">
-      {[0, 1, 2].map(card => <img src="images/verso_card.png" alt="" key={card} />)}
-    </div>
-    <span>Distribuindo influências</span>
-  </div>;
-}
+import { useEffect } from 'react';
+import type { CSSProperties } from 'react';
+import { ArenaShuffle } from '../components/modals/ArenaCinematics';
+import './arena-intro.css';
 
-export function OnlineBackstab() {
-  return <div className="online-backstab" data-testid="online-backstab">
-    <div className="online-backstab-brand" aria-hidden="true"><img src="images/isologo.png" alt="" /></div>
-    <strong>BACKSTAB</strong>
+export const ONLINE_INTRO_DURATION = 5000;
+
+export function OnlineArenaIntro({ onComplete }: { onComplete: () => void }) {
+  useEffect(() => {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(onComplete, reduced ? 700 : ONLINE_INTRO_DURATION);
+    return () => window.clearTimeout(timer);
+  }, [onComplete]);
+
+  return <div className="online-arena-intro" role="status" aria-label="Preparando a arena">
+    <div className="online-intro-shuffle" aria-hidden="true">
+      <ArenaShuffle />
+      <span>Embaralhando influências</span>
+    </div>
+    <div className="online-intro-tunnel" aria-hidden="true">
+      {Array.from({ length: 7 }, (_, index) => <i key={index} style={{ '--ring': index } as CSSProperties} />)}
+      <img src="images/isotipo.png" alt="" />
+    </div>
+    <span className="online-intro-arrival" aria-hidden="true">Bem-vindo à arena</span>
+    <span className="online-intro-reduced" aria-hidden="true">Preparando a arena</span>
   </div>;
 }

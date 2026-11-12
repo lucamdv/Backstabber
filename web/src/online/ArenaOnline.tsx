@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { ArenaBoard } from '../components/game/ArenaBoard';
 import { actions, playerName } from '../components/game/gameDisplay';
+import { ArenaCinematic } from '../components/modals/ArenaCinematics';
+import { ArenaDialog } from '../components/modals/ArenaDialog';
 import { OnlineResult } from './OnlineResult';
-import { OraclePanel } from '../components/shared/Oracle';
-import type { Action } from '../game/application/contracts';
+import { Oracle } from '../components/shared/Oracle';
+import type { Action, GameEvent } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView } from '../game/application/online-contracts';
 import { OnlineDecisionPanel } from './OnlineDecisionPanel';
-import { OnlineDeal } from './OnlineCinematics';
+import { OnlineArenaIntro } from './OnlineCinematics';
 import '../components/game/arena.css';
 import './arena-online.css';
 
@@ -18,6 +20,7 @@ interface ArenaOnlineProps {
   onCloseMatch: () => void;
   connectedIds: string[];
   busy: boolean;
+  playIntro?: boolean;
   error?: string;
 }
 
@@ -35,10 +38,26 @@ function CloseMatchControl({ busy, onCloseMatch }: Pick<ArenaOnlineProps, 'busy'
   </>;
 }
 
-export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, connectedIds, busy, error }: ArenaOnlineProps) {
+export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, connectedIds, busy, error, playIntro }: ArenaOnlineProps) {
   const [utility, setUtility] = useState<{ kind: 'oracle' | 'options'; decision: string } | null>(null);
   const [target, setTarget] = useState<{ action: Action; round: number; revision: number }>();
-  const panelScroll = useRef<HTMLDivElement>(null);
+  const openingRound = !view.closed && !view.window && view.phase.kind === 'action' && view.history.length === 0;
+  const observedRound = useRef(view.round);
+  const [introRound, setIntroRound] = useState(() => playIntro && openingRound ? view.round : undefined);
+  const endIntro = useCallback(() => setIntroRound(undefined), []);
+  const playingIntro = introRound === view.round && !view.closed;
+  useLayoutEffect(() => {
+    if (observedRound.current === view.round) return;
+    observedRound.current = view.round;
+    setIntroRound(openingRound ? view.round : undefined);
+  }, [openingRound, view.round]);
+  const backstab = view.window?.kind === 'acknowledge' && view.lastEvent?.kind === 'backstab'
+    ? view.lastEvent : undefined;
+  const backstabKey = backstab ? `${view.round}/${view.window?.id}` : undefined;
+  const seenBackstab = useRef(backstabKey);
+  const [impact, setImpact] = useState<{ event: GameEvent; allowAudio: boolean }>();
+  const endImpact = useCallback(() => setImpact(undefined), []);
+  const playingImpact = Boolean(impact && !view.closed && !playingIntro);
   const turn = !view.closed && view.activeId === view.viewerId && view.phase.kind === 'action' && !view.window;
   const targetAction = turn && target?.round === view.round && target.revision === view.revision
     && view.availableActions.includes(target.action) ? target.action : undefined;
@@ -48,12 +67,14 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
   const showResult = view.phase.kind === 'finished' && !view.window && !view.closed;
   const closeMatchControl = mayClose && <CloseMatchControl key={view.round} busy={busy} onCloseMatch={onCloseMatch} />;
 
-  useEffect(() => {
-    if (panelScroll.current) panelScroll.current.scrollTop = 0;
-  }, [activeUtility, targetAction, view.phase.kind, view.window?.id]);
+  useLayoutEffect(() => {
+    if (view.closed || !backstab || seenBackstab.current === backstabKey) return;
+    seenBackstab.current = backstabKey;
+    setImpact({ event: backstab, allowAudio: navigator.userActivation?.hasBeenActive === true });
+  }, [backstab, backstabKey, view.closed]);
 
   function chooseAction(action: Action) {
-    if (!turn || busy || !view.availableActions.includes(action)) return;
+    if (!turn || busy || playingIntro || playingImpact || !view.availableActions.includes(action)) return;
     setUtility(null);
     if (actions[action].targetTitle) {
       setTarget({ action, round: view.round, revision: view.revision });
@@ -66,13 +87,18 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
     setUtility(activeUtility === kind ? null : { kind, decision });
   }
 
-  const panel = !showResult && <div className="online-playmat-scroll" ref={panelScroll} tabIndex={0} role="region" aria-label="Decisões da partida">
-    {view.history.length === 0 && view.phase.kind === 'action' && !view.window && !view.closed && <OnlineDeal key={view.round} />}
-    {activeUtility === 'oracle' && view.window && <div className="overlay-content online-panel">
-      <button type="button" className="btn-pass" onClick={() => setUtility(null)}>Voltar à decisão coletiva</button>
-    </div>}
-    {activeUtility === 'oracle' && <OraclePanel onClose={() => setUtility(null)} />}
-    {activeUtility === 'options' && <section className="overlay-content online-panel" aria-labelledby="online-options-title">
+  const panel = !showResult && <div className="online-stage" role="region" aria-label="Decisões da partida">
+    <div className="online-stage-content">
+      <OnlineDecisionPanel view={view} send={send} busy={busy} targetAction={targetAction}
+        onCancelTarget={() => setTarget(undefined)} onExit={onExit} />
+    </div>
+    {error ? <p className="online-error" role="alert">{error}</p>
+      : busy && <p className="online-arena-busy" role="status">Enviando à mesa…</p>}
+  </div>;
+
+  const options = activeUtility === 'options' && <ArenaDialog id="online-options" titleId="online-options-title"
+    onEscape={() => setUtility(null)}>
+    <section className="overlay-content online-panel">
       <h2 id="online-options-title">Opções da partida</h2>
       <p>A partida continua disponível nesta sala.</p>
       <div className="online-decision-buttons">
@@ -80,20 +106,21 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
         <button type="button" className="btn-pass" onClick={onExit}>Sair da arena</button>
       </div>
       {closeMatchControl}
-    </section>}
-    <OnlineDecisionPanel view={view} send={send} busy={busy} targetAction={targetAction}
-      onCancelTarget={() => setTarget(undefined)} onExit={onExit} />
-    {busy && <p className="online-arena-busy" role="status">Enviando à mesa…</p>}
-    {error && <p className="online-error" role="alert">{error}</p>}
-  </div>;
+    </section>
+  </ArenaDialog>;
 
-  return <div className="arena-root online-arena" data-your-turn={turn}>
-    <ArenaBoard view={view} blocked={showResult} hideHand={showResult} onAction={chooseAction}
+  return <div className={`arena-root online-arena${playingImpact ? ' arena-backstab-impact' : ''}`} data-your-turn={turn}>
+    <ArenaBoard view={view} blocked={showResult || playingIntro || playingImpact || Boolean(activeUtility)} hideHand={showResult} onAction={chooseAction}
       onOracle={() => toggleUtility('oracle')}
       onPause={() => toggleUtility('options')}
       online={{ viewerId: view.viewerId, connectedIds, panel, showActions: turn && !targetAction,
         actionsDisabled: busy }} />
-    {showResult && view.phase.kind === 'finished' && <OnlineResult key={view.round}
+    {!playingIntro && !playingImpact && activeUtility === 'oracle' && <Oracle onClose={() => setUtility(null)} />}
+    {!playingIntro && !playingImpact && options}
+    {playingIntro && <OnlineArenaIntro key={introRound} onComplete={endIntro} />}
+    {playingImpact && impact && <ArenaCinematic view={view} event={impact.event}
+      allowAudio={impact.allowAudio} onComplete={endImpact} />}
+    {showResult && !playingIntro && !playingImpact && view.phase.kind === 'finished' && <OnlineResult key={view.round}
       won={view.phase.winnerId === view.viewerId}
       winner={playerName(view, view.phase.winnerId)}
       cards={view.phase.winnerId === view.viewerId ? view.phase.cards : []}
@@ -101,11 +128,6 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
       {mayClose && <div className="online-victory-host-controls">{closeMatchControl}</div>}
       {error && <p className="online-error" role="alert">{error}</p>}
     </OnlineResult>}
-    <div className="portrait-lock" role="status" aria-live="polite">
-      <img src="images/isotipo.png" alt="" />
-      <strong>GIRE O DISPOSITIVO</strong>
-      <span>A mesa do Backstabber foi projetada para o modo retrato.</span>
-    </div>
   </div>;
 }
 

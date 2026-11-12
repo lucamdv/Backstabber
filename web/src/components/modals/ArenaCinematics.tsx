@@ -9,6 +9,16 @@ function reducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+export function ArenaShuffle() {
+  return <div className="intro-deck" aria-hidden="true">
+    {(['magnata', 'executor', 'mercenario'] as const).map((character, index) =>
+      <div className="intro-card" id={`icard-${index + 1}`} key={character}>
+        <div className={`intro-face intro-front carta carta-${character}`} />
+        <div className="intro-face intro-back carta carta-verso" />
+      </div>)}
+  </div>;
+}
+
 export function ArenaIntro({ onComplete }: { onComplete: () => void }) {
   const [fading, setFading] = useState(false);
   useEffect(() => {
@@ -23,13 +33,7 @@ export function ArenaIntro({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return <div id="intro-overlay" role="status" className={fading ? 'arena-intro-fading' : undefined}>
-    <div className="intro-deck" aria-hidden="true">
-      {(['magnata', 'executor', 'mercenario'] as const).map((character, index) =>
-        <div className="intro-card" id={`icard-${index + 1}`} key={character}>
-          <div className={`intro-face intro-front carta carta-${character}`} />
-          <div className="intro-face intro-back carta carta-verso" />
-        </div>)}
-    </div>
+    <ArenaShuffle />
     <div className="intro-text">EMBARALHANDO DADOS...</div>
   </div>;
 }
@@ -81,21 +85,21 @@ function playImpact(): (() => void) | undefined {
   return () => { window.clearTimeout(timeout); close(); };
 }
 
-export function ArenaCinematic({ view, event, onComplete }: {
-  view: GameView; event: GameEvent; onComplete: () => void;
+export function ArenaCinematic({ view, event, onComplete, allowAudio = true }: {
+  view: GameView; event: GameEvent; onComplete: () => void; allowAudio?: boolean;
 }) {
   const backstab = event.kind === 'backstab';
   useEffect(() => {
     const reduced = reducedMotion();
     const timeout = window.setTimeout(onComplete, reduced ? 350 : backstab ? 2500 : 1750);
-    const stopAudio = backstab && !reduced ? playImpact() : undefined;
+    const stopAudio = backstab && !reduced && allowAudio ? playImpact() : undefined;
     if (backstab && !reduced) navigator.vibrate?.([45, 35, 110]);
     return () => {
       window.clearTimeout(timeout);
       stopAudio?.();
       if (backstab && !reduced) navigator.vibrate?.(0);
     };
-  }, [backstab, onComplete]);
+  }, [allowAudio, backstab, onComplete]);
 
   const actor = playerName(view, event.playerId);
   if (!backstab) return <div id="defeat-cinematic" className="defeat-cinematic active" role="status">

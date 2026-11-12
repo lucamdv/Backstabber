@@ -5,7 +5,6 @@ import { ArenaOnline } from './ArenaOnline';
 import { OnlineApiError } from './api';
 import type { OnlineApi } from './api';
 
-const mobile = '(max-width: 900px), (max-height: 600px) and (pointer: coarse)';
 const messages: Record<string, string> = {
   STALE_REVISION: 'A partida avançou. Confira o estado atualizado.',
   ALREADY_RESPONDED: 'Sua resposta já foi registrada.',
@@ -20,15 +19,17 @@ function code(error: unknown) {
   return error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
 }
 
-export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidation, onExit }: {
+export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidation, onExit, startedFromLobby }: {
   matchId: string;
   roomId: string;
   api: OnlineApi;
   connectedIds: string[];
   matchInvalidation: number;
   onExit: () => void;
+  startedFromLobby?: boolean;
 }) {
   const [view, setView] = useState<OnlineView>();
+  const [playIntro, setPlayIntro] = useState(Boolean(startedFromLobby));
   const [error, setError] = useState<string>();
   const [connectionError, setConnectionError] = useState(false);
   const [accessError, setAccessError] = useState<string>();
@@ -36,6 +37,10 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
   const pending = useRef(false);
   const accessEpoch = useRef(0);
   const path = `/matches/${matchId}`;
+
+  useEffect(() => {
+    if (view && playIntro) setPlayIntro(false);
+  }, [playIntro, view]);
 
   const accept = useCallback((next: OnlineView) => {
     setView(current => !current || (next.revision >= current.revision && (!current.closed || next.closed)) ? next : current);
@@ -131,8 +136,7 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
 
   return <>
     <link rel="stylesheet" href="css/style-game.css" />
-    <link rel="stylesheet" href="css/mobile-game.css" media={mobile} />
-    {view ? <ArenaOnline view={view} connectedIds={connectedIds} busy={busy}
+    {view ? <ArenaOnline view={view} connectedIds={connectedIds} busy={busy} playIntro={playIntro}
       error={error ?? (connectionError ? 'Reconectando à partida…' : undefined)}
       send={send} onExit={onExit}
       onRematch={() => void run(async () => {

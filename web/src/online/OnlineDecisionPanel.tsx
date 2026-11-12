@@ -4,7 +4,6 @@ import { actions, characterName, playerName } from '../components/game/gameDispl
 import { Claims } from '../components/modals/ArenaDecisions';
 import type { Action } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../game/application/online-contracts';
-import { OnlineBackstab } from './OnlineCinematics';
 
 interface DecisionProps {
   view: OnlineView;
@@ -31,7 +30,7 @@ function WindowClaims({ view }: { view: OnlineView }) {
     return <Claims view={view} declaration={declaration} block={block}
       result={{ truthful, on: block ? 'bloqueio' : 'acao' }} />;
   }
-  if (view.lastEvent?.kind === 'income') {
+  if (view.lastEvent?.kind === 'income' || view.lastEvent?.kind === 'backstab') {
     return <Claims view={view} declaration={{ action: view.lastEvent.kind, playerId: view.lastEvent.playerId,
       targetId: view.lastEvent.targetId ?? null }} />;
   }
@@ -40,27 +39,32 @@ function WindowClaims({ view }: { view: OnlineView }) {
 
 function CollectiveDecision({ view, send, busy, window }: DecisionProps & { window: OnlineWindow }) {
   const { phase } = view;
+  const challenge = phase.kind === 'loss' ? phase.challenge : undefined;
   const targetId = phase.kind === 'reaction' || phase.kind === 'block-reaction'
-    ? phase.declaration.targetId : view.lastEvent?.targetId;
+    ? phase.declaration.targetId : challenge?.declaration.targetId ?? view.lastEvent?.targetId;
   const viewerResponded = window.responded.includes(view.viewerId);
   const mayVote = window.eligible.includes(view.viewerId) && !viewerResponded;
-  const challenge = phase.kind === 'loss' ? phase.challenge : undefined;
   const outcome = challenge ? challenge.truthful ? 'proved' : 'bluff'
     : view.lastEvent?.kind === 'backstab' ? 'backstab'
     : view.lastEvent?.kind === 'eliminated' ? 'eliminated' : undefined;
   const heading = window.kind === 'reaction' ? 'A mesa exige uma resposta'
     : window.kind === 'block-reaction' ? 'Contestar defesa' : 'Resultado da jogada';
-  return <section className="overlay-content online-panel online-collective" data-outcome={outcome}
+  return <section className="online-hologram online-collective" data-outcome={outcome}
     data-window-kind={window.kind} aria-labelledby="online-decision-title">
-    {outcome === 'backstab' ? <OnlineBackstab /> : outcome && <div className="online-outcome">
-      <strong>{outcome === 'proved' ? 'Defesa validada' : outcome === 'bluff' ? 'Blefe descoberto'
+    <div className="online-projection">
+      <WindowClaims view={view} />
+    </div>
+    <div className="online-reaction-controls">
+    {outcome && outcome !== 'backstab' && <div className="online-outcome">
+      <strong>{outcome === 'proved' ? 'Carta confirmada' : outcome === 'bluff' ? 'Blefe descoberto'
         : 'Operador eliminado'}</strong>
     </div>}
     <h2 id="online-decision-title">{heading}</h2>
-    <WindowClaims view={view} />
     <p className="online-declaration-summary">{window.summary}</p>
     {outcome === 'backstab' && view.lastEvent && <p>Jogada de {playerName(view, view.lastEvent.playerId)}</p>}
-    {targetId && <p>Alvo: {playerName(view, targetId)}</p>}
+    {challenge && phase.kind === 'loss'
+      ? <p>{playerName(view, phase.victimId)} perde uma influência.</p>
+      : targetId && <p>Alvo: {playerName(view, targetId)}</p>}
     <p className="online-progress" role="status">Aguardando respostas — {window.responded.length}/{window.eligible.length}</p>
     <progress className="online-vote-meter" aria-label="Progresso das respostas" max={Math.max(1, window.eligible.length)} value={window.responded.length} />
     {viewerResponded && <p>Sua decisão está selada. Aguardando os outros jogadores.</p>}
@@ -73,17 +77,21 @@ function CollectiveDecision({ view, send, busy, window }: DecisionProps & { wind
         {voteLabel(choice, window)}
       </button>)}
     </div>}
-    <ul className="online-responses" aria-label="Participantes da decisão">
-      {window.eligible.map((id) => <li key={id} data-responded={window.responded.includes(id)}>
-        {playerName(view, id)} · {window.responded.includes(id) ? 'respondeu' : 'pendente'}
-      </li>)}
-    </ul>
+    <details className="online-response-list" key={window.id}>
+      <summary>Participantes da decisão</summary>
+      <ul className="online-responses" aria-label="Participantes da decisão">
+        {window.eligible.map((id) => <li key={id} data-responded={window.responded.includes(id)}>
+          {playerName(view, id)} · {window.responded.includes(id) ? 'respondeu' : 'pendente'}
+        </li>)}
+      </ul>
+    </details>
+    </div>
   </section>;
 }
 
 function InfluenceLoss({ view, send, busy, victimId }: DecisionProps & { victimId: string }) {
   const isVictim = victimId === view.viewerId && view.privatePlayerId === view.viewerId;
-  return <section className="overlay-content online-panel" aria-labelledby="online-loss-title">
+  return <section className="overlay-content online-panel online-private-stage" aria-labelledby="online-loss-title">
     <h2 id="online-loss-title">Uma influência caiu</h2>
     <p>{isVictim ? 'Escolha uma influência para perder.' : `${playerName(view, victimId)} está escolhendo uma influência para perder.`}</p>
     {isVictim && <div id="loss-cards" className="hand">
@@ -114,7 +122,7 @@ function BrokerChoice({ view, send, busy, keep }: DecisionProps & { keep: number
 
 function Negotiation({ view, send, busy, playerId, keep }: DecisionProps & { playerId: string; keep: number }) {
   const isBroker = playerId === view.viewerId && view.privatePlayerId === view.viewerId;
-  return <section className="overlay-content online-panel" aria-labelledby="online-broker-title">
+  return <section className="overlay-content online-panel online-private-stage" aria-labelledby="online-broker-title">
     <h2 id="online-broker-title">Negociação do Broker</h2>
     {isBroker ? <BrokerChoice view={view} send={send} busy={busy} keep={keep} />
       : <p>Aguardando a negociação de {playerName(view, playerId)}.</p>}
@@ -122,9 +130,9 @@ function Negotiation({ view, send, busy, playerId, keep }: DecisionProps & { pla
 }
 
 function TargetPicker({ view, send, busy, action, onCancel }: DecisionProps & { action: Action; onCancel: () => void }) {
-  return <section className="overlay-content online-panel" aria-labelledby="online-target-title">
+  return <section className="overlay-content online-panel online-private-stage" aria-labelledby="online-target-title">
     <h2 id="online-target-title">Alvo para: {actions[action].targetTitle ?? actions[action].title}</h2>
-    <div className="online-decision-buttons">
+    <div className="online-target-list">
       {view.targets.map((id) => <button type="button" className="btn-challenge" key={id} disabled={busy}
         onClick={() => send({ type: 'select-action', action, targetId: id })}>Alvo: {playerName(view, id)}</button>)}
     </div>
@@ -142,7 +150,7 @@ export function OnlineDecisionPanel({ view, send, busy, targetAction, onCancelTa
     <h2>Partida encerrada</h2>
     <button type="button" className="btn-pass" onClick={onExit}>Sair da arena</button>
   </section>;
-  if (view.window) return <CollectiveDecision key={view.window.id} view={view} send={send} busy={busy} window={view.window} />;
+  if (view.window) return <CollectiveDecision view={view} send={send} busy={busy} window={view.window} />;
   if (phase.kind === 'loss') return <InfluenceLoss view={view} send={send} busy={busy} victimId={phase.victimId} />;
   if (phase.kind === 'negotiation') return <Negotiation key={`${view.round}-${view.revision}`} view={view} send={send}
     busy={busy} playerId={phase.playerId} keep={phase.keep} />;
