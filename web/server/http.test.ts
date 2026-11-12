@@ -25,8 +25,8 @@ const fakeAuth = (async (_url, options) => {
   const id = token.replace(/^session\./, '').replace(/\.reconnected$/, '');
   return ids.includes(id) ? Response.json({ id }) : Response.json({}, { status: 401 });
 }) as typeof fetch;
-const api = createApi(connect, supabaseAuthenticator('http://supabase.test', 'test-publishable', fakeAuth));
-const apiSecondInstance = createApi(connect, supabaseAuthenticator('http://supabase.test', 'test-publishable', fakeAuth));
+const api = createApi(connect, supabaseAuthenticator('https://supabase.test', 'test-publishable', fakeAuth));
+const apiSecondInstance = createApi(connect, supabaseAuthenticator('https://supabase.test', 'test-publishable', fakeAuth));
 const request = (actor: string, path: string, method = 'GET', payload?: unknown, handler = api) =>
   handler(new Request(`http://backstabber.test/api/v1${path}`, {
     method, headers: { Authorization: `Bearer session.${actor}`, 'Content-Type': 'application/json' },

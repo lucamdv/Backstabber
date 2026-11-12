@@ -1,3 +1,3 @@
-import { handleRequest } from '../web/server/http';
+import { vercelRequest } from '../web/server/vercel';
 
-export default { fetch: handleRequest };
+export default { fetch: vercelRequest };

@@ -7,13 +7,29 @@ import { socialRoute } from './social';
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 type Authenticate = (token: string) => Promise<string>;
 export type Connect = () => Promise<PoolClient>;
+const unavailableCodes = new Set(['55P03', '40P01', '57014', '40001', '53300', '57P01']);
+const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+function errorCode(error: unknown) {
+  return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+    ? error.code : '';
+}
 
 export function supabaseAuthenticator(url: string, key: string, fetcher = fetch): Authenticate {
   return async token => {
     if (!url || !key) throw new ApiError('SERVICE_UNAVAILABLE', 503);
-    const response = await fetcher(new URL('/auth/v1/user', url), {
-      headers: { apikey: key, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000),
-    });
+    let response: Response;
+    try {
+      const endpoint = new URL('/auth/v1/user', url);
+      if (endpoint.protocol !== 'https:' && (endpoint.protocol !== 'http:' || !loopbackHosts.has(endpoint.hostname))) {
+        throw new Error('Invalid Auth endpoint');
+      }
+      response = await fetcher(endpoint, {
+        headers: { apikey: key, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000),
+      });
+    } catch {
+      throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    }
     if (response.status === 401 || response.status === 403) throw new ApiError('UNAUTHENTICATED', 401);
     if (!response.ok) throw new ApiError('SERVICE_UNAVAILABLE', 503);
     const user: unknown = await response.json();
@@ -36,6 +52,7 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
       return new Response(null, { status: 204, headers });
     }
     let tx: PoolClient | undefined;
+    let discardClient = false;
     try {
       const url = new URL(request.url);
       const path = url.pathname.startsWith('/api/v1/') ? url.pathname.slice('/api/v1'.length)
@@ -58,30 +75,50 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
           }
         }
       }
-      tx = await connect();
+      try {
+        tx = await connect();
+      } catch {
+        throw new ApiError('SERVICE_UNAVAILABLE', 503);
+      }
       await tx.query('begin');
+      // These limits belong to the transaction and work with transaction poolers.
+      await tx.query("set local lock_timeout = '3s'");
+      await tx.query("set local statement_timeout = '8s'");
+      await tx.query("set local idle_in_transaction_session_timeout = '10s'");
       const result = await matchRoute(tx, userId, request.method, path, body)
         ?? await socialRoute(tx, userId, request.method, path, body, url.searchParams);
       if (result === undefined) throw new ApiError('NOT_FOUND', 404);
       await tx.query('commit');
       return Response.json(result, { headers });
     } catch (error) {
-      if (tx) await tx.query('rollback').catch(() => {});
+      const sqlCode = errorCode(error);
+      discardClient = /^08\d{3}$/.test(sqlCode);
+      if (tx) await tx.query('rollback').catch(() => { discardClient = true; });
       if (error instanceof ApiError) return Response.json({ error: error.code }, { status: error.status, headers });
+      if (unavailableCodes.has(sqlCode) || discardClient) {
+        return Response.json({ error: 'SERVICE_UNAVAILABLE' }, { status: 503, headers });
+      }
       console.error('Backstabber API request failed', { type: error instanceof Error ? error.name : 'UnknownError' });
       return Response.json({ error: 'INTERNAL_ERROR' }, { status: 500, headers });
     } finally {
-      tx?.release();
+      tx?.release(discardClient);
     }
   };
 }
 
 let pool: Pool | undefined;
-export function handleRequest(request: Request) {
+export function handleRequest(request: Request, attachPool?: (pool: Pool) => void) {
   return createApi(async () => {
     if (!process.env.DATABASE_URL) throw new ApiError('SERVICE_UNAVAILABLE', 503);
-    pool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 3,
-      connectionTimeoutMillis: 5000, statement_timeout: 8000 });
+    if (!pool) {
+      const url = new URL(process.env.DATABASE_URL);
+      if (!loopbackHosts.has(url.hostname)) url.searchParams.set('sslmode', 'verify-full');
+      const instance = new Pool({ connectionString: url.href, max: 3, idleTimeoutMillis: 5000,
+        connectionTimeoutMillis: 5000 });
+      instance.on('error', () => console.error('Backstabber idle database connection closed'));
+      attachPool?.(instance);
+      pool = instance;
+    }
     return pool.connect();
   }, supabaseAuthenticator(process.env.SUPABASE_URL ?? '', process.env.SUPABASE_PUBLISHABLE_KEY ?? ''),
   process.env.BACKSTABBER_ALLOWED_ORIGIN)(request);
