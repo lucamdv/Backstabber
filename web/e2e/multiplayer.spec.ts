@@ -32,7 +32,7 @@ test('três contas, reação em reconexão, vitória e revanche @live', async ({
   const button = (page: Page, name: string | RegExp) => page.getByRole('button', { name, exact: typeof name === 'string' });
   try {
     await Promise.all(pages.map(page => page.goto('./#/amigos')));
-    await Promise.all(pages.map(page => expect(page.getByRole('heading', { name: 'Amigos', exact: true })).toBeVisible()));
+    await Promise.all(pages.map(page => expect(page.getByRole('heading', { name: 'Rede de contatos', exact: true })).toBeVisible()));
     const friend = a.getByRole('list', { name: 'Lista de amigos' }).getByRole('listitem')
       .filter({ hasText: '@' + usernames[1] });
     if (!(await friend.isVisible())) {

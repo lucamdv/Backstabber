@@ -1,3 +1,5 @@
+@import './online-theme.css';
+
 .online-arena .scoreboard-bar {
   max-width: 100%;
 }
@@ -173,21 +175,6 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
 }
 
-.online-victory .victory-single-action {
-  grid-template-columns: minmax(0, 1fr);
-  max-width: 310px;
-}
-
-.online-victory .victory-content {
-  overflow-x: hidden;
-}
-
-.online-victory .victory-announcement strong {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  text-align: center;
-}
-
 .online-victory-host-controls {
   display: grid;
   justify-items: center;
@@ -241,8 +228,13 @@
     gap: 4px;
   }
 
+  .online-arena .scoreboard-bar:not(:has(.player-stat:nth-child(6))) {
+    display: flex;
+  }
+
   .online-arena .player-stat {
     display: grid;
+    flex: 1 1 0;
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
     min-width: 0;
@@ -415,11 +407,258 @@
     padding: 2px;
   }
 
-  .online-victory .victory-content h2 {
-    font-size: clamp(3rem, 20vw, 5.4rem);
-  }
 
-  .online-victory .victory-emblem {
+}
+
+.online-arena .hud-header {
+  border-color: #67315c;
+  background: linear-gradient(90deg, #1c0b20dd, #080611dd 50%, #100b1cdd);
+}
+
+.online-arena .player-stat {
+  background: linear-gradient(145deg, #29162c, #0b0916);
+  border: 1px solid var(--net-line);
+}
+
+.online-arena .player-stat.active {
+  border-color: var(--net-hot);
+  background: linear-gradient(145deg, #45152d, #140c1c);
+}
+
+.online-arena .player-stat.active.online-viewer { border-color: var(--net-cold); }
+.online-arena .player-resource b { display: inline-block; animation: online-resource 380ms var(--net-ease) backwards; }
+
+.online-arena #cemetery-list li .cemetery-card-art {
+  width: min(100%, 74px);
+  height: auto;
+  aspect-ratio: .61;
+}
+.online-arena .cemetery-card-name { font-size: clamp(.72rem, 1vw, .95rem); }
+
+@keyframes online-resource {
+  from { transform: scale(1.24); }
+  to { transform: scale(1); }
+}
+
+.online-arena .playmat-arena {
+  position: relative;
+  border-color: #975178;
+  background: radial-gradient(ellipse at center, #160c23c2, #08071191 72%);
+}
+
+.online-arena[data-your-turn="true"] .playmat-arena { border-color: #54a4a9; }
+.online-arena .online-playmat-scroll {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  padding: clamp(5px, 1vw, 14px);
+}
+.online-arena .online-playmat-scroll > * { flex-shrink: 0; }
+
+.online-arena .online-panel {
+  text-align: center;
+  border: 1px solid #8e527c;
+  border-top: 2px solid var(--net-hot);
+  background: linear-gradient(165deg, #251331, #0d0917 52%);
+  box-shadow: inset 0 -2px #1e1128;
+  animation: online-arrive 240ms var(--net-ease) backwards;
+}
+
+.online-arena .online-panel h2 { color: var(--net-text); line-height: 1; }
+.online-arena .online-declaration-summary { color: var(--net-muted); overflow-wrap: anywhere; }
+.online-arena .online-panel :is(.btn-pass, .btn-block, .btn-challenge) {
+  min-height: 44px;
+  transition: transform 140ms var(--net-ease), border-color 140ms;
+}
+.online-arena button:active:not(:disabled) { transform: translateY(2px); }
+.online-arena .online-panel .btn-block { border-color: #69eaef; }
+.online-arena .online-panel .btn-challenge { border-color: #ff4e96; }
+.online-arena .online-panel .btn-pass { border-color: #8ec6aa; }
+.online-vote-meter { display: block; width: min(80%, 300px); height: 8px; margin: 0 auto 7px; accent-color: var(--net-cold); }
+.online-responses li { background: #160b1f; }
+.online-responses li[data-responded="true"] { background: #13231e; }
+
+.online-outcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  margin-bottom: .4rem;
+  padding: .25rem;
+  color: #ff8db7;
+  border-block: 1px solid currentColor;
+  font: 400 clamp(1.2rem, 4vw, 2.2rem)/1 'VT323', monospace;
+  text-transform: uppercase;
+}
+
+.online-collective[data-outcome="proved"] .online-outcome { color: var(--net-green); }
+.online-collective[data-outcome="backstab"] .online-outcome {
+  color: #ffafcf;
+  background: linear-gradient(140deg, transparent 25%, #a11950 50%, transparent 75%) #3c0e24;
+  animation: online-impact 460ms var(--net-ease) backwards;
+  font-size: clamp(1.8rem, 6vw, 3.1rem);
+}
+.online-collective[data-outcome="backstab"] .online-outcome img {
+  width: 3.5rem;
+  height: 2rem;
+  object-fit: cover;
+}
+
+@keyframes online-impact {
+  0% { opacity: .25; transform: translateX(-9px) skewX(-7deg); }
+  38% { opacity: 1; transform: translateX(4px) skewX(3deg); }
+  100% { transform: none; }
+}
+
+.online-arena .turn-indicator { max-width: 100%; }
+.online-arena #current-player-name { overflow-wrap: anywhere; animation: online-arrive 260ms var(--net-ease) backwards; }
+.online-arena .online-turn-message { animation: online-arrive 220ms var(--net-ease) backwards; }
+.online-arena .online-hand-caption {
+  display: block;
+  color: var(--net-cold);
+  font: 400 .92rem/1 'VT323', monospace;
+  letter-spacing: .11em;
+  text-align: center;
+}
+.online-arena #player-hand .carta { transition: transform 160ms var(--net-ease); }
+.online-arena #player-hand .carta:hover { transform: translateY(-3px); }
+.online-arena .online-arena-busy { margin: .3rem auto; color: var(--net-cold); text-align: center; }
+.online-arena .online-round-entry {
+  position: absolute;
+  z-index: 4;
+  inset: 5px 5px auto;
+  color: var(--net-cold);
+  font: 400 1.35rem/1 'VT323', monospace;
+  letter-spacing: .13em;
+  text-align: center;
+  pointer-events: none;
+  animation: online-round-entry 850ms var(--net-ease) both;
+}
+
+@keyframes online-round-entry {
+  0% { opacity: 0; transform: translateY(-7px); }
+  25%, 75% { opacity: 1; transform: none; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+.online-arena .online-result {
+  --result-light: #8cfcff;
+  --result-dark: #1e526a;
+  z-index: 12000;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: safe center;
+  overflow: auto;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: radial-gradient(ellipse at 50% 35%, #17364d, #0a0812 68%);
+  isolation: isolate;
+}
+.online-arena .online-result-loss {
+  --result-light: #ffa1be;
+  --result-dark: #5d284a;
+  background: radial-gradient(ellipse at 50% 35%, #3d1934, #090611 66%);
+}
+.online-result-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, #0000 0 5px, #9bc4ec0b 5px 6px),
+    linear-gradient(135deg, transparent 36%, #90bde915 50%, transparent 64%);
+}
+.online-result-loss .online-result-field {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 5px, #ff4e9618 5px 6px),
+    linear-gradient(171deg, transparent 47%, #a3416a5e 48% 49%, transparent 50%);
+}
+.online-result-field i {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: 5px;
+  height: 5px;
+  background: var(--result-light);
+  opacity: 0;
+  animation: online-result-particle 1350ms var(--net-ease) var(--delay) both;
+}
+@keyframes online-result-particle {
+  0% { opacity: 0; transform: translateY(25px); }
+  35% { opacity: .85; }
+  100% { opacity: 0; transform: translateY(-80px) rotate(55deg); }
+}
+
+.online-result-sheet {
+  width: min(100%, 650px);
+  display: grid;
+  justify-items: center;
+  gap: clamp(6px, 1.3dvh, 14px);
+  padding: clamp(14px, 4vw, 42px);
+  border: 1px solid var(--result-dark);
+  border-block-start: 3px solid var(--result-light);
+  background: linear-gradient(160deg, #141322, #0b0814);
+  clip-path: var(--net-cut);
+  text-align: center;
+  color: var(--net-text);
+  animation: online-arrive 430ms var(--net-ease) backwards;
+}
+
+.online-result-loss .online-result-sheet { animation: online-impact 440ms var(--net-ease) backwards; }
+.online-result-mark { width: clamp(52px, 9dvh, 92px); height: auto; }
+.online-result-loss .online-result-mark { opacity: .67; filter: grayscale(.7); }
+.online-result-sheet h2 {
+  font: 400 clamp(3.8rem, min(17vw, 14dvh), 8.75rem)/.82 'VT323', monospace;
+  color: var(--result-light);
+  text-shadow: 2px 2px var(--result-dark), 0 0 24px var(--result-dark);
+}
+.online-result-sheet p { margin: 0; overflow-wrap: anywhere; }
+.online-result-kicker { letter-spacing: .15em; color: var(--result-light); font-size: clamp(.7rem, 2vw, 1rem); }
+.online-result-winner { font-size: clamp(1.15rem, 4vw, 1.85rem); }
+.online-result-winner strong { color: var(--result-light); }
+.online-result-wait { color: var(--net-muted); }
+.online-result-cards { color: var(--result-light); letter-spacing: .09em; }
+.online-result-cards .hand { margin-block: 6px; justify-content: center; }
+.online-arena .online-result-cards .carta { width: auto; height: clamp(80px, 16dvh, 156px); aspect-ratio: .61; }
+.online-arena .online-result-sheet button {
+  min-height: 44px;
+  padding: .5rem .85rem;
+  border: 1px solid var(--result-light);
+  background: var(--net-panel);
+  color: var(--net-text);
+  cursor: pointer;
+  font: 400 1.2rem/1 'VT323', monospace;
+  transition: transform 140ms var(--net-ease), background-color 140ms;
+}
+.online-arena .online-result-sheet button.btn-challenge { background: var(--result-dark); }
+.online-arena .online-result-sheet button.btn-danger { border-color: var(--net-hot); color: #ffaccb; }
+.online-arena .online-result-sheet button:hover:not(:disabled) { background: var(--result-dark); }
+.online-arena .online-result-sheet button:disabled { opacity: .55; cursor: not-allowed; }
+.online-arena .online-result-sheet .online-victory-host-controls { margin: 0; }
+
+@media (max-width: 900px), (max-height: 600px) and (pointer: coarse) {
+  .online-arena .panel-center { --online-hand-size: clamp(122px, 20dvh, 166px); }
+  .online-arena #player-hand .carta { height: calc(var(--online-hand-size) - 46px); }
+  .online-arena .turn-indicator {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     flex-shrink: 0;
+    gap: 6px;
+    height: auto;
+    min-height: 26px;
   }
+  .online-arena #current-player-name { font-size: 1rem; line-height: 1; margin: 0; }
+  .online-arena .player-resources { justify-content: center; gap: 2px; }
+  .online-arena .player-resource { padding-inline: 1px; }
+  .online-arena .player-resource b { font-size: 1rem; }
+  .online-arena .online-panel { padding: 7px; }
+  .online-arena .actions-bar .btn-action { min-height: 44px; }
+  .online-arena .online-panel p { margin-block: 3px 6px; }
+  .online-arena .declared-card .carta-declarada { width: clamp(46px, 13vw, 74px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-result-field i, .online-arena .online-round-entry { display: none; }
+  .online-arena #player-hand .carta:hover { transform: none; }
 }

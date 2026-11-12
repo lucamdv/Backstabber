@@ -22,7 +22,7 @@ test('keeps the return to local mode when public Supabase settings are absent', 
   vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', '');
   render(<OnlineHub onExit={() => undefined} renderMatch={() => null} />);
   expect(screen.getByRole('status')).toHaveTextContent('Você pode continuar no modo local');
-  expect(screen.getByRole('button', { name: 'Voltar ao menu' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Voltar ao menu local' })).toBeEnabled();
   expect(screen.queryByRole('button', { name: 'Entrar com Google' })).toBeNull();
   expect(createClient).not.toHaveBeenCalled();
 });

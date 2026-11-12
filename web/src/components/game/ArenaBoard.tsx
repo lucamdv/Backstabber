@@ -29,8 +29,8 @@ function PlayerStats({ view, online }: Pick<ArenaBoardProps, 'view' | 'online'>)
       className={`player-stat${player.id === view.activeId ? ' active' : ''}${online?.viewerId === player.id ? ' online-viewer' : ''}`}>
       <strong title={player.name}>{player.name}</strong>
       <span className="player-resources">
-        <span className="player-resource player-credits"><b>{player.credits}</b><small>CRÉDITOS</small></span>
-        <span className="player-resource player-influences"><b>{player.influence}</b><small>INFL.</small></span>
+        <span className="player-resource player-credits"><b key={online ? player.credits : undefined}>{player.credits}</b><small>CRÉDITOS</small></span>
+        <span className="player-resource player-influences"><b key={online ? player.influence : undefined}>{player.influence}</b><small>INFL.</small></span>
       </span>
       {online && <span className="online-player-presence" data-connected={connected}>
         {connected ? 'Conectado' : 'Desconectado'}
@@ -49,7 +49,7 @@ function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, '
       </span>
     </div>
     <div className="header-center">
-      <span className="turn-label">STATUS DA MESA</span>
+      <span className="turn-label">{online ? 'ARENA ONLINE' : 'STATUS DA MESA'}</span>
       <div id="scoreboard" className="scoreboard-bar" role={online ? 'group' : undefined}
         aria-label={online ? 'Placar e conexão dos jogadores' : undefined}>
         <PlayerStats view={view} online={online} />
@@ -170,7 +170,8 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
       <section className={`panel-center${online && !online.showActions ? ' online-no-action-bar' : ''}`}>
         <Playmat>{online?.panel}</Playmat>
         <div className="player-hand-container">
-          <div className="turn-indicator"><span>{online ? 'JOGADOR ATIVO' : 'TERMINAL ATIVO'}</span><h2 id="current-player-name" aria-live="polite">{currentPlayer}</h2></div>
+          <div className="turn-indicator"><span>{online ? 'JOGADOR ATIVO' : 'TERMINAL ATIVO'}</span><h2 id="current-player-name" key={online ? view.activeId : undefined} aria-live="polite">{currentPlayer}</h2></div>
+          {online && !hideHand && <span className="online-hand-caption">SUAS INFLUÊNCIAS</span>}
           <div className="hand" id="player-hand" role={online ? 'group' : undefined} aria-live="polite" aria-label={handLabel}>
             {!hideHand && view.revealed && view.privatePlayerId === handOwner
               && view.hand.map((card) => <Card key={card.id} character={card.character} />)}

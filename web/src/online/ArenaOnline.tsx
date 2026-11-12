@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArenaBoard } from '../components/game/ArenaBoard';
-import { actions } from '../components/game/gameDisplay';
-import { VictoryDialog } from '../components/modals/ArenaCinematics';
+import { actions, playerName } from '../components/game/gameDisplay';
+import { OnlineResult } from './OnlineResult';
 import { OraclePanel } from '../components/shared/Oracle';
 import type { Action } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView } from '../game/application/online-contracts';
@@ -44,7 +44,7 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
   const mayClose = view.canClose && !view.closed;
   const decision = `${view.round}/${view.window?.id ?? view.phase.kind}`;
   const activeUtility = !view.closed && utility?.decision === decision ? utility.kind : null;
-  const showVictory = view.phase.kind === 'finished' && !view.window && !view.closed;
+  const showResult = view.phase.kind === 'finished' && !view.window && !view.closed;
   const closeMatchControl = mayClose && <CloseMatchControl key={view.round} busy={busy} onCloseMatch={onCloseMatch} />;
 
   useEffect(() => {
@@ -65,7 +65,8 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
     setUtility(activeUtility === kind ? null : { kind, decision });
   }
 
-  const panel = !showVictory && <div className="online-playmat-scroll" ref={panelScroll} tabIndex={0} role="region" aria-label="Decisões da partida">
+  const panel = !showResult && <div className="online-playmat-scroll" ref={panelScroll} tabIndex={0} role="region" aria-label="Decisões da partida">
+    {view.history.length === 0 && view.phase.kind === 'action' && !view.window && !view.closed && <span key={view.round} className="online-round-entry" aria-hidden="true">MESA ABERTA</span>}
     {activeUtility === 'oracle' && view.window && <div className="overlay-content online-panel">
       <button type="button" className="btn-pass" onClick={() => setUtility(null)}>Voltar à decisão coletiva</button>
     </div>}
@@ -81,20 +82,24 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
     </section>}
     <OnlineDecisionPanel view={view} send={send} busy={busy} targetAction={targetAction}
       onCancelTarget={() => setTarget(undefined)} onExit={onExit} />
+    {busy && <p className="online-arena-busy" role="status">Enviando à mesa…</p>}
     {error && <p className="online-error" role="alert">{error}</p>}
   </div>;
 
-  return <div className="arena-root online-arena">
-    <ArenaBoard view={view} blocked={showVictory} hideHand={showVictory} onAction={chooseAction}
+  return <div className="arena-root online-arena" data-your-turn={turn}>
+    <ArenaBoard view={view} blocked={showResult} hideHand={showResult} onAction={chooseAction}
       onOracle={() => toggleUtility('oracle')}
       onPause={() => toggleUtility('options')}
       online={{ viewerId: view.viewerId, connectedIds, panel, showActions: turn && !targetAction,
         actionsDisabled: busy }} />
-    {showVictory && <VictoryDialog key={view.round} view={view} onRematch={view.canRematch ? onRematch : undefined} onExit={onExit}
-      online={{ viewerId: view.viewerId, busy, details: <>
-        {mayClose && <div className="online-victory-host-controls">{closeMatchControl}</div>}
-        {error && <p className="online-error" role="alert">{error}</p>}
-      </> }} />}
+    {showResult && view.phase.kind === 'finished' && <OnlineResult key={view.round}
+      won={view.phase.winnerId === view.viewerId}
+      winner={playerName(view, view.phase.winnerId)}
+      cards={view.phase.winnerId === view.viewerId ? view.phase.cards : []}
+      busy={busy} onRematch={view.canRematch ? onRematch : undefined} onExit={onExit}>
+      {mayClose && <div className="online-victory-host-controls">{closeMatchControl}</div>}
+      {error && <p className="online-error" role="alert">{error}</p>}
+    </OnlineResult>}
     <div className="portrait-lock" role="status" aria-live="polite">
       <img src="images/isotipo.png" alt="" />
       <strong>GIRE O DISPOSITIVO</strong>

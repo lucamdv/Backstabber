@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Profile';
 import type { Friend, Room } from './types';
 
@@ -23,18 +23,44 @@ export function Lobby({
   const available = friends.filter(friend => !room.members.some(member => member.id === friend.id));
   const canStart = room.status === 'lobby' && room.canStart && room.members.length >= 2
     && room.members.every(member => member.ready && member.connected);
+  const startHint = room.members.length < 2 ? 'Convide pelo menos mais um jogador.'
+    : room.members.some(member => !member.connected) ? 'Aguardando jogadores desconectados retornarem.'
+    : room.members.some(member => !member.ready) ? 'Todos os jogadores precisam confirmar que estão prontos.'
+    : !canStart ? 'A sala ainda não está disponível para iniciar.'
+    : host ? 'Todos prontos. Você pode iniciar a partida.' : 'Todos prontos. Aguarde o anfitrião iniciar a partida.';
+  const previousMembers = useRef(room.members);
+  const [rosterNotice, setRosterNotice] = useState('');
 
-  return <section className="online-card" aria-labelledby="lobby-title">
+  useEffect(() => {
+    const previous = previousMembers.current;
+    previousMembers.current = room.members;
+    const arrivals = room.members.filter(member => !previous.some(player => player.id === member.id));
+    const departures = previous.filter(member => !room.members.some(player => player.id === member.id));
+    const changes = [...arrivals.map(member => `${member.displayName} entrou`),
+      ...departures.map(member => `${member.displayName} saiu`)];
+    if (!changes.length) return;
+    setRosterNotice(changes.join(' · '));
+  }, [room.members]);
+
+  useEffect(() => {
+    if (!rosterNotice) return;
+    const timer = window.setTimeout(() => setRosterNotice(''), 4500);
+    return () => window.clearTimeout(timer);
+  }, [rosterNotice]);
+
+  return <section className="online-card online-lobby" data-ready={canStart} aria-labelledby="lobby-title">
     <div className="online-card-heading">
-      <h2 id="lobby-title">Lobby</h2>
+      <h2 id="lobby-title">Preparação da mesa</h2>
       <span>{room.members.length}/{room.capacity} jogadores</span>
     </div>
     <div className="online-room-code">
       <p>Código da sala <strong>{room.code}</strong></p>
       <button type="button" onClick={onCopy}>Copiar link de convite</button>
     </div>
-    <ul className="online-list" aria-label="Participantes">
-      {room.members.map(member => <li key={member.id}>
+    <p className="online-lobby-hint" role="status">{startHint}</p>
+    <div className="online-roster-notice" role="status">{rosterNotice}</div>
+    <ul className="online-list online-roster" aria-label="Participantes">
+      {room.members.map(member => <li key={member.id} data-ready={member.ready} data-connected={member.connected}>
         <Avatar profile={member} />
         <div>
           <strong>{member.displayName}{room.hostId === member.id && ' · Anfitrião'}{member.id === userId && ' · Você'}</strong>
@@ -61,13 +87,12 @@ export function Lobby({
       <button disabled={busy || !available.some(friend => friend.id === recipient)}>Enviar convite</button>
     </form>}
     <div className="online-actions">
-      <button type="button" className="online-primary" onClick={() => onReady(!me?.ready)}
+      <button type="button" className={host && canStart ? undefined : "online-primary"} onClick={() => onReady(!me?.ready)}
         disabled={busy || !me || room.status !== 'lobby'}>{me?.ready ? 'Cancelar prontidão' : 'Estou pronto'}</button>
       {host && <button type="button" className="online-primary" onClick={onStart}
         disabled={busy || !canStart}>Iniciar partida</button>}
       <button type="button" onClick={onLeave} disabled={busy}>Sair da sala</button>
       {host && <button type="button" onClick={onClose} disabled={busy}>Encerrar sala</button>}
     </div>
-    {host && !canStart && <p className="online-muted">A partida precisa de pelo menos dois jogadores, todos conectados e prontos.</p>}
   </section>;
 }

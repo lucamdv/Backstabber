@@ -1,7 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
 const liveUrl = process.env.BACKSTABBER_E2E_URL;
-const baseURL = liveUrl ?? 'http://localhost:4177';
+const port = process.env.BACKSTABBER_E2E_PORT ?? '4177';
+const baseURL = liveUrl ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,7 +13,7 @@ export default defineConfig({
     trace: 'off', screenshot: 'off', video: 'off',
   },
   webServer: liveUrl ? undefined : {
-    command: 'npm run dev -- --host localhost --port 4177 --strictPort',
+    command: `npm run dev -- --host localhost --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
   },

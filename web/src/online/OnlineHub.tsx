@@ -6,7 +6,7 @@ import type { OnlineApi } from './api';
 import { useOnlineAuth } from './auth';
 import { FriendsPanel, RoomInvites } from './FriendsPanel';
 import { Lobby } from './Lobby';
-import { ProfileEditor } from './Profile';
+import { Avatar, ProfileEditor } from './Profile';
 import { usePrivateBroadcast, useRoomRealtime } from './realtime';
 import { onlineHash } from './routes';
 import type { OnlineSection } from './routes';
@@ -39,19 +39,19 @@ const destinations = [
 
 function HubSurface({ onExit, onLogout, section = 'rooms', onNavigate, children }:
 Pick<HubProps, 'onExit' | 'section' | 'onNavigate'> & { onLogout?: () => void; children: ReactNode }) {
-  return <main className="online-hub">
+  return <main className={`online-hub${onLogout ? '' : ' online-entry'}`}>
     <header className="online-header">
       <div>
         <img src="images/isotipo.png" alt="" />
-        <h1>Backstabber Online</h1>
+        <h1>Backstabber <span>Online</span></h1>
       </div>
       <div className="online-actions">
-        <button onClick={onExit}>Voltar ao menu</button>
+        <button onClick={onExit}>{onLogout ? 'Voltar ao menu' : 'Voltar ao menu local'}</button>
         {onLogout && <button onClick={onLogout}>Sair da conta</button>}
       </div>
     </header>
     <div className="online-content">
-      <nav className="online-sections" aria-label="Modo online">
+      {onLogout && <nav className="online-sections" aria-label="Modo online">
         {destinations.map(destination => (
           <a key={destination.section} href={onlineHash(destination.section)}
             aria-current={section === destination.section ? 'page' : undefined}
@@ -62,7 +62,7 @@ Pick<HubProps, 'onExit' | 'section' | 'onNavigate'> & { onLogout?: () => void; c
               }
             }}>{destination.label}</a>
         ))}
-      </nav>
+      </nav>}
       {children}
     </div>
   </main>;
@@ -74,8 +74,9 @@ function RoomEntry({ busy, onCreate, onJoin }: {
   const [capacity, setCapacity] = useState(4);
   const [code, setCode] = useState(() => new URLSearchParams(window.location.search).get('sala')?.slice(0, 10).toUpperCase() ?? '');
 
-  return <section className="online-card" aria-labelledby="room-entry-title">
+  return <section className="online-card online-room-entry" aria-labelledby="room-entry-title">
     <h2 id="room-entry-title">Salas privadas</h2>
+    <p>Abra uma mesa ou use o código que recebeu.</p>
     <form className="online-inline" onSubmit={event => { event.preventDefault(); onCreate(capacity); }}>
       <label htmlFor="room-capacity">Vagas</label>
       <select id="room-capacity" value={capacity} onChange={event => setCapacity(Number(event.target.value))}>
@@ -272,11 +273,11 @@ function ConnectedHub({
     } finally {
       await refreshSocial();
     }
-  })} />;
+  }, accept ? 'Convite aceito.' : 'Convite recusado.')} />;
 
   return <HubSurface onExit={onExit} onLogout={onLogout} section={section} onNavigate={onNavigate}>
     <div className="online-profile-bar">
-      <p>{profile.displayName} <small>@{profile.username}</small></p>
+      <div className="online-identity"><Avatar profile={profile} /><p><strong>{profile.displayName}</strong><small>@{profile.username}</small></p></div>
       <button onClick={editProfile}>Editar perfil</button>
     </div>
     {(authError || error) && <p className="online-error" role="alert">{authError || error}</p>}
@@ -304,11 +305,11 @@ function ConnectedHub({
         onRespond={(id, accept) => run(async () => {
           await api.request(`/friends/requests/${id}/respond`, 'POST', { accept });
           await refreshSocial();
-        })}
+        }, accept ? 'Amizade aceita.' : 'Solicitação recusada.')}
         onRemove={id => run(async () => {
           await api.request(`/friends/${id}`, 'DELETE');
           await refreshSocial();
-        })} />}
+        }, 'Contato removido.')} />}
       {invitePanel}
     </div> : <section aria-label="Salas e partidas">
       {roomError && <div className="online-error">
@@ -411,8 +412,11 @@ export function OnlineHub(props: HubProps) {
     session={session} api={api} client={supabase} authError={authError} onLogout={() => { void signOut(); }} />;
 
   return <HubSurface onExit={props.onExit} section={props.section} onNavigate={props.onNavigate}>
-    <section className="online-card online-login">
-      <h2>Acessar sua conta</h2>
+    <section className="online-login" aria-labelledby="online-login-title">
+      <img className="online-login-art" src="images/menu.png" alt="" />
+      <div className="online-card online-login-terminal">
+      <h2 id="online-login-title">Entrar na rede</h2>
+      <p>Na rede, alianças são temporárias. Entre com sua conta Google para disputar o controle da mesa.</p>
       {authError && <p role="alert">{authError}</p>}
       {!supabase
         ? <p role="status">{configuration === 'invalid'
@@ -423,7 +427,8 @@ export function OnlineHub(props: HubProps) {
           : <button className="online-primary" disabled={signingIn} onClick={() => {
             setSigningIn(true);
             void signIn().finally(() => setSigningIn(false));
-          }}>Entrar com Google</button>}
+          }}>{signingIn ? 'Conectando ao Google…' : 'Entrar com Google'}</button>}
+      </div>
     </section>
   </HubSurface>;
 }

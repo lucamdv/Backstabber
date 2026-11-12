@@ -46,7 +46,7 @@ describe('arena online', () => {
 
   it('mantém as cartas próprias acessíveis fora do turno e no Oráculo', () => {
     const { update } = setup(fixture());
-    expect(screen.getByText('Aguardando a jogada de Ana.')).toBeVisible();
+    expect(screen.getByText('Ana está tramando o próximo movimento…')).toBeVisible();
     expect(screen.getByText('Desconectado')).toBeVisible();
     expect(screen.queryByRole('button', { name: /RENDA/ })).toBeNull();
     const hand = screen.getByRole('group', { name: 'Minhas influências' });
@@ -73,13 +73,16 @@ describe('arena online', () => {
       phase: { kind: 'reaction', declaration: { action: 'assassinate', playerId: 'ana', targetId: 'bia' } },
       window: { ...window, eligible: [...window.eligible], responded: [], options: [...window.options] },
     }));
+    const decision = screen.getByRole('region', { name: 'A mesa exige uma resposta' });
     expect(screen.getByRole('img', { name: 'Executor' })).toBeVisible();
     expect(within(screen.getByRole('group', { name: 'Minhas influências' })).getByRole('img', { name: 'Broker' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Duvidar' }));
     expect(send).toHaveBeenCalledWith({ type: 'vote', windowId: 'r1', choice: { kind: 'challenge' } });
-    update({ window: { ...window, eligible: ['bia', 'caio'], responded: ['bia'], options: [{ kind: 'challenge' }] } });
+    update({ revision: 5, window: { ...window, eligible: ['bia', 'caio'], responded: ['bia'], options: [{ kind: 'challenge' }] } });
+    expect(screen.getByRole('region', { name: 'A mesa exige uma resposta' })).toBe(decision);
+    expect(screen.getByRole('progressbar', { name: 'Progresso das respostas' })).toHaveValue(1);
     expect(screen.getByText('Aguardando respostas — 1/2')).toBeVisible();
-    expect(screen.getByText(/Resposta registrada/)).toBeVisible();
+    expect(screen.getByText(/Sua decisão está selada/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Duvidar' })).toBeNull();
   });
 
@@ -144,7 +147,8 @@ describe('arena online', () => {
     const { onExit, onCloseMatch, onRematch, update } = setup(fixture({
       phase: { kind: 'finished', winnerId: 'ana', cards: [] },
     }));
-    expect(screen.getByRole('heading', { name: 'VITÓRIA' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'DERROTA' })).toBeVisible();
+    expect(screen.getByText(/anfitrião pode iniciar a revanche/i)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Jogar revanche' })).toBeNull();
     update({ canRematch: true, canClose: true });
     fireEvent.click(screen.getByRole('button', { name: 'Jogar revanche' }));
@@ -175,9 +179,10 @@ describe('arena online', () => {
     expect(screen.queryByRole('heading', { name: 'VITÓRIA' })).toBeNull();
     expect(within(screen.getByRole('group', { name: 'Minhas influências' })).getByRole('img', { name: 'Broker' })).toBeVisible();
     update({ window: undefined });
-    const victory = screen.getByRole('dialog', { name: 'VITÓRIA' });
-    expect(within(victory).getByText('Ana')).toBeVisible();
-    expect(within(victory).queryByRole('img', { name: 'Executor' })).toBeNull();
-    expect(within(victory).queryByRole('img', { name: 'Broker' })).toBeNull();
+    const defeat = screen.getByRole('dialog', { name: 'DERROTA' });
+    expect(within(defeat).getByText('Ana')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'VITÓRIA' })).toBeNull();
+    expect(within(defeat).queryByRole('img', { name: 'Executor' })).toBeNull();
+    expect(within(defeat).queryByRole('img', { name: 'Broker' })).toBeNull();
   });
 });

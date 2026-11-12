@@ -44,8 +44,11 @@ export function FriendsPanel({
     </li>;
   }
 
-  return <section className="online-card" aria-labelledby="online-friends-title">
-    <h2 id="online-friends-title">Amigos</h2>
+  return <section className="online-card online-contact-panel" aria-labelledby="online-friends-title">
+    <div className="online-section-heading">
+      <h2 id="online-friends-title">Rede de contatos</h2>
+      <span>{social.friends.length} {social.friends.length === 1 ? 'contato' : 'contatos'}</span>
+    </div>
     <form className="online-inline" onSubmit={event => {
       event.preventDefault();
       const username = query.trim().toLowerCase();
@@ -56,10 +59,10 @@ export function FriendsPanel({
       <label htmlFor="online-search">Buscar por nome de usuário</label>
       <input id="online-search" value={query} onChange={event => setQuery(event.target.value)}
         autoComplete="off" minLength={1} maxLength={18} required />
-      <button disabled={searching}>Buscar jogador</button>
+      <button disabled={searching}>{searching ? 'Buscando…' : 'Buscar jogador'}</button>
     </form>
     {results && <ul className="online-list" aria-label="Resultados da busca">
-      {results.length === 0 && <li>Nenhum jogador encontrado.</li>}
+      {!results.some(person => person.id !== userId) && <li>Nenhum jogador encontrado.</li>}
       {results.filter(person => person.id !== userId).map(person => <li key={person.id}>
         <Identity profile={person} />
         <button disabled={busy || alreadyConnected(person)} onClick={() => onRequest(person.id)}>Adicionar amigo</button>
@@ -72,8 +75,8 @@ export function FriendsPanel({
         {sent.map(request => requestRow(request, false))}
       </ul>
     </>}
-    <h3>Sua lista</h3>
-    {social.friends.length === 0 && <p className="online-muted">Você ainda não adicionou amigos.</p>}
+    <h3>Seus contatos</h3>
+    {social.friends.length === 0 && <div className="online-empty"><strong>Sua rede está vazia</strong><p>Busque um jogador pelo nome de usuário e envie uma solicitação de amizade.</p></div>}
     <ul className="online-list" aria-label="Lista de amigos">
       {social.friends.map(friend => <li key={friend.id}>
         <Identity profile={friend} />

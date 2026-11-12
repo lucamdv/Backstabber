@@ -3,14 +3,14 @@ import { expect, test } from '@playwright/test';
 for (const [width, height] of [[1920, 1080], [1366, 768], [390, 844], [360, 800]]) {
   test(`menu, acesso online e partida local em ${width}×${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
-    await page.goto('./');
+    await page.goto('./', { waitUntil: 'domcontentloaded' });
     const menu = page.getByRole('navigation', { name: 'Menu principal' });
     await expect(menu).toBeVisible();
     await menu.getByRole('button', { name: 'Amigos', exact: true }).click();
     await expect(page).toHaveURL(/#\/amigos$/);
-    await expect(page.getByRole('heading', { name: 'Acessar sua conta' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Entrar na rede' })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
-    await page.getByRole('button', { name: 'Voltar ao menu' }).click();
+    await page.getByRole('button', { name: 'Voltar ao menu local' }).click();
     await menu.getByRole('button', { name: 'Jogar', exact: true }).click();
     await expect(page.getByRole('button', { name: /jogar online|multiplayer online/i })).toBeVisible();
     const fields = page.getByRole('textbox');

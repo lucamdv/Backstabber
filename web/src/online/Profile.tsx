@@ -34,7 +34,11 @@ export function ProfileEditor({ profile, defaults, busy, onSave }: {
     setError('');
     onSave({ username: username.trim().toLowerCase(), displayName: cleanName, avatarUrl: cleanAvatar || null, showOnline });
   }}>
-    <h2>{profile ? 'Seu perfil' : 'Configure seu perfil'}</h2>
+    <div className="online-profile-preview">
+      <Avatar profile={{ displayName: displayName.trim() || '?', avatarUrl: profile ? profile.avatarUrl : defaults.avatarUrl }} />
+      <div><h2>{profile ? 'Seu perfil' : 'Configure seu perfil'}</h2>
+        <p>Defina como você aparece para outros operadores.</p></div>
+    </div>
     <label htmlFor="online-username">Nome de usuário</label>
     <input id="online-username" value={username} onChange={event => setUsername(event.target.value)}
       autoComplete="username" minLength={3} maxLength={18} pattern="[A-Za-z0-9_]{3,18}"
@@ -49,6 +53,6 @@ export function ProfileEditor({ profile, defaults, busy, onSave }: {
       Mostrar minha disponibilidade aos amigos
     </label>
     {error && <p role="alert">{error}</p>}
-    <button className="online-primary" disabled={busy}>Salvar perfil</button>
+    <button className="online-primary" disabled={busy}>{busy ? 'Salvando perfil…' : 'Salvar perfil'}</button>
   </form>;
 }

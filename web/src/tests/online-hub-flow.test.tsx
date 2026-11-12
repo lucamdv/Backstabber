@@ -64,7 +64,7 @@ test('a shared room link prefills the code even with an existing room, then ente
   render(<OnlineHub onExit={() => undefined} renderMatch={() => null} />);
   expect(await screen.findByLabelText('Código de convite')).toHaveValue(other.code);
   fireEvent.click(screen.getByRole('button', { name: 'Entrar por código' }));
-  expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Preparação da mesa' })).toBeInTheDocument();
   expect(request).toHaveBeenCalledWith('/rooms/join', 'POST', { code: other.code });
   expect(screen.getByText(other.code, { selector: 'strong' })).toBeInTheDocument();
 });
@@ -79,7 +79,7 @@ test('a room broadcast reloads the server snapshot before mounting the match for
   render(<OnlineHub onExit={() => undefined} renderMatch={({ matchId, connectedIds }) => (
     <output>Partida {matchId} · {connectedIds.join(',')}</output>
   )} />);
-  await screen.findByRole('heading', { name: 'Lobby' });
+  await screen.findByRole('heading', { name: 'Preparação da mesa' });
   snapshot = { ...room, status: 'started', matchId: 'game-9' };
   await act(async () => { refresh.get(`room:${room.id}`)?.(); });
   expect(await screen.findByText('Partida game-9 · eva,rui')).toBeInTheDocument();
@@ -96,8 +96,8 @@ test('Amigos asks for login and a callback restores the Friends destination, inc
   window.history.replaceState(null, '', '/?online=amigos&code=example');
   connect(async path => path === '/rooms' ? [{ ...room, status: 'started', matchId: 'existing' }] : baseData(path));
   render(<App />);
-  expect(await screen.findByRole('heading', { name: 'Amigos' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: 'Lobby' })).toBeNull();
+  expect(await screen.findByRole('heading', { name: 'Rede de contatos' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Preparação da mesa' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Amigos' })).toHaveAttribute('aria-current', 'page');
 });
 
@@ -109,7 +109,7 @@ test('Jogar online opens the rooms destination and leaves local setup available 
   fireEvent.click(screen.getByRole('button', { name: 'Jogar online' }));
   expect(window.location.hash).toBe('#/online');
   expect(await screen.findByRole('heading', { name: 'Salas privadas' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: 'Amigos' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Rede de contatos' })).toBeNull();
 });
 
 test('a first-time account creates its profile and lands directly in Friends', async () => {
@@ -125,7 +125,7 @@ test('a first-time account creates its profile and lands directly in Friends', a
   fireEvent.change(screen.getByLabelText('Nome de usuário'), { target: { value: 'eva' } });
   fireEvent.change(screen.getByLabelText('Nome de exibição'), { target: { value: 'Eva' } });
   fireEvent.click(screen.getByRole('button', { name: 'Salvar perfil' }));
-  expect(await screen.findByRole('heading', { name: 'Amigos' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Rede de contatos' })).toBeInTheDocument();
   expect(request).toHaveBeenCalledWith('/profile', 'PUT', {
     username: 'eva', displayName: 'Eva', avatarUrl: null, showOnline: false,
   });
@@ -140,9 +140,9 @@ test('Friends distinguishes a connection failure from an empty list and allows r
   });
   render(<OnlineHub section="friends" onExit={() => undefined} renderMatch={() => null} />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível atualizar amigos e convites');
-  expect(screen.queryByText('Você ainda não adicionou amigos.')).toBeNull();
+  expect(screen.queryByText('Sua rede está vazia')).toBeNull();
   failed = false;
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
-  expect(await screen.findByText('Você ainda não adicionou amigos.')).toBeInTheDocument();
+  expect(await screen.findByText('Sua rede está vazia')).toBeInTheDocument();
   expect(screen.queryByRole('alert')).toBeNull();
 });
