@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Action, GameView } from '../../game/application/contracts';
+import { SignalIcon } from '../../online/OnlinePresence';
 import { Card } from './Card';
 import { actions, characterName, playerName } from './gameDisplay';
 
@@ -16,6 +17,9 @@ interface ArenaBoardProps {
   online?: {
     viewerId: string;
     connectedIds: string[];
+    memberIds?: string[];
+    signalChanges?: readonly string[];
+    connectionFeed: ReactNode;
     panel: ReactNode;
     showActions: boolean;
     actionsDisabled: boolean;
@@ -24,23 +28,31 @@ interface ArenaBoardProps {
 
 function PlayerStats({ view, online }: Pick<ArenaBoardProps, 'view' | 'online'>) {
   return view.players.map((player) => {
-    const connected = online?.connectedIds.includes(player.id);
+    const connected = online && (!online.memberIds || online.memberIds.includes(player.id))
+      ? online.connectedIds.includes(player.id) : undefined;
     return <div key={player.id} aria-current={player.id === view.activeId || undefined}
+      data-offline={connected === false || undefined}
       className={`player-stat${player.id === view.activeId ? ' active' : ''}${online?.viewerId === player.id ? ' online-viewer' : ''}`}>
       <strong title={player.name}>{player.name}</strong>
       <span className="player-resources">
         <span className="player-resource player-credits"><b key={online ? player.credits : undefined}>{player.credits}</b><small>CRÉDITOS</small></span>
         <span className="player-resource player-influences"><b key={online ? player.influence : undefined}>{player.influence}</b><small>INFL.</small></span>
       </span>
-      {online && <span className="online-player-presence" data-connected={connected}>
-        {connected ? 'Conectado' : 'Desconectado'}
-        {player.influence === 0 && ' · Eliminado'}
+      {online && <span className="online-player-presence">
+        <span key={String(connected)} className="online-player-signal" data-connected={connected}
+          data-changed={online.signalChanges?.includes(player.id) || undefined}>
+          {connected !== undefined && <SignalIcon connected={connected} />}
+          <span>{connected === undefined ? 'Sincronizando' : connected ? 'Conectado' : 'Desconectado'}</span>
+        </span>
+        {player.influence === 0 && <span className="online-player-eliminated">Eliminado</span>}
       </span>}
     </div>;
   });
 }
 
-function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'>) {
+function Scoreboard({ view, onOracle, onPause, online, presenceButton }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'> & {
+  presenceButton?: ReactNode;
+}) {
   return <header className="hud-header">
     <div className="header-logo" role="img" aria-label="Backstabber">
       <img className="brand-isotipo" src="images/isotipo.png" alt="" />
@@ -54,6 +66,7 @@ function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, '
         aria-label={online ? 'Placar e conexão dos jogadores' : undefined}>
         <PlayerStats view={view} online={online} />
       </div>
+      {presenceButton}
     </div>
     <div className="header-right">
       <div className="header-tools" aria-label="Controles da partida">
@@ -64,6 +77,7 @@ function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, '
       </div>
       <p>TRUST<br />IS A<br />CURRENCY.</p>
     </div>
+    {online?.connectionFeed}
   </header>;
 }
 
@@ -96,13 +110,16 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   const currentPlayer = playerName(view, view.activeId);
   const handOwner = online?.viewerId ?? view.activeId;
   const handLabel = online ? 'Minhas influências' : `Influências de ${currentPlayer}`;
+  const offlineCount = online ? view.players.filter(player =>
+    (!online.memberIds || online.memberIds.includes(player.id)) && !online.connectedIds.includes(player.id)).length : 0;
+  const offlineLabel = offlineCount === 1 ? '1 jogador fora da rede' : `${offlineCount} jogadores fora da rede`;
 
   function toggleDrawer(next: Drawer) {
     setDrawer((current) => current === next ? null : next);
   }
 
   function closeDrawer() {
-    activeTrigger.current?.focus();
+    (activeTrigger.current?.isConnected ? activeTrigger.current : document.getElementById('btn-pause'))?.focus();
     setDrawer(null);
   }
 
@@ -112,7 +129,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
       setDrawer(null);
-      activeTrigger.current?.focus();
+      (activeTrigger.current?.isConnected ? activeTrigger.current : document.getElementById('btn-pause'))?.focus();
     }
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
@@ -120,7 +137,15 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
 
   return <div className="hud-container" inert={blocked || undefined}>
     <Scoreboard view={view} online={online} onOracle={() => { setDrawer(null); onOracle(); }}
-      onPause={() => { setDrawer(null); onPause(); }} />
+      onPause={() => { setDrawer(null); onPause(); }}
+      presenceButton={offlineCount > 0 && <button type="button" className="online-offline-count"
+        aria-label={offlineLabel} title={offlineLabel} aria-controls="mobile-scoreboard-panel"
+        aria-expanded={openDrawer === 'scoreboard'} onClick={event => {
+          scoreboardTrigger.current = event.currentTarget;
+          toggleDrawer('scoreboard');
+        }}>
+        <SignalIcon /><span aria-hidden="true">{offlineCount}<small> fora da rede</small></span>
+      </button>} />
     <main className="hud-body">
       <nav className="mobile-table-nav mobile-only" aria-label="Informações da mesa">
         <button type="button" ref={tribunalTrigger} id="btn-mobile-tribunal" className="mobile-table-button"
@@ -135,9 +160,14 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
           aria-controls="mobile-cemetery-panel" aria-expanded={openDrawer === 'cemetery'} onClick={() => toggleDrawer('cemetery')}>
           <span aria-hidden="true">✦</span><small>DESCARTE</small>
         </button>
-        {online && <button type="button" ref={scoreboardTrigger} className="mobile-table-button" aria-label="Mesa"
-          aria-controls="mobile-scoreboard-panel" aria-expanded={openDrawer === 'scoreboard'} onClick={() => toggleDrawer('scoreboard')}>
-          <span aria-hidden="true">◈</span><small>MESA</small>
+        {online && <button type="button" className="mobile-table-button" aria-label={offlineCount ? offlineLabel : 'Mesa'}
+          title={offlineCount ? offlineLabel : undefined} data-offline={offlineCount > 0 || undefined}
+          aria-controls="mobile-scoreboard-panel" aria-expanded={openDrawer === 'scoreboard'} onClick={event => {
+            scoreboardTrigger.current = event.currentTarget;
+            toggleDrawer('scoreboard');
+          }}>
+          {offlineCount > 0 ? <><SignalIcon /><small aria-hidden="true">{offlineCount} FORA DA REDE</small></>
+            : <><span aria-hidden="true">◈</span><small>MESA</small></>}
         </button>}
       </nav>
       <aside className={`panel-left${openDrawer === 'tribunal' ? ' is-mobile-open' : ''}`}
@@ -205,7 +235,8 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
         </div>
       </aside>
     </main>
-    {openDrawer && <button type="button" id="mobile-drawer-scrim" className="mobile-drawer-scrim mobile-only is-open"
+    {openDrawer && <button type="button" id="mobile-drawer-scrim"
+      className={`mobile-drawer-scrim mobile-only is-open${openDrawer === 'scoreboard' ? ' online-scoreboard-scrim' : ''}`}
       aria-label="Fechar painel de informações" onClick={closeDrawer} />}
   </div>;
 }

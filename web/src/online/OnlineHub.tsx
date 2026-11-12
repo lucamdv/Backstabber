@@ -21,6 +21,8 @@ export type OnlineMatchProps = {
   roomId: string;
   userId: string;
   connectedIds: string[];
+  memberIds: string[];
+  realtimeUnavailable: boolean;
   api: OnlineApi;
   onExit: () => void;
   matchInvalidation: number;
@@ -173,7 +175,7 @@ function ConnectedHub({
   }, [refreshRooms]);
 
   usePrivateBroadcast(client, `user:${profile.id}`, invalidateUser);
-  const presence = useRoomRealtime(client, roomId, profile.id, invalidateRoom);
+  const { presence, realtimeUnavailable } = useRoomRealtime(client, roomId, profile.id, invalidateRoom, refreshRooms);
 
   useEffect(() => {
     const roomRequests = roomGeneration;
@@ -267,6 +269,7 @@ function ConnectedHub({
     const connectedIds = room.members.filter(member => member.connected).map(member => member.id);
     return renderMatch({
       matchId: room.matchId, roomId: room.id, userId: profile.id, connectedIds, api, onExit, matchInvalidation,
+      memberIds: room.members.map(member => member.id), realtimeUnavailable,
       startedFromLobby: observedLobby.current === room.id,
     });
   }

@@ -14,13 +14,147 @@
   border-color: var(--cyan, #00f3ff);
 }
 
-.online-player-presence {
-  color: #ffc477;
-  font-size: 0.9rem;
+.online-arena .hud-header { position: relative; }
+.online-player-presence,
+.online-player-signal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25em;
+  min-width: 0;
+  color: #c3afcf;
+  font-size: .9rem;
+  line-height: 1.15;
+}
+.online-player-signal[data-connected="true"], .online-signal-icon[data-signal="up"] { color: #86f3d7; }
+.online-player-signal[data-connected="false"], .online-signal-icon[data-signal="down"] { color: #ff86b8; }
+.online-player-eliminated::before { content: '· '; }
+.online-arena .player-stat[data-offline] > strong { color: #c5b4c6; }
+.online-signal-icon { flex: none; font-size: 1em; line-height: 1; }
+.online-player-signal[data-changed] > .online-signal-icon { animation: online-signal-in 360ms ease-out both; }
+
+.online-offline-count {
+  position: absolute;
+  top: 3px;
+  inset-inline-end: 105px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 36px;
+  min-height: 26px;
+  padding: 2px 6px;
+  border: 1px solid #a34a78;
+  border-radius: 4px;
+  color: #ffd6e6;
+  background: #221125;
+  font: inherit;
+  cursor: pointer;
+}
+.online-offline-count small { font-size: inherit; }
+.online-offline-count:focus-visible,
+.online-arena .mobile-table-button[data-offline]:focus-visible { outline: 2px solid #86f3d7; outline-offset: 2px; }
+
+.online-connection-feed {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + var(--table-gap));
+  z-index: 4;
+  display: grid;
+  gap: 3px;
+  width: clamp(124px, 14vw, 240px);
+  pointer-events: none;
+}
+.online-connection-toast {
+  --signal-accent: #ff86b8;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid var(--signal-accent);
+  border-inline-start-width: 3px;
+  border-radius: 4px;
+  background: #100b1cf2;
+  color: #f2e4f4;
+  line-height: 1.15;
+  box-shadow: 0 3px 10px #06040dcc;
+  animation: online-signal-in 240ms ease-out both;
+}
+.online-connection-toast[data-signal="up"] { --signal-accent: #86f3d7; }
+.online-connection-toast strong { display: block; color: var(--signal-accent); text-transform: uppercase; }
+.online-connection-toast div { min-width: 0; overflow-wrap: anywhere; }
+.online-connection-toast[data-duration="drop"] {
+  animation: online-signal-in 240ms ease-out both, online-signal-out 240ms 3760ms ease-in forwards;
+}
+.online-connection-toast[data-duration="return"] {
+  animation: online-signal-in 240ms ease-out both, online-signal-out 240ms 2760ms ease-in forwards;
+}
+@keyframes online-signal-in {
+  0% { opacity: 0; transform: translateX(-3px); }
+  36% { opacity: .8; transform: translateX(2px); }
+  60% { opacity: .6; transform: translateX(-1px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes online-signal-out { to { opacity: 0; } }
+
+@media (min-width: 1051px) {
+  .online-arena .hud-body > .online-scoreboard-drawer {
+    display: block;
+    position: fixed;
+    inset: 92px max(12px, env(safe-area-inset-right)) auto auto;
+    width: min(420px, 90vw);
+    max-height: 75dvh;
+    padding: 12px;
+    z-index: 250;
+    border: 1px solid #9a5180;
+    background: #100b1c;
+  }
+  .online-arena .online-scoreboard-drawer .mobile-panel-close { display: block; margin-inline-start: auto; }
+  .online-arena .online-scoreboard-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .online-arena .online-scoreboard-scrim { display: block; position: fixed; inset: 0; z-index: 240; background: #05030b90; }
 }
 
-.online-player-presence[data-connected="true"] {
-  color: #86e9b2;
+@media (max-width: 1050px) {
+  .online-offline-count { display: none; }
+  .online-arena .mobile-table-button[data-offline] {
+    color: #ffd6e6;
+    border-color: #a34a78;
+    background: #221125;
+  }
+  .online-arena .mobile-table-button[data-offline] small { line-height: 1; }
+  .online-arena #scoreboard .online-player-presence,
+  .online-arena #scoreboard .online-player-signal { font-size: .82rem; }
+  .online-connection-feed {
+    top: calc(100% + 36px + 2 * var(--table-gap));
+    display: flex;
+    width: max-content;
+    max-width: calc(100% - 12px);
+    inset-inline-start: 4px;
+    font-size: .9rem;
+  }
+  .online-connection-toast {
+    max-width: 240px;
+    padding-block: 3px;
+    line-height: 1;
+  }
+  .online-connection-toast > div > :is(strong, span) {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .online-connection-feed {
+    top: calc(100% + 28px + 2 * var(--table-gap));
+    inset-inline-start: auto;
+    inset-inline-end: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .online-player-signal[data-changed] > .online-signal-icon,
+  .online-connection-toast[data-duration] { animation: none; }
 }
 
 .online-arena .online-panel {

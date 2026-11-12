@@ -112,7 +112,7 @@ export function App() {
     <link rel="stylesheet" href="css/oracle.css" />
     <link rel="stylesheet" href={`css/mobile-${stylesheet}.css`} media={mobile} />
     {onlineSection ? <OnlineHub section={onlineSection} onNavigate={enterOnline} onExit={exitOnline}
-        renderMatch={props => <OnlineMatch key={props.matchId} {...props} />} />
+        renderMatch={props => <OnlineMatch key={`${props.roomId}/${props.matchId}`} {...props} />} />
       : inGame && session
       ? <ActiveGame key={session.matchId} session={session} onExit={exit}
           onRematch={() => open(createGame(session.getSnapshot().players.map(player => player.name)))} />

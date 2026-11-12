@@ -4,6 +4,7 @@ import type { OnlineCommand, OnlineView } from '../game/application/online-contr
 import { ArenaOnline } from './ArenaOnline';
 import { OnlineApiError } from './api';
 import type { OnlineApi } from './api';
+import type { LocalConnection } from './OnlinePresence';
 
 const messages: Record<string, string> = {
   STALE_REVISION: 'A partida avançou. Confira o estado atualizado.',
@@ -19,11 +20,15 @@ function code(error: unknown) {
   return error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
 }
 
-export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidation, onExit, startedFromLobby }: {
+export function OnlineMatch({
+  matchId, roomId, api, connectedIds, memberIds, realtimeUnavailable, matchInvalidation, onExit, startedFromLobby,
+}: {
   matchId: string;
   roomId: string;
   api: OnlineApi;
   connectedIds: string[];
+  memberIds?: string[];
+  realtimeUnavailable?: boolean;
   matchInvalidation: number;
   onExit: () => void;
   startedFromLobby?: boolean;
@@ -31,7 +36,7 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
   const [view, setView] = useState<OnlineView>();
   const [playIntro, setPlayIntro] = useState(Boolean(startedFromLobby));
   const [error, setError] = useState<string>();
-  const [connectionError, setConnectionError] = useState(false);
+  const [connection, setConnection] = useState<LocalConnection | undefined>(() => navigator.onLine ? undefined : 'offline');
   const [accessError, setAccessError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -53,7 +58,7 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
       if (isCurrent() && epoch === accessEpoch.current) {
         accept(next);
         setAccessError(undefined);
-        setConnectionError(false);
+        setConnection(current => !navigator.onLine ? 'offline' : current ? 'restored' : undefined);
       }
       return next;
     } catch (failure) {
@@ -63,12 +68,24 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
           setView(undefined);
           setAccessError(failure.status === 401 ? messages.UNAUTHENTICATED : messages.NOT_FOUND);
         } else {
-          setConnectionError(true);
+          setConnection(!navigator.onLine ? 'offline' : failure instanceof OnlineApiError ? 'api' : 'unstable');
         }
       }
       throw failure;
     }
   }, [accept, api, path]);
+
+  useEffect(() => {
+    const offline = () => setConnection('offline');
+    window.addEventListener('offline', offline);
+    return () => window.removeEventListener('offline', offline);
+  }, []);
+
+  useEffect(() => {
+    if (connection !== 'restored') return;
+    const timer = window.setTimeout(() => setConnection(undefined), 3000);
+    return () => window.clearTimeout(timer);
+  }, [connection]);
 
   useEffect(() => {
     let disposed = false;
@@ -136,8 +153,9 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
 
   return <>
     <link rel="stylesheet" href="css/style-game.css" />
-    {view ? <ArenaOnline view={view} connectedIds={connectedIds} busy={busy} playIntro={playIntro}
-      error={error ?? (connectionError ? 'Reconectando à partida…' : undefined)}
+    {view ? <ArenaOnline view={view} connectedIds={connectedIds} memberIds={memberIds} busy={busy} playIntro={playIntro}
+      localConnection={connection ?? (realtimeUnavailable ? 'realtime' : undefined)}
+      error={connection && connection !== 'restored' && error === 'Falha ao comunicar com a partida. Tente novamente.' ? undefined : error}
       send={send} onExit={onExit}
       onRematch={() => void run(async () => {
         await api.request<OnlineView>(`${path}/rematch`, 'POST');
@@ -147,7 +165,9 @@ export function OnlineMatch({ matchId, roomId, api, connectedIds, matchInvalidat
         await api.request(`/rooms/${roomId}/close`, 'POST');
         await loadSnapshot();
       })} /> : <main className="overlay active">
-      <p role={accessError ? 'alert' : 'status'}>{accessError ?? (connectionError ? 'Reconectando à partida…' : 'Carregando partida…')}</p>
+      <p role={accessError ? 'alert' : 'status'}>{accessError ?? (
+        connection && connection !== 'restored' ? 'Reconectando à partida…' : 'Carregando partida…'
+      )}</p>
       <button className="btn-pass" onClick={onExit}>Sair da arena</button>
     </main>}
   </>;

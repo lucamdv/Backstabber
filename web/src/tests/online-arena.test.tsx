@@ -32,6 +32,54 @@ function setup(view: OnlineView, playIntro = false) {
 }
 
 describe('arena online', () => {
+  it('agrupa quedas confirmadas e anuncia o retorno uma vez por transição', () => {
+    vi.useFakeTimers();
+    try {
+      const view = fixture({ players: [ana, bia, { ...caio, influence: 0 }] });
+      const props = { view, send: vi.fn(), onExit: vi.fn(), onRematch: vi.fn(), onCloseMatch: vi.fn(), busy: false };
+      const page = render(<ArenaOnline {...props} connectedIds={['ana', 'bia', 'caio']} />);
+      const scoreboard = screen.getByRole('group', { name: 'Placar e conexão dos jogadores' });
+      expect(within(scoreboard).getAllByText('Conectado')).toHaveLength(3);
+      expect(within(scoreboard).getByText('Eliminado')).toBeVisible();
+      expect(screen.queryByText('Conexão interrompida')).toBeNull();
+
+      page.rerender(<ArenaOnline {...props} connectedIds={['bia']} />);
+      const drop = screen.getByText('Conexão interrompida');
+      expect(drop.closest('[role="status"]')).toHaveTextContent('Ana e Caio saíram da rede.');
+      expect(within(scoreboard).getAllByText('Desconectado')).toHaveLength(2);
+      const header = screen.getByRole('banner');
+      const aggregate = within(header).getByRole('button', { name: '2 jogadores fora da rede' });
+      fireEvent.click(aggregate);
+      const panel = screen.getByRole('complementary', { name: 'Jogadores da mesa' });
+      expect(within(panel).getAllByText('Desconectado')).toHaveLength(2);
+      expect(within(panel).getByText('Eliminado')).toBeVisible();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(aggregate).toHaveFocus();
+
+      act(() => vi.advanceTimersByTime(2500));
+      page.rerender(<ArenaOnline {...props} view={{ ...view, revision: 8 }} connectedIds={['bia']} />);
+      expect(screen.getByText('Conexão interrompida')).toBe(drop);
+      act(() => vi.advanceTimersByTime(1500));
+      expect(drop).not.toBeInTheDocument();
+      expect(aggregate).toBeVisible();
+
+      page.rerender(<ArenaOnline {...props} connectedIds={['bia', 'caio']} />);
+      expect(screen.getByText('Conexão restabelecida').closest('[role="status"]')).toHaveTextContent('Caio voltou à mesa.');
+      expect(within(header).getByRole('button', { name: '1 jogador fora da rede' })).toBeVisible();
+      page.rerender(<ArenaOnline {...props} view={{ ...view, round: 2 }} connectedIds={['ana', 'bia']} />);
+      expect(screen.queryByText('Conexão restabelecida')).toBeNull();
+      expect(screen.queryByText('Conexão interrompida')).toBeNull();
+      page.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('exibe a primeira leitura fora da rede sem notificar queda', () => {
+    setup(fixture());
+    expect(screen.getByText('Desconectado')).toBeVisible();
+    expect(screen.queryByText('Conexão interrompida')).toBeNull();
+  });
+
   it.each([true, false])('pinta só o bloqueio verificado após o resultado público (verdade %s)', truthful => {
     const declaration = { action: 'assassinate', playerId: 'ana', targetId: 'caio' } as const;
     const block = { playerId: 'caio', character: 'sentinela' } as const;
@@ -90,7 +138,8 @@ describe('arena online', () => {
 
   it('abre o placar completo pela barra mobile e devolve o foco ao fechar', () => {
     setup(fixture());
-    const toggle = screen.getByRole('button', { name: 'Mesa' });
+    const table = screen.getByRole('navigation', { name: 'Informações da mesa' });
+    const toggle = within(table).getByRole('button', { name: '1 jogador fora da rede' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(toggle);
     const panel = screen.getByRole('complementary', { name: 'Jogadores da mesa' });

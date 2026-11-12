@@ -14,6 +14,17 @@ const scene = new URLSearchParams(location.search).get('scene');
 const root = createRoot(document.querySelector('#fixture')!);
 const noop = () => undefined;
 
+function PresenceArena({ view }: { view: OnlineView }) {
+  const [connectedIds, setConnectedIds] = useState(['ada', 'bia', 'caio']);
+  useEffect(() => {
+    const update = (event: Event) => setConnectedIds((event as CustomEvent<string[]>).detail);
+    window.addEventListener('arena-fixture-presence', update);
+    return () => window.removeEventListener('arena-fixture-presence', update);
+  }, []);
+  return <ArenaOnline view={view} send={noop} connectedIds={connectedIds} busy={false}
+    onCloseMatch={noop} onExit={noop} onRematch={noop} />;
+}
+
 function RecordedArena({ initial, next, pilot }: { initial: OnlineView; next: OnlineView; pilot?: boolean }) {
   const [snapshot, setSnapshot] = useState(initial);
   useEffect(() => {
@@ -65,7 +76,7 @@ if (scene === 'login') {
     targets: ['bia', 'caio'], challenges: [], blocks: [], closed: false, canClose: true, canRematch: false,
   };
   let initial = { ...view };
-  if (scene === 'reaction') {
+  if (scene === 'reaction' || scene === 'presence-vote') {
     view.activeId = 'bia';
     view.phase = { kind: 'block-reaction', declaration: { action: 'assassinate', playerId: 'bia', targetId: 'caio' },
       block: { playerId: 'caio', character: 'sentinela' } };
@@ -136,7 +147,8 @@ if (scene === 'login') {
     view.canRematch = scene === 'victory';
     view.canClose = scene === 'victory';
   }
-  root.render(scene === 'impact' || scene === 'pilot-impact' || scene === 'intro' || scene?.endsWith('-motion')
+  root.render(scene === 'presence' || scene === 'presence-vote' ? <PresenceArena view={view} />
+    : scene === 'impact' || scene === 'pilot-impact' || scene === 'intro' || scene?.endsWith('-motion')
     ? <RecordedArena initial={initial} next={view} pilot={scene === 'pilot-impact'} />
     : <ArenaOnline view={view} send={command => {
     document.querySelector('#fixture')?.setAttribute('data-command', command.type);

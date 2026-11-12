@@ -45,29 +45,63 @@ export function usePrivateBroadcast(client: SupabaseClient, topic: string, inval
 
 export function useRoomRealtime(
   client: SupabaseClient, roomId: string | undefined, userId: string, invalidate: () => void,
+  refreshPresence: () => void,
 ) {
   const [presence, setPresence] = useState<{ roomId: string; userIds: ReadonlySet<string> }>();
+  const [unavailableRoom, setUnavailableRoom] = useState<string>();
 
   useEffect(() => {
+    setPresence(undefined);
+    setUnavailableRoom(undefined);
     if (!roomId) return;
     const topic = `room:${roomId}`;
-    return subscribeAfterLeave(client, topic, isActive => {
+    let presenceTimer: number | undefined;
+    let failureTimer: number | undefined;
+    let observedRoster: string | undefined;
+    const release = subscribeAfterLeave(client, topic, isActive => {
       const channel = client.channel(topic, { config: { private: true, presence: { key: userId } } });
       return channel.on('broadcast', { event: 'invalidate' }, () => { if (isActive()) invalidate(); })
         .on('presence', { event: 'sync' }, () => {
-          if (isActive()) setPresence({ roomId, userIds: new Set(Object.keys(channel.presenceState())) });
+          if (!isActive()) return;
+          const ids = Object.keys(channel.presenceState()).sort();
+          setPresence({ roomId, userIds: new Set(ids) });
+          window.clearTimeout(presenceTimer);
+          if (!ids.includes(userId)) {
+            observedRoster = undefined;
+            return;
+          }
+          const roster = JSON.stringify(ids);
+          if (observedRoster === undefined) observedRoster = roster;
+          if (observedRoster !== roster) presenceTimer = window.setTimeout(() => {
+            observedRoster = roster;
+            refreshPresence();
+          }, 1000);
         })
         .subscribe(status => {
           if (!isActive()) return;
           if (status === 'SUBSCRIBED') {
+            window.clearTimeout(failureTimer);
+            failureTimer = undefined;
+            setUnavailableRoom(current => current === roomId ? undefined : current);
             void channel.track({ connected: true }).catch(() => undefined);
             invalidate();
           } else {
+            window.clearTimeout(presenceTimer);
+            observedRoster = undefined;
+            failureTimer ??= window.setTimeout(() => setUnavailableRoom(roomId), 2000);
             setPresence(current => current?.roomId === roomId ? undefined : current);
           }
         });
     });
-  }, [client, roomId, userId, invalidate]);
+    return () => {
+      window.clearTimeout(presenceTimer);
+      window.clearTimeout(failureTimer);
+      release();
+    };
+  }, [client, roomId, userId, invalidate, refreshPresence]);
 
-  return presence?.roomId === roomId ? presence?.userIds : undefined;
+  return {
+    presence: presence?.roomId === roomId ? presence?.userIds : undefined,
+    realtimeUnavailable: roomId !== undefined && unavailableRoom === roomId,
+  };
 }

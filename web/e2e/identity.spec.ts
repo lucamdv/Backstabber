@@ -25,6 +25,61 @@ test.describe('identidade online', () => {
     await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
   });
 
+  for (const [width, height] of [[1920, 1080], [1366, 768], [800, 720], [390, 844], [360, 800], [844, 390], [667, 375]]) {
+    test(`presença online em ${width}×${height}`, async ({ page }) => {
+      test.skip(baseline);
+      test.setTimeout(60_000);
+      await page.setViewportSize({ width, height });
+      await openScene(page, 'presence-vote');
+      await page.waitForLoadState('load');
+      const header = page.locator('.hud-header');
+      const stage = page.locator('.playmat-arena');
+      const originalStage = await stage.boundingBox();
+      const vote = page.getByRole('button', { name: 'Contestar bloqueio', exact: true });
+      const update = (ids: string[]) => page.evaluate(value => {
+        window.dispatchEvent(new CustomEvent('arena-fixture-presence', { detail: value }));
+      }, ids);
+      await expect(header.getByText('Conectado', { exact: true }).first()).toBeVisible();
+      await expect(page.locator('.online-connection-feed')).toHaveText('');
+      await update(['ada']);
+      const aggregate = page.getByRole('button', { name: '2 jogadores fora da rede' });
+      await expect(aggregate).toBeInViewport({ ratio: 1 });
+      const feed = page.getByRole('status').filter({ hasText: 'Conexão interrompida' });
+      await expect(feed).toHaveText(/Bia e Caio saíram da rede/);
+      await expect(feed).toHaveAttribute('aria-atomic', 'true');
+      await expect(feed.locator('.online-connection-toast')).toHaveCSS('animation-name', 'none');
+      await expect(header).toBeInViewport({ ratio: 1 });
+      expect(await stage.boundingBox()).toEqual(originalStage);
+      await expect(vote).toBeInViewport({ ratio: 1 });
+      const toastBox = (await feed.boundingBox())!;
+      const protectedItems = [vote, ...await stage.locator('.declared-card').all(), ...await page.locator('#player-hand .carta').all()];
+      for (const item of protectedItems) {
+        const box = (await item.boundingBox())!;
+        const overlaps = toastBox.x < box.x + box.width && box.x < toastBox.x + toastBox.width
+          && toastBox.y < box.y + box.height && box.y < toastBox.y + toastBox.height;
+        expect(overlaps, JSON.stringify({ toastBox, box })).toBe(false);
+      }
+      await expect.poll(() => page.evaluate(() => [document.documentElement.scrollWidth - innerWidth,
+        document.documentElement.scrollHeight - innerHeight, scrollX, scrollY])).toEqual([0, 0, 0, 0]);
+      if (output && (width === 1920 || width === 390)) {
+        await page.screenshot({ path: `${output}/presenca-queda-${width}.png` });
+      }
+      await aggregate.click();
+      const drawer = page.getByRole('complementary', { name: 'Jogadores da mesa' });
+      await expect(drawer.getByText('Caio')).toBeVisible();
+      await expect(drawer.getByText('Desconectado', { exact: true })).toHaveCount(2);
+      if (output && width === 390) await page.screenshot({ path: `${output}/presenca-placar-mobile.png` });
+      await page.keyboard.press('Escape');
+      await expect(aggregate).toBeFocused();
+      await update(['ada', 'caio']);
+      await expect(page.getByRole('button', { name: '1 jogador fora da rede' })).toBeVisible();
+      await expect(page.getByRole('status').filter({ hasText: 'Conexão restabelecida' })).toHaveText(/Caio voltou à mesa/);
+      if (output && (width === 1920 || width === 390)) {
+        await page.screenshot({ path: `${output}/presenca-retorno-${width}.png` });
+      }
+    });
+  }
+
   for (const [width, height, minimum, rows] of [[1920, 1080, 175, 1], [1366, 768, 136, 1], [800, 720, 130, 1],
     [390, 844, 100, 2], [360, 800, 95, 2], [667, 375, 76, 1]]) {
     test(`Broker no palco em ${width}×${height}`, async ({ page }) => {

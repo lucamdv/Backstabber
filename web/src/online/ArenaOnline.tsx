@@ -9,6 +9,8 @@ import type { Action, GameEvent } from '../game/application/contracts';
 import type { OnlineCommand, OnlineView } from '../game/application/online-contracts';
 import { OnlineDecisionPanel } from './OnlineDecisionPanel';
 import { OnlineArenaIntro } from './OnlineCinematics';
+import { OnlineConnectionFeed, usePlayerConnectionTransitions } from './OnlinePresence';
+import type { LocalConnection } from './OnlinePresence';
 import '../components/game/arena.css';
 import './arena-online.css';
 
@@ -19,6 +21,8 @@ interface ArenaOnlineProps {
   onRematch: () => void;
   onCloseMatch: () => void;
   connectedIds: string[];
+  memberIds?: string[];
+  localConnection?: LocalConnection;
   busy: boolean;
   playIntro?: boolean;
   error?: string;
@@ -38,7 +42,9 @@ function CloseMatchControl({ busy, onCloseMatch }: Pick<ArenaOnlineProps, 'busy'
   </>;
 }
 
-export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, connectedIds, busy, error, playIntro }: ArenaOnlineProps) {
+export function ArenaOnline({
+  view, send, onExit, onRematch, onCloseMatch, connectedIds, memberIds, localConnection, busy, error, playIntro,
+}: ArenaOnlineProps) {
   const [utility, setUtility] = useState<{ kind: 'oracle' | 'options'; decision: string } | null>(null);
   const [target, setTarget] = useState<{ action: Action; round: number; revision: number }>();
   const openingRound = !view.closed && !view.window && view.phase.kind === 'action' && view.history.length === 0;
@@ -65,6 +71,8 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
   const decision = `${view.round}/${view.window?.id ?? view.phase.kind}`;
   const activeUtility = !view.closed && utility?.decision === decision ? utility.kind : null;
   const showResult = view.phase.kind === 'finished' && !view.window && !view.closed;
+  const presenceNotice = usePlayerConnectionTransitions(view.round, view.players, view.viewerId, connectedIds, memberIds);
+  const signalChanges = presenceNotice && [...presenceNotice.dropped, ...presenceNotice.returned].map(player => player.id);
   const closeMatchControl = mayClose && <CloseMatchControl key={view.round} busy={busy} onCloseMatch={onCloseMatch} />;
 
   useLayoutEffect(() => {
@@ -113,7 +121,9 @@ export function ArenaOnline({ view, send, onExit, onRematch, onCloseMatch, conne
     <ArenaBoard view={view} blocked={showResult || playingIntro || playingImpact || Boolean(activeUtility)} hideHand={showResult} onAction={chooseAction}
       onOracle={() => toggleUtility('oracle')}
       onPause={() => toggleUtility('options')}
-      online={{ viewerId: view.viewerId, connectedIds, panel, showActions: turn && !targetAction,
+      online={{ viewerId: view.viewerId, connectedIds, memberIds, signalChanges,
+        connectionFeed: <OnlineConnectionFeed notice={presenceNotice} local={localConnection} />,
+        panel, showActions: turn && !targetAction,
         actionsDisabled: busy }} />
     {!playingIntro && !playingImpact && activeUtility === 'oracle' && <Oracle onClose={() => setUtility(null)} />}
     {!playingIntro && !playingImpact && options}
