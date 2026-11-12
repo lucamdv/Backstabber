@@ -17,7 +17,10 @@ function errorCode(error: unknown) {
 
 export function supabaseAuthenticator(url: string, key: string, fetcher = fetch): Authenticate {
   return async token => {
-    if (!url || !key) throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    if (!url || !key) {
+      console.error('Backstabber auth configuration missing', { hasUrl: Boolean(url), hasPublishableKey: Boolean(key) });
+      throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    }
     let response: Response;
     try {
       const endpoint = new URL('/auth/v1/user', url);
@@ -27,11 +30,18 @@ export function supabaseAuthenticator(url: string, key: string, fetcher = fetch)
       response = await fetcher(endpoint, {
         headers: { apikey: key, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000),
       });
-    } catch {
+    } catch (error) {
+      console.error('Backstabber auth upstream unreachable', {
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+        errorCode: errorCode(error) || 'UNKNOWN',
+      });
       throw new ApiError('SERVICE_UNAVAILABLE', 503);
     }
     if (response.status === 401 || response.status === 403) throw new ApiError('UNAUTHENTICATED', 401);
-    if (!response.ok) throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    if (!response.ok) {
+      console.error('Backstabber auth upstream unavailable', { httpStatus: response.status });
+      throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    }
     const user: unknown = await response.json();
     if (!user || typeof user !== 'object' || !('id' in user) || typeof user.id !== 'string' || !uuid.test(user.id)
       || ('is_anonymous' in user && user.is_anonymous === true)) throw new ApiError('UNAUTHENTICATED', 401);
@@ -77,7 +87,11 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
       }
       try {
         tx = await connect();
-      } catch {
+      } catch (error) {
+        console.error('Backstabber database connection unavailable', {
+          errorType: error instanceof Error ? error.name : 'UnknownError',
+          errorCode: errorCode(error) || 'UNKNOWN',
+        });
         throw new ApiError('SERVICE_UNAVAILABLE', 503);
       }
       await tx.query('begin');
