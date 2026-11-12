@@ -6,6 +6,7 @@ import type { OnlineApi } from './api';
 import { useOnlineAuth } from './auth';
 import { FriendsPanel, RoomInvites } from './FriendsPanel';
 import { Lobby } from './Lobby';
+import { OnlineAtmosphere } from './OnlineAtmosphere';
 import { Avatar, ProfileEditor } from './Profile';
 import { usePrivateBroadcast, useRoomRealtime } from './realtime';
 import { onlineHash } from './routes';
@@ -40,6 +41,7 @@ const destinations = [
 function HubSurface({ onExit, onLogout, section = 'rooms', onNavigate, children }:
 Pick<HubProps, 'onExit' | 'section' | 'onNavigate'> & { onLogout?: () => void; children: ReactNode }) {
   return <main className={`online-hub${onLogout ? '' : ' online-entry'}`}>
+    <OnlineAtmosphere />
     <header className="online-header">
       <div>
         <img src="images/isotipo.png" alt="" />
@@ -413,21 +415,21 @@ export function OnlineHub(props: HubProps) {
 
   return <HubSurface onExit={props.onExit} section={props.section} onNavigate={props.onNavigate}>
     <section className="online-login" aria-labelledby="online-login-title">
-      <img className="online-login-art" src="images/menu.png" alt="" />
       <div className="online-card online-login-terminal">
-      <h2 id="online-login-title">Entrar na rede</h2>
-      <p>Na rede, alianças são temporárias. Entre com sua conta Google para disputar o controle da mesa.</p>
-      {authError && <p role="alert">{authError}</p>}
-      {!supabase
-        ? <p role="status">{configuration === 'invalid'
-          ? 'A configuração pública do Supabase está inválida. Confira a URL e a chave publicável do ambiente.'
-          : 'O modo online precisa da configuração do Supabase neste ambiente. Você pode continuar no modo local.'}</p>
-        : session === undefined
-          ? <p role="status">Restaurando sessão…</p>
-          : <button className="online-primary" disabled={signingIn} onClick={() => {
-            setSigningIn(true);
-            void signIn().finally(() => setSigningIn(false));
-          }}>{signingIn ? 'Conectando ao Google…' : 'Entrar com Google'}</button>}
+        <div className="online-terminal-label"><span aria-hidden="true" />Terminal de acesso</div>
+        <h2 id="online-login-title">Entrar na rede</h2>
+        <p>Na rede, alianças são temporárias. Entre com sua conta Google para disputar o controle da mesa.</p>
+        {authError && <p className="online-error" role="alert">{authError}</p>}
+        {!supabase
+          ? <p role="status">{configuration === 'invalid'
+            ? 'A configuração pública do Supabase está inválida. Confira a URL e a chave publicável do ambiente.'
+            : 'O modo online precisa da configuração do Supabase neste ambiente. Você pode continuar no modo local.'}</p>
+          : session === undefined
+            ? <p className="online-loading-status" role="status">Restaurando sessão…</p>
+            : <button className="online-primary" disabled={signingIn} onClick={() => {
+              setSigningIn(true);
+              void signIn().finally(() => setSigningIn(false));
+            }}>{signingIn ? 'Conectando ao Google…' : 'Entrar com Google'}</button>}
       </div>
     </section>
   </HubSurface>;

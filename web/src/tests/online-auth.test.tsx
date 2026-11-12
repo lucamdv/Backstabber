@@ -2,9 +2,19 @@ import { act, render, renderHook, screen, waitFor } from '@testing-library/react
 import { afterEach, expect, test, vi } from 'vitest';
 import { useOnlineAuth } from '../online/auth';
 import { OnlineHub } from '../online/OnlineHub';
+import { oauthRedirect, readOnlineSection } from '../online/routes';
 
 const createClient = vi.hoisted(() => vi.fn());
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
+
+test('uses the stable Preview origin for the Google return, including room invites', () => {
+  const stable = 'https://backstabber-homologacao-git-feat-b522fa-luca-monteiros-projects.vercel.app';
+  const redirect = new URL(oauthRedirect(`${stable}/?sala=11111ABC12#/online`, 'rooms'));
+  expect(redirect.origin).toBe(stable);
+  expect(redirect.searchParams.get('sala')).toBe('11111ABC12');
+  expect(readOnlineSection(redirect)).toBe('rooms');
+  expect(oauthRedirect(`${stable}/#/amigos`, 'friends')).toBe(`${stable}/?online=amigos`);
+});
 
 function publicConfig(project = 'backstabber') {
   vi.stubEnv('VITE_SUPABASE_URL', `https://${project}.example.test`);

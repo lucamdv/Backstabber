@@ -1,5 +1,15 @@
 
+@font-face {
+  font-family: 'Backstabber Pixel';
+  src: url('./fonts/VT323-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :is(.online-hub, .online-arena) {
+  --net-display: 'Backstabber Pixel', 'Courier New', monospace;
+  --net-body: system-ui, sans-serif;
   --net-ink: #080610;
   --net-panel: #120d20;
   --net-raised: #1d122d;
@@ -16,6 +26,11 @@
 @keyframes online-arrive {
   from { opacity: 0; transform: translateY(7px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes online-scan {
+  from { transform: translateY(-25%); }
+  to { transform: translateY(120%); }
 }
 
 @keyframes online-ready {

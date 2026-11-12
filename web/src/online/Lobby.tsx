@@ -51,7 +51,10 @@ export function Lobby({
   return <section className="online-card online-lobby" data-ready={canStart} aria-labelledby="lobby-title">
     <div className="online-card-heading">
       <h2 id="lobby-title">Preparação da mesa</h2>
-      <span>{room.members.length}/{room.capacity} jogadores</span>
+      <div className="online-occupancy">
+        <span>{room.members.length}/{room.capacity} jogadores</span>
+        <progress aria-label="Ocupação da sala" value={room.members.length} max={room.capacity} />
+      </div>
     </div>
     <div className="online-room-code">
       <p>Código da sala <strong>{room.code}</strong></p>
@@ -63,15 +66,16 @@ export function Lobby({
       {room.members.map(member => <li key={member.id} data-ready={member.ready} data-connected={member.connected}>
         <Avatar profile={member} />
         <div>
-          <strong>{member.displayName}{room.hostId === member.id && ' · Anfitrião'}{member.id === userId && ' · Você'}</strong>
+          <strong>{member.displayName}{member.id === userId && ' · Você'}</strong>
           <small>@{member.username}</small>
+          {room.hostId === member.id && <span className="online-host-badge">Anfitrião</span>}
         </div>
         <div className="online-member-status">
           <span className={member.connected ? 'online-good' : 'online-muted'}>
             {member.connected ? 'Conectado' : 'Desconectado'}
           </span>
           {presence?.has(member.id) && member.connected && <small>Em tempo real</small>}
-          <span className={member.ready ? 'online-good' : 'online-muted'}>{member.ready ? 'Pronto' : 'Aguardando'}</span>
+          <span className={member.ready ? 'online-good online-ready-badge' : 'online-muted'}>{member.ready ? 'Pronto' : 'Aguardando'}</span>
         </div>
       </li>)}
     </ul>
