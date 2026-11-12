@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArenaOnline } from '../online/ArenaOnline';
 import type { OnlineView } from '../game/application/online-contracts';
@@ -21,26 +21,71 @@ function fixture(overrides: Partial<OnlineView> = {}): OnlineView {
   };
 }
 
-function setup(view: OnlineView) {
+function setup(view: OnlineView, playIntro = false) {
   const props = {
     send: vi.fn(), onExit: vi.fn(), onCloseMatch: vi.fn(), onRematch: vi.fn(),
-    busy: false, connectedIds: ['ana', 'bia'],
+    busy: false, connectedIds: ['ana', 'bia'], playIntro,
   };
   const result = render(<ArenaOnline view={view} {...props} />);
-  return { ...props, update: (next: Partial<OnlineView>) => result.rerender(<ArenaOnline view={{ ...view, ...next }} {...props} />) };
+  return { ...props, unmount: result.unmount,
+    update: (next: Partial<OnlineView>) => result.rerender(<ArenaOnline view={{ ...view, ...next }} {...props} />) };
 }
 
 describe('arena online', () => {
-  it('mantém o embaralhamento decorativo na rodada sem bloquear a primeira ação', () => {
-    const { send, update } = setup(fixture({ activeId: 'bia', availableActions: ['income'] }));
-    const deal = screen.getByTestId('online-deal');
-    expect(deal).toHaveAttribute('aria-hidden', 'true');
-    fireEvent.click(screen.getByRole('button', { name: /RENDA/ }));
-    expect(send).toHaveBeenCalledWith({ type: 'select-action', action: 'income' });
-    update({ revision: 5 });
-    expect(screen.getByTestId('online-deal')).toBe(deal);
-    update({ history: [{ player: 'Ana', text: 'Renda' }] });
-    expect(screen.queryByTestId('online-deal')).toBeNull();
+  it.each([true, false])('pinta só o bloqueio verificado após o resultado público (verdade %s)', truthful => {
+    const declaration = { action: 'assassinate', playerId: 'ana', targetId: 'caio' } as const;
+    const block = { playerId: 'caio', character: 'sentinela' } as const;
+    const { update } = setup(fixture({
+      phase: { kind: 'block-reaction', declaration, block },
+      window: { id: 'block', kind: 'block-reaction', eligible: ['bia'], responded: [],
+        options: [{ kind: 'challenge' }], summary: 'Reaja ao bloqueio.' },
+    }));
+    const attack = screen.getByRole('img', { name: 'Executor' }).closest('article');
+    const defense = screen.getByRole('img', { name: 'Sentinela' }).closest('article');
+    for (const card of [attack, defense]) {
+      expect(card).not.toHaveClass('is-truth');
+      expect(card).not.toHaveClass('is-lie');
+    }
+    update({
+      phase: { kind: 'loss', victimId: truthful ? 'bia' : 'caio', reason: 'challenge',
+        challenge: { declaration, block, truthful, challengerId: 'bia', declarerId: 'caio', character: 'sentinela' } },
+      window: { id: 'result', kind: 'acknowledge', eligible: ['bia'], responded: [],
+        options: [{ kind: 'acknowledge' }], summary: 'Contestação resolvida.' },
+    });
+    expect(screen.getByRole('img', { name: 'Sentinela' }).closest('article')).toBe(defense);
+    expect(defense).toHaveClass(truthful ? 'is-truth' : 'is-lie');
+    expect(attack).not.toHaveClass('is-truth');
+    expect(attack).not.toHaveClass('is-lie');
+    expect(screen.getByText(truthful ? 'Bia perde uma influência.' : 'Caio perde uma influência.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Perder / })).toBeNull();
+  });
+
+  it('executa cinco segundos por rodada nova e revela o snapshot mais recente', () => {
+    vi.useFakeTimers();
+    try {
+      const { send, update, unmount } = setup(fixture({ activeId: 'bia', availableActions: ['income'] }), true);
+      const intro = screen.getByRole('status', { name: 'Preparando a arena' });
+      fireEvent.click(screen.getByRole('button', { name: /RENDA/ }));
+      expect(send).not.toHaveBeenCalled();
+      update({ revision: 5, activeId: 'ana', history: [{ player: 'Ana', text: 'Renda' }] });
+      expect(screen.getByRole('status', { name: 'Preparando a arena' })).toBe(intro);
+      act(() => vi.advanceTimersByTime(4999));
+      expect(intro).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1));
+      expect(intro).not.toBeInTheDocument();
+      expect(screen.getByText('Ana está tramando o próximo movimento…')).toBeVisible();
+      update({ revision: 6, round: 2 });
+      const rematch = screen.getByRole('status', { name: 'Preparando a arena' });
+      update({ revision: 7, round: 2 });
+      expect(screen.getByRole('status', { name: 'Preparando a arena' })).toBe(rematch);
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('dispensa a introdução ao conectar numa partida em andamento', () => {
+    setup(fixture({ round: 3, history: [{ player: 'Ana', text: 'Renda' }] }), true);
+    expect(screen.queryByRole('status', { name: 'Preparando a arena' })).toBeNull();
   });
 
   it('abre o placar completo pela barra mobile e devolve o foco ao fechar', () => {
@@ -105,17 +150,38 @@ describe('arena online', () => {
       window: { id: 'ack', kind: 'acknowledge', eligible: ['ana', 'bia'], responded: ['ana'],
         options: [{ kind: 'acknowledge' }], summary: 'Backstab em Bia' },
     }));
-    const impact = screen.getByTestId('online-backstab');
-    expect(within(impact).getByText('BACKSTAB')).toBeVisible();
+    expect(screen.getByRole('img', { name: 'BACKSTAB' })).toBeVisible();
+    expect(document.querySelector('#backstab-cinematic')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Perder Broker' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Ciente / Continuar' }));
     expect(send).toHaveBeenCalledWith({ type: 'vote', windowId: 'ack', choice: { kind: 'acknowledge' } });
     update({ window: undefined });
-    expect(screen.queryByTestId('online-backstab')).toBeNull();
+    expect(screen.queryByRole('img', { name: 'BACKSTAB' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Perder Broker' }));
     expect(send).toHaveBeenLastCalledWith({ type: 'lose', cardId: 'bia-broker' });
     update({ window: undefined, viewerId: 'ana' });
     expect(screen.queryByRole('button', { name: 'Perder Broker' })).toBeNull();
+  });
+
+  it('executa o Backstab recebido uma vez, sem reiniciar em novas revisões de votos', () => {
+    vi.useFakeTimers();
+    try {
+      const { update } = setup(fixture());
+      const event = { kind: 'backstab', playerId: 'ana', targetId: 'bia' } as const;
+      const phase = { kind: 'loss', reason: 'backstab', victimId: 'bia' } as const;
+      const window = { id: '1:5', kind: 'acknowledge' as const, eligible: ['ana', 'bia'], responded: [],
+        options: [{ kind: 'acknowledge' } as const], summary: 'Backstab em Bia.' };
+      update({ phase, lastEvent: event, window: { ...window } });
+      const cinematic = document.querySelector('#backstab-cinematic');
+      expect(cinematic).toBeInTheDocument();
+      expect(cinematic?.querySelector('.backstab-shockwave')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1800));
+      update({ revision: 8, phase, lastEvent: { ...event }, window: { ...window, responded: ['ana'] } });
+      expect(document.querySelector('#backstab-cinematic')).toBe(cinematic);
+      act(() => vi.advanceTimersByTime(700));
+      expect(document.querySelector('#backstab-cinematic')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Ciente / Continuar' })).toBeEnabled();
+    } finally { vi.useRealTimers(); }
   });
 
   it('mostra o bloqueio e permite que só o participante elegível envie a resposta', () => {

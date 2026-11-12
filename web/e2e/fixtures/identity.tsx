@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArenaOnline } from '../../src/online/ArenaOnline';
 import { OnlineHub } from '../../src/online/OnlineHub';
@@ -7,10 +8,24 @@ import { FriendsPanel } from '../../src/online/FriendsPanel';
 import { ProfileEditor } from '../../src/online/Profile';
 import type { OnlineView } from '../../src/game/application/online-contracts';
 import type { Profile, Room } from '../../src/online/types';
+import GamePage from '../../src/pages/GamePage';
 
 const scene = new URLSearchParams(location.search).get('scene');
 const root = createRoot(document.querySelector('#fixture')!);
 const noop = () => undefined;
+
+function RecordedArena({ initial, next, pilot }: { initial: OnlineView; next: OnlineView; pilot?: boolean }) {
+  const [snapshot, setSnapshot] = useState(initial);
+  useEffect(() => {
+    const advance = () => setSnapshot(next);
+    window.addEventListener('arena-fixture-advance', advance);
+    return () => window.removeEventListener('arena-fixture-advance', advance);
+  }, [next]);
+  if (pilot) return <GamePage view={snapshot} showIntro={false} send={noop}
+    onReveal={noop} onConceal={noop} onExit={noop} onRematch={noop} />;
+  return <ArenaOnline view={snapshot} send={noop} connectedIds={['ada', 'bia']} busy={false}
+    onCloseMatch={noop} onExit={noop} onRematch={noop} />;
+}
 const people: Profile[] = [
   { id: 'ada', username: 'ada', displayName: 'Ada', avatarUrl: null, showOnline: true },
   { id: 'bia', username: 'bia', displayName: 'Bia', avatarUrl: null, showOnline: true },
@@ -49,6 +64,7 @@ if (scene === 'login') {
     availableActions: ['income', 'patrocinio', 'tax', 'steal', 'negotiate'],
     targets: ['bia', 'caio'], challenges: [], blocks: [], closed: false, canClose: true, canRematch: false,
   };
+  let initial = { ...view };
   if (scene === 'reaction') {
     view.activeId = 'bia';
     view.phase = { kind: 'block-reaction', declaration: { action: 'assassinate', playerId: 'bia', targetId: 'caio' },
@@ -56,13 +72,61 @@ if (scene === 'login') {
     view.window = { id: '1:3', kind: 'block-reaction', eligible: ['ada', 'bia'], responded: ['bia'],
       options: [{ kind: 'accept' }, { kind: 'challenge' }], summary: 'Reaja ao bloqueio.' };
   }
-  if (scene === 'deal') {
-    view.history = [];
-  }
-  if (scene === 'income' || scene === 'backstab') {
-    const backstab = scene === 'backstab';
+  if (scene === 'declaration') {
     view.activeId = 'bia';
-    view.lastEvent = { kind: scene, playerId: 'bia', targetId: backstab ? 'caio' : undefined };
+    view.phase = { kind: 'reaction', declaration: { action: 'tax', playerId: 'bia', targetId: null } };
+    view.window = { id: '1:2', kind: 'reaction', eligible: ['ada', 'caio'], responded: [],
+      options: [{ kind: 'accept' }, { kind: 'challenge' }], summary: 'Bia declarou Magnata.' };
+  }
+  if (scene === 'contest') {
+    view.activeId = 'bia';
+    view.phase = { kind: 'reaction', declaration: { action: 'steal', playerId: 'bia', targetId: 'ada' } };
+    view.window = { id: '1:2', kind: 'reaction', eligible: ['ada', 'caio'], responded: [],
+      options: [{ kind: 'accept' }, { kind: 'challenge' }, { kind: 'block', character: 'mercenario' },
+        { kind: 'block', character: 'broker' }], summary: 'Bia declarou Mercenário.' };
+  }
+  if (scene === 'truth' || scene === 'bluff' || scene === 'truth-motion' || scene === 'bluff-motion' || scene === 'conflict-motion') {
+    const truthful = scene.startsWith('truth');
+    const declaration = { action: 'assassinate', playerId: 'bia', targetId: 'caio' } as const;
+    const block = { playerId: 'caio', character: 'sentinela' } as const;
+    const reaction = { id: '1:4', kind: 'block-reaction' as const, eligible: ['ada', 'bia'], responded: [],
+      options: [{ kind: 'challenge' as const }, { kind: 'accept' as const }], summary: 'Caio declarou Sentinela.' };
+    view.activeId = 'bia';
+    if (scene === 'conflict-motion') {
+      initial = { ...view, phase: { kind: 'reaction', declaration },
+        window: { ...reaction, id: '1:3', kind: 'reaction', summary: 'Bia declarou Executor.' } };
+      view.phase = { kind: 'block-reaction', declaration, block };
+      view.window = reaction;
+    } else {
+      initial = { ...view, phase: { kind: 'block-reaction', declaration, block }, window: reaction };
+      view.phase = { kind: 'loss', reason: 'challenge', victimId: truthful ? 'ada' : 'caio',
+        challenge: { declaration, block, truthful, challengerId: 'ada', declarerId: 'caio', character: 'sentinela' } };
+      view.window = { ...reaction, id: '1:5', kind: 'acknowledge',
+        options: [{ kind: 'acknowledge' }], summary: truthful ? 'A carta foi comprovada.' : 'A defesa falhou.' };
+    }
+  }
+  if (scene === 'loss') {
+    view.phase = { kind: 'loss', reason: 'execution', victimId: 'ada' };
+    view.choices = [...hand];
+  }
+  if (scene === 'targets') {
+    view.players = [...players, ...Array.from({ length: 7 }, (_, index) => ({
+      id: `seat-${index}`, name: `Operador ${index + 4}`, credits: 2, influence: 2,
+    }))];
+    view.targets = view.players.filter(player => player.id !== view.viewerId).map(player => player.id);
+  }
+  if (scene === 'negotiation') {
+    view.phase = { kind: 'negotiation', playerId: 'ada', keep: 2 };
+    view.choices = [...hand, { id: 'neg-1', character: 'executor' }, { id: 'neg-2', character: 'sentinela' }];
+  }
+  if (scene === 'deal' || scene === 'intro') {
+    view.history = [];
+    if (scene === 'intro') view.round = 2;
+  }
+  if (scene === 'income' || scene === 'backstab' || scene === 'impact' || scene === 'pilot-impact') {
+    const backstab = scene !== 'income';
+    view.activeId = 'bia';
+    view.lastEvent = { kind: backstab ? 'backstab' : 'income', playerId: 'bia', targetId: backstab ? 'caio' : undefined };
     if (backstab) view.phase = { kind: 'loss', victimId: 'caio', reason: 'backstab' };
     view.window = { id: '1:4', kind: 'acknowledge', eligible: ['ada', 'bia', 'caio'], responded: ['bia'],
       options: [{ kind: 'acknowledge' }], summary: backstab ? 'Backstab declarado.' : 'Bia recebeu 1 crédito.' };
@@ -72,8 +136,10 @@ if (scene === 'login') {
     view.canRematch = scene === 'victory';
     view.canClose = scene === 'victory';
   }
-  root.render(<ArenaOnline view={view} send={command => {
+  root.render(scene === 'impact' || scene === 'pilot-impact' || scene === 'intro' || scene?.endsWith('-motion')
+    ? <RecordedArena initial={initial} next={view} pilot={scene === 'pilot-impact'} />
+    : <ArenaOnline view={view} send={command => {
     document.querySelector('#fixture')?.setAttribute('data-command', command.type);
-  }} connectedIds={['ada', 'bia']} busy={false}
+    }} connectedIds={['ada', 'bia']} busy={false} playIntro={scene === 'deal'}
     onCloseMatch={noop} onExit={noop} onRematch={noop} />);
 }
