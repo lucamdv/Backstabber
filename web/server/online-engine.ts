@@ -1,7 +1,7 @@
-import { availableCommands, createGame, transition } from '../src/game/core/engine';
-import type { GameState } from '../src/game/core/engine';
-import type { GameCommand } from '../src/game/application/contracts';
-import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../src/game/application/online-contracts';
+import { availableCommands, createGame, transition } from '../src/game/core/engine.js';
+import type { GameState } from '../src/game/core/engine.js';
+import type { GameCommand } from '../src/game/application/contracts.js';
+import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../src/game/application/online-contracts.js';
 
 export type Participant = { id: string; name: string };
 type Vote = { playerId: string; choice: VoteChoice; sequence: number };
@@ -49,7 +49,7 @@ function openWindow(state: OnlineState, kind: OnlineWindow['kind'], summary: str
 
 function applyCore(state: OnlineState, command: GameCommand, random: Random): string | undefined {
   const result = transition(state.game, command, state.game.revision, random);
-  if (!result.ok) return result.error;
+  if (result.ok === false) return result.error;
   state.game = result.state;
 }
 

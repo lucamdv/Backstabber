@@ -1,4 +1,4 @@
-import type { Action, Character, GameView } from './contracts';
+import type { Action, Character, GameView } from './contracts.js';
 
 export type VoteChoice =
   | { kind: 'accept' }
