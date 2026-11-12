@@ -1,5 +1,38 @@
 # Contrato inicial dos backends
 
+## Sprint 02 — contrato implementado
+
+Esta seção substitui a proposta da Sprint 01 abaixo para o modo online. A base padrão é `/api/v1` e pode ser substituída por `VITE_API_URL`. As rotas exigem `Authorization: Bearer <access_token>`. A identidade vem de `GET /auth/v1/user` do Supabase. O corpo do comando jamais contém `playerId`.
+
+| Método e rota | Corpo e resultado |
+| --- | --- |
+| `GET /profile` / `PUT /profile` | Perfil próprio ou `null`. Escrita com `username`, `displayName`, `avatarUrl`, `showOnline`. |
+| `POST /profile/heartbeat` | Atualiza disponibilidade individual. |
+| `GET /users?username=` | Lista por prefixo de nome de usuário, sem e-mail nem atividade. |
+| `GET /friends` | `{friends,requests}`. Disponibilidade depende do consentimento do amigo. |
+| `POST /friends/requests` | `{userId}`. |
+| `POST /friends/requests/:id/respond` | `{accept:boolean}`. Somente destinatário. |
+| `DELETE /friends/:userId` | Remove a amizade bilateral. |
+| `GET /invites` / `POST /invites/:id/respond` | Lista convites válidos e responde com `{accept:boolean}`. |
+| `GET /rooms` / `GET /rooms/:id` | Salas da sessão e snapshot do lobby. |
+| `POST /rooms` / `POST /rooms/join` | `{capacity}` ou `{code}`. Retorna a sala. |
+| `POST /rooms/:id/invite` | `{userId}` de um amigo. |
+| `POST /rooms/:id/ready` | `{ready:boolean}`. Retorna o lobby atualizado. |
+| `POST /rooms/:id/heartbeat`, `leave`, `start`, `close` | Heartbeat, saída do lobby, início pelo host ou encerramento controlado. |
+| `GET /matches/:id` | Snapshot `OnlineView` filtrado pela sessão. |
+| `POST /matches/:id/commands` | `OnlineEnvelope`. Retorna `{ok:true,revision}`. |
+| `POST /matches/:id/rematch` | Anfitrião após vitória confirmada. Mesmo ID de partida, rodada e revisão incrementadas. |
+
+O envelope tem `protocolVersion:1`, `commandId`, `expectedRevision` e `command`. Comandos: `select-action` com `action` e `targetId` quando necessário, `vote` com `windowId` e `choice`, `lose` com `cardId`, `negotiate` com `keepIds`. Escolhas: `{kind:"accept"}`, `{kind:"challenge"}`, `{kind:"acknowledge"}` ou `{kind:"block",character}`. Tipos completos em `web/src/game/application/online-contracts.ts`.
+
+O estado versionado retorna mão própria em qualquer fase. A janela informa ID, tipo, participantes elegíveis, quem respondeu, resumo e opções da sessão. Os votos dos demais são privados. Quando fechada, a auditoria registra sequência e prioridade no banco. Realtime emite apenas `invalidate` para `room:<id>` ou `user:<id>`; reconexões recuperam o estado pela rota HTTP.
+
+Erros são JSON `{error:CODE}`. Códigos do jogo: `UNSUPPORTED_PROTOCOL` e `INVALID_COMMAND` para envelope inválido ou colisão de ID (400), `UNAUTHENTICATED` (401), `NOT_AUTHORIZED` (403), `NOT_FOUND` inclusive fora da sala (404), `STALE_REVISION`, `ALREADY_RESPONDED` ou `INVALID_PHASE` (409). Transições recusadas pelo domínio retornam 409 salvo autorização. Erros sociais incluem `ROOM_NOT_READY`, `HOST_REQUIRED`, `ROOM_FULL`, `USERNAME_TAKEN` e `INVITE_NOT_FOUND`.
+
+Comandos aceitos são idempotentes por partida, usuário e ID. Uma revisão obsoleta não altera o jogo. O cliente pode reenviar um voto na revisão nova se a mesma janela ainda estiver aberta e a própria resposta continuar pendente.
+
+## Proposta histórica da Sprint 01
+
 A Sprint 01 fornece a interface `GameAdapter`, o contrato TypeScript em `web/src/game/application/contracts.ts` e o adaptador local. As rotas e regras abaixo especificam a primeira versão do protocolo HTTP. A implementação Node.js e a Spring Boot devem aceitar o mesmo JSON e produzir o mesmo comportamento.
 
 ## Salas e sessão
