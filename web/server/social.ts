@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { ApiError } from './errors';
-import { createMatch } from './match-store';
-import { HOST_ABANDONMENT_SECONDS } from './room-policy';
+import { ApiError } from './errors.js';
+import { createMatch } from './match-store.js';
+import { HOST_ABANDONMENT_SECONDS } from './room-policy.js';
 
 type Input = Record<string, unknown>;
 type RoomStatus = 'lobby' | 'started' | 'closed';

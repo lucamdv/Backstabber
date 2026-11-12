@@ -1,8 +1,8 @@
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
-import { ApiError } from './errors';
-import { matchRoute } from './match-store';
-import { socialRoute } from './social';
+import { ApiError } from './errors.js';
+import { matchRoute } from './match-store.js';
+import { socialRoute } from './social.js';
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 type Authenticate = (token: string) => Promise<string>;

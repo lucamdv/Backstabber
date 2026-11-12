@@ -1,4 +1,4 @@
 import { attachDatabasePool } from '@vercel/functions';
-import { handleRequest } from './http';
+import { handleRequest } from './http.js';
 
 export const vercelRequest = (request: Request) => handleRequest(request, attachDatabasePool);

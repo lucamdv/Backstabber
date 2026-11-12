@@ -1,11 +1,11 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { actions, characters } from '../src/game/application/contracts';
-import type { OnlineCommand, OnlineEnvelope } from '../src/game/application/online-contracts';
-import { ApiError } from './errors';
-import { createOnlineGame, onlineTransition, onlineView } from './online-engine';
-import type { OnlineState, Participant } from './online-engine';
-import { HOST_ABANDONMENT_SECONDS } from './room-policy';
+import { actions, characters } from '../src/game/application/contracts.js';
+import type { OnlineCommand, OnlineEnvelope } from '../src/game/application/online-contracts.js';
+import { ApiError } from './errors.js';
+import { createOnlineGame, onlineTransition, onlineView } from './online-engine.js';
+import type { OnlineState, Participant } from './online-engine.js';
+import { HOST_ABANDONMENT_SECONDS } from './room-policy.js';
 
 const random = () => randomInt(0x100000000) / 0x100000000;
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;

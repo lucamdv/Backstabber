@@ -1,7 +1,7 @@
-import { availableCommands, createGame, transition } from '../src/game/core/engine';
-import type { GameState } from '../src/game/core/engine';
-import type { GameCommand } from '../src/game/application/contracts';
-import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../src/game/application/online-contracts';
+import { availableCommands, createGame, transition } from '../src/game/core/engine.js';
+import type { GameState } from '../src/game/core/engine.js';
+import type { GameCommand } from '../src/game/application/contracts.js';
+import type { OnlineCommand, OnlineView, OnlineWindow, VoteChoice } from '../src/game/application/online-contracts.js';
 
 export type Participant = { id: string; name: string };
 type Vote = { playerId: string; choice: VoteChoice; sequence: number };

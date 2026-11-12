@@ -1,9 +1,9 @@
-import { actions, characters } from '../application/contracts';
+import { actions, characters } from '../application/contracts.js';
 import type {
   Action, AvailableCommands, Block, Card, Character, CommandError, Declaration,
   GameCommand, GameEvent, HistoryEntry, Phase, PlayerId,
-} from '../application/contracts';
-import { deckSizeFor, validateNames } from './setup';
+} from '../application/contracts.js';
+import { deckSizeFor, validateNames } from './setup.js';
 
 export type Player = { id: PlayerId; name: string; credits: number; cards: Card[] };
 export type GameState = {
