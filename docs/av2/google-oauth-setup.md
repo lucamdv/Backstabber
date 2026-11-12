@@ -1,0 +1,9 @@
+# Google OAuth
+
+1. No Google Cloud, crie um cliente OAuth do tipo **Web application** e configure a tela de consentimento. Enquanto o app estiver em teste, autorize as três contas de homologação como test users.
+2. Em **Authorized JavaScript origins**, cadastre as origens sem caminho, como `http://localhost:5173` e a origem HTTPS do preview quando estiver disponível. Em **Authorized redirect URIs**, informe o callback mostrado em **Supabase Auth → Providers → Google**, no formato `https://<ref>.supabase.co/auth/v1/callback`.
+3. Habilite Google em **Supabase Auth → Providers**. Insira o Client ID e o Client Secret diretamente no painel. Os dois valores ficam fora do Git e o secret nunca entra em variável `VITE_`.
+4. Em **Auth → URL Configuration**, use a origem de homologação como **Site URL** e inclua as URLs de retorno autorizadas. No local, cadastre `http://localhost:5173/**` e, se usar Playwright ou Vite nessa origem, `http://localhost:4177/**`. Para preview use apenas os domínios sob controle do projeto. Cadastre a origem de produção quando houver publicação autorizada.
+5. Abra Amigos. Escolha Google, autentique, crie ou recupere o perfil e confira o retorno para `#/amigos`. Recarregue e confira a sessão. Saia da conta e confira que a tela de login reaparece. Repita a partir de Jogar Online para conferir `#/online`. Teste cancelamento e retorno com um link `?sala=...`.
+
+O cliente usa PKCE com persistência de sessão. O callback do frontend distingue `?online=amigos` de `?online=salas` e preserva um código de sala válido. A versão legada `?online=1` continua apontando para salas. O SDK troca o código antes da limpeza da URL. Os testes de integração do React exercitam esse encadeamento, e a autenticação real depende do cliente Google ativo. [Google no Supabase](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) · [URLs de retorno](https://supabase.com/docs/guides/auth/redirect-urls).

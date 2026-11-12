@@ -1,5 +1,9 @@
 # Contrato inicial dos backends
 
+## Sprint 02.1
+
+O formato de comandos, snapshots e fases continua o mesmo. A API usa o erro existente `503 {error:"SERVICE_UNAVAILABLE"}` quando Auth está indisponível, a conexão falha, ou o PostgreSQL rejeita uma transação por deadlock ou timeout. Um timeout ou deadlock ocorrido durante a jogada é revertido. Em falha de conexão no commit, consulte o snapshot e reenvie o mesmo envelope e ID quando precisar distinguir confirmação perdida de comando não aplicado. Uma leitura 401, 403 ou 404 remove a arena do cliente até que a sessão obtenha um snapshot autorizado.
+
 ## Sprint 02 — contrato implementado
 
 Esta seção substitui a proposta da Sprint 01 abaixo para o modo online. A base padrão é `/api/v1` e pode ser substituída por `VITE_API_URL`. As rotas exigem `Authorization: Bearer <access_token>`. A identidade vem de `GET /auth/v1/user` do Supabase. O corpo do comando jamais contém `playerId`.

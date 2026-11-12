@@ -1,5 +1,7 @@
 # Sprint 03 — implementação Spring Boot
 
+O contrato da Sprint 02.1 preserva a API de jogo. Use também `web/server/native-postgres.test.ts` como referência de conformidade para corrida pela última vaga, início, revanche, duas contestações, contestação contra bloqueio, idempotência e erros 503 após rollback. As regras de visibilidade da vitória mostram as cartas restantes apenas ao vencedor, depois da última confirmação coletiva.
+
 Use o contrato HTTP da Sprint 02 e as mesmas migrações Supabase. O navegador continua autenticando no Supabase e enviando o access token para a origem configurada em `VITE_API_URL`. O backend valida o token no Supabase e usa o identificador devolvido como autor do comando.
 
 1. Implemente rotas e validação com o mesmo JSON, revisões e códigos HTTP. Use `@Transactional` e mantenha a ordem de bloqueio sala → partida para as rotas mutáveis da partida.

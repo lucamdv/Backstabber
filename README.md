@@ -68,6 +68,10 @@ Na Vercel, o arquivo `vercel.json` usa a raiz do repositório, o build Vite em `
 - [Validação da Sprint 02](docs/av2/sprint-02-validation.md)
 - [Handoff para Spring Boot](docs/av2/sprint-03-handoff.md)
 
+### Homologação 02.1
+
+Consulte o [relatório da Sprint 02.1](docs/av2/sprint-02-homologation.md) e os guias de [Supabase](docs/av2/supabase-setup.md), [Google OAuth](docs/av2/google-oauth-setup.md), [preview Vercel](docs/av2/vercel-deployment.md) e [testes E2E](docs/av2/multiplayer-e2e.md).
+
 - De **1 a 10 jogadores** no mesmo dispositivo.
 - Baralhos proporcionais de **15, 20 ou 25 cartas**.
 - Cartas: **Magnata, Executor, Sentinela, Mercenário e Broker**.
