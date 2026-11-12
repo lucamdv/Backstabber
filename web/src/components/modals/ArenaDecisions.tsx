@@ -17,7 +17,7 @@ interface ClaimsProps {
   result?: { truthful: boolean; on: 'acao' | 'bloqueio'; exiting?: boolean };
 }
 
-function Claims({ view, declaration, block, result }: ClaimsProps) {
+export function Claims({ view, declaration, block, result }: ClaimsProps) {
   const action = actions[declaration.action];
   function status(slot: 'acao' | 'bloqueio') {
     if (result?.on !== slot) return '';

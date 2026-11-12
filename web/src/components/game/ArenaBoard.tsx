@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Action, GameView } from '../../game/application/contracts';
 import { Card } from './Card';
 import { actions, characterName, playerName } from './gameDisplay';
@@ -12,9 +13,16 @@ interface ArenaBoardProps {
   onAction: (action: Action) => void;
   onOracle: () => void;
   onPause: () => void;
+  online?: {
+    viewerId: string;
+    connectedIds: string[];
+    panel: ReactNode;
+    showActions: boolean;
+    actionsDisabled: boolean;
+  };
 }
 
-function Scoreboard({ view, onOracle, onPause }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause'>) {
+function Scoreboard({ view, onOracle, onPause, online }: Pick<ArenaBoardProps, 'view' | 'onOracle' | 'onPause' | 'online'>) {
   return <header className="hud-header">
     <div className="header-logo" role="img" aria-label="Backstabber">
       <img className="brand-isotipo" src="images/isotipo.png" alt="" />
@@ -24,40 +32,49 @@ function Scoreboard({ view, onOracle, onPause }: Pick<ArenaBoardProps, 'view' | 
     </div>
     <div className="header-center">
       <span className="turn-label">STATUS DA MESA</span>
-      <div id="scoreboard" className="scoreboard-bar">
+      <div id="scoreboard" className="scoreboard-bar" role={online ? 'group' : undefined}
+        aria-label={online ? 'Placar e conexão dos jogadores' : undefined} tabIndex={online ? 0 : undefined}>
         {view.players.map((player) => <div key={player.id} aria-current={player.id === view.activeId || undefined}
-          className={`player-stat${player.id === view.activeId ? ' active' : ''}`}>
-          <strong>{player.name}</strong>
+          className={`player-stat${player.id === view.activeId ? ' active' : ''}${online?.viewerId === player.id ? ' online-viewer' : ''}`}>
+          <strong title={player.name}>{player.name}</strong>
           <span className="player-resources">
             <span className="player-resource player-credits"><b>{player.credits}</b><small>CRÉDITOS</small></span>
             <span className="player-resource player-influences"><b>{player.influence}</b><small>INFL.</small></span>
           </span>
+          {online && <span className="online-player-presence" data-connected={online.connectedIds.includes(player.id)}>
+            {online.connectedIds.includes(player.id) ? 'Conectado' : 'Desconectado'}
+            {player.influence === 0 && ' · Eliminado'}
+          </span>}
         </div>)}
       </div>
     </div>
     <div className="header-right">
       <div className="header-tools" aria-label="Controles da partida">
         <button type="button" className="header-tool-btn" aria-label="Abrir Oráculo" title="Oráculo" onClick={onOracle}>?</button>
-        <button type="button" className="header-tool-btn" id="btn-pause" aria-label="Abrir menu de pausa" title="Pausar" onClick={onPause}>☰</button>
+        <button type="button" className="header-tool-btn" id="btn-pause"
+          aria-label={online ? 'Abrir opções da partida' : 'Abrir menu de pausa'}
+          title={online ? 'Opções da partida' : 'Pausar'} onClick={onPause}>☰</button>
       </div>
       <p>TRUST<br />IS A<br />CURRENCY.</p>
     </div>
   </header>;
 }
 
-function Playmat() {
-  return <div className="playmat-arena" aria-hidden="true">
-    <div className="crosshair top-left">+</div>
-    <div className="crosshair top-right">+</div>
-    <div className="crosshair bottom-left">+</div>
-    <div className="crosshair bottom-right">+</div>
-    <div className="arena-center-logo">👑</div>
-    <div className="arena-border-label top">SISTEMA ONLINE</div>
-    <div className="arena-border-label bottom">LADO ATIVO</div>
+function Playmat({ children }: { children?: ReactNode }) {
+  return <div className="playmat-arena" aria-hidden={children ? undefined : true}>
+    {children ?? <>
+      <div className="crosshair top-left">+</div>
+      <div className="crosshair top-right">+</div>
+      <div className="crosshair bottom-left">+</div>
+      <div className="crosshair bottom-right">+</div>
+      <div className="arena-center-logo">👑</div>
+      <div className="arena-border-label top">SISTEMA ONLINE</div>
+      <div className="arena-border-label bottom">LADO ATIVO</div>
+    </>}
   </div>;
 }
 
-export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPause }: ArenaBoardProps) {
+export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPause, online }: ArenaBoardProps) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const openDrawer = blocked ? null : drawer;
   const tribunalTrigger = useRef<HTMLButtonElement>(null);
@@ -65,6 +82,8 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   const closeTribunal = useRef<HTMLButtonElement>(null);
   const closeCemetery = useRef<HTMLButtonElement>(null);
   const currentPlayer = playerName(view, view.activeId);
+  const handOwner = online?.viewerId ?? view.activeId;
+  const handLabel = online ? 'Minhas influências' : `Influências de ${currentPlayer}`;
 
   function toggleDrawer(next: Drawer) {
     setDrawer((current) => current === next ? null : next);
@@ -89,7 +108,7 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
   }, [openDrawer]);
 
   return <div className="hud-container" inert={blocked || undefined}>
-    <Scoreboard view={view} onOracle={() => { setDrawer(null); onOracle(); }}
+    <Scoreboard view={view} online={online} onOracle={() => { setDrawer(null); onOracle(); }}
       onPause={() => { setDrawer(null); onPause(); }} />
     <main className="hud-body">
       <nav className="mobile-table-nav mobile-only" aria-label="Informações da mesa">
@@ -126,26 +145,26 @@ export function ArenaBoard({ view, blocked, hideHand, onAction, onOracle, onPaus
           <div className="deck-info"><span>DECK</span><small id="deck-count">{view.deckCount} RESTANTES</small></div>
         </div>
       </aside>
-      <section className="panel-center">
-        <Playmat />
+      <section className={`panel-center${online && !online.showActions ? ' online-no-action-bar' : ''}`}>
+        <Playmat>{online?.panel}</Playmat>
         <div className="player-hand-container">
-          <div className="turn-indicator"><span>TERMINAL ATIVO</span><h2 id="current-player-name" aria-live="polite">{currentPlayer}</h2></div>
-          <div className="hand" id="player-hand" aria-live="polite" aria-label={`Influências de ${currentPlayer}`}>
-            {!hideHand && view.revealed && view.privatePlayerId === view.activeId
+          <div className="turn-indicator"><span>{online ? 'JOGADOR ATIVO' : 'TERMINAL ATIVO'}</span><h2 id="current-player-name" aria-live="polite">{currentPlayer}</h2></div>
+          <div className="hand" id="player-hand" role={online ? 'group' : undefined} aria-live="polite" aria-label={handLabel}>
+            {!hideHand && view.revealed && view.privatePlayerId === handOwner
               && view.hand.map((card) => <Card key={card.id} character={card.character} />)}
           </div>
         </div>
-        <div className="actions-bar" id="action-panel">
+        {(!online || online.showActions) && <div className="actions-bar" id="action-panel">
           {(Object.keys(actions) as Action[]).map((action) => {
             const display = actions[action];
             return <button key={action} type="button" className="btn-action" id={`btn-${action}`}
-              data-action={action} disabled={blocked || !view.availableActions.includes(action)} onClick={() => onAction(action)}>
+              data-action={action} disabled={blocked || online?.actionsDisabled || !view.availableActions.includes(action)} onClick={() => onAction(action)}>
               {display.title}<span className="action-effect">{display.effect}</span>
               <small aria-hidden="true" data-mobile={display.mobile}>{display.note}</small>
               <span className="arena-sr-only">{display.note}</span>
             </button>;
           })}
-        </div>
+        </div>}
       </section>
       <aside className={`panel-right${openDrawer === 'cemetery' ? ' is-mobile-open' : ''}`}
         id="mobile-cemetery-panel" aria-label="Cartas descartadas">

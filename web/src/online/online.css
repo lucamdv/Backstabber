@@ -1,0 +1,130 @@
+.online-hub {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: #f4edf1;
+  background: radial-gradient(ellipse at 30% 0%, #231027, transparent 60%), #050510;
+  font-size: 1.2rem;
+  scrollbar-color: #ff0055 #050510;
+}
+
+.online-header,
+.online-content {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  padding-inline: max(1rem, env(safe-area-inset-left), env(safe-area-inset-right));
+}
+
+.online-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  flex-wrap: wrap;
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ff00557a;
+}
+
+.online-header > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.online-header img { width: 3rem; height: 3rem; object-fit: contain; }
+.online-header h1 {
+  font-size: clamp(1.7rem, 5vw, 2.8rem);
+  color: #ff3f7f;
+  text-shadow: 0 0 14px #ff00557a;
+}
+
+.online-content { padding-top: 1rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+.online-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.online-stack { display: grid; gap: 0.75rem; min-width: 0; }
+.online-card {
+  padding: clamp(0.75rem, 3vw, 1.2rem);
+  border: 1px solid #ff00557a;
+  border-top: 2px solid #ff0055;
+  background: #0b0915;
+  box-shadow: 0 0 18px #ff00551c;
+  min-width: 0;
+}
+
+.online-login { max-width: 34rem; margin-inline: auto; }
+.online-card h2 { color: #ff3f7f; font-size: 1.8rem; margin-bottom: 0.65rem; }
+.online-card h3 { color: #00f3ff; margin-block: 1rem 0.35rem; }
+.online-card p { margin-block: 0.4rem; }
+.online-card-heading,
+.online-room-code,
+.online-profile-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.online-profile-bar { margin-bottom: 0.7rem; }
+.online-profile-bar small { color: #00f3ff; }
+.online-room-code p { display: grid; }
+.online-room-code strong { color: #00f3ff; letter-spacing: 0.12em; font-size: 1.5rem; }
+
+.online-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+.online-card > .online-actions { margin-top: 0.75rem; }
+.online-hub button {
+  padding: 0.45rem 0.75rem;
+  min-height: 44px;
+  border: 1px solid #00f3ff75;
+  background: #00f3ff0a;
+  color: #ccfbff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.online-hub .online-primary { color: #fff; border-color: #ff0055; background: #ae003a; }
+.online-hub button:hover:not(:disabled) { border-color: #00f3ff; box-shadow: 0 0 12px #00f3ff40; }
+.online-hub button:disabled { opacity: 0.5; cursor: not-allowed; }
+.online-hub :is(button, input, select):focus-visible { outline: 2px solid #00f3ff; outline-offset: 2px; }
+.online-inline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.35rem; align-items: end; margin-block: 0.65rem; }
+.online-inline label { grid-column: 1 / -1; margin-bottom: 0; }
+.online-hub :is(input, select) { min-width: 0; min-height: 44px; font-size: 1rem; color: #f4edf1; }
+.online-hub label { color: #00f3ff; font-size: 1.05rem; text-shadow: none; }
+.online-form { display: grid; gap: 0.45rem; max-width: 38rem; margin: 0 auto 0.75rem; }
+.online-form label { margin-bottom: 0; }
+.online-check { display: flex; align-items: center; gap: 0.55rem; }
+.online-hub .online-check input { width: auto; margin-inline: 0.2rem; accent-color: #ff0055; }
+
+.online-list { list-style: none; }
+.online-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid #00f3ff25;
+}
+.online-list li > div:nth-child(2) { flex: 1 1 7rem; overflow-wrap: anywhere; }
+.online-list li small { display: block; color: #b7bbca; }
+.online-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.4rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: cover;
+  color: #00f3ff;
+  border: 1px solid #00f3ff70;
+  background: #00f3ff12;
+}
+.online-member-status { display: grid; font-size: 1rem; text-align: right; margin-inline-start: auto; }
+.online-good { color: #5af7ce; }
+.online-muted { color: #c8c6d4; }
+.online-error,
+.online-notice { padding: 0.55rem 0.75rem; border: 1px solid; margin-bottom: 0.7rem; }
+.online-error { color: #ffa1be; background: #ff005510; }
+.online-notice { color: #b2faff; background: #00f3ff10; }
+
+@media (max-width: 720px) {
+  .online-grid { grid-template-columns: minmax(0, 1fr); }
+}

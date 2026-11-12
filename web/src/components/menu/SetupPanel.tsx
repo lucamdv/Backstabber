@@ -7,12 +7,13 @@ type SetupPanelProps = {
   active: boolean;
   onStart: (names: string[]) => void;
   onResume?: () => void;
+  onOnline?: () => void;
   onClose: () => void;
 };
 
 const playerCounts = Array.from({ length: 10 }, (_, index) => index + 1);
 
-export function SetupPanel({ active, onStart, onResume, onClose }: SetupPanelProps) {
+export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: SetupPanelProps) {
   const [names, setNames] = useState(['', '']);
   const [error, setError] = useState<string | null>(null);
   const count = names.length;
@@ -35,6 +36,7 @@ export function SetupPanel({ active, onStart, onResume, onClose }: SetupPanelPro
   return (
     <TerminalPanel panel="jogar" title="NOVA PARTIDA" focusClose={false} onClose={onClose}>
       <p className="glitch-text">INICIALIZANDO PROTOCOLO DE CONEXÃO...</p>
+      {onOnline && <button type="button" className="btn-start menu-resume" onClick={onOnline}>Jogar online</button>}
       {onResume && <button type="button" className="btn-start menu-resume" onClick={onResume}>Retomar partida</button>}
       <form id="setup-form" onSubmit={submit}>
         <div className="setup-options">

@@ -52,29 +52,33 @@ export function Oracle({ onClose }: { onClose: () => void }) {
       aria-labelledby="oracle-title"
       onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
     >
-      <section className="oracle-shell" tabIndex={0} aria-label="Cartas do Oráculo">
-        <header className="oracle-header">
-          <div>
-            <span className="oracle-kicker">BANCO DE DADOS // INFLUÊNCIAS</span>
-            <h2 id="oracle-title">ORÁCULO</h2>
-            <p>Consulte ações, defesas e vulnerabilidades antes de declarar sua jogada.</p>
-          </div>
-          <button type="button" className="oracle-close" aria-label="Fechar Oráculo" data-initial-focus onClick={onClose}>✕</button>
-        </header>
-        <div className="oracle-grid">
-          {cards.map(({ name, image, action, blocks, blockedBy }, index) => (
-            <article key={image} className="oracle-card" style={{ '--oracle-index': index } as CSSProperties}>
-              <img className="oracle-card-image" src={`images/${image}_card.png`} alt={`Carta ${name}`} loading="lazy" />
-              <div className="oracle-card-content">
-                <h3>{name}</h3>
-                <section><h4>AÇÃO</h4><p>{action}</p></section>
-                <section><h4>BLOQUEIA</h4><p>{blocks}</p></section>
-                <section><h4>PODE SER BLOQUEADO POR</h4><p>{blockedBy}</p></section>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <OraclePanel onClose={onClose} />
     </div>
   );
+}
+
+export function OraclePanel({ onClose }: { onClose: () => void }) {
+  return <section className="oracle-shell" tabIndex={0} aria-label="Cartas do Oráculo">
+    <header className="oracle-header">
+      <div>
+        <span className="oracle-kicker">BANCO DE DADOS // INFLUÊNCIAS</span>
+        <h2 id="oracle-title">ORÁCULO</h2>
+        <p>Consulte ações, defesas e vulnerabilidades antes de declarar sua jogada.</p>
+      </div>
+      <button type="button" className="oracle-close" aria-label="Fechar Oráculo" data-initial-focus onClick={onClose}>✕</button>
+    </header>
+    <div className="oracle-grid">
+      {cards.map(({ name, image, action, blocks, blockedBy }, index) => (
+        <article key={image} className="oracle-card" style={{ '--oracle-index': index } as CSSProperties}>
+          <img className="oracle-card-image" src={`images/${image}_card.png`} alt={`Carta ${name}`} loading="lazy" />
+          <div className="oracle-card-content">
+            <h3>{name}</h3>
+            <section><h4>AÇÃO</h4><p>{action}</p></section>
+            <section><h4>BLOQUEIA</h4><p>{blocks}</p></section>
+            <section><h4>PODE SER BLOQUEADO POR</h4><p>{blockedBy}</p></section>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>;
 }

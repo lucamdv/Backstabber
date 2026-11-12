@@ -10,14 +10,15 @@ interface CardProps {
   animationDelay?: string;
   onSelect?: () => void;
   selected?: boolean;
+  disabled?: boolean;
 }
 
-export function Card({ character, label, className = '', children, animationDelay, onSelect, selected }: CardProps) {
+export function Card({ character, label, className = '', children, animationDelay, onSelect, selected, disabled }: CardProps) {
   const art = `carta carta-${character ?? 'verso'} ${className}`;
   const accessibleName = label ?? (character ? characterName[character] : 'Influência virada para baixo');
   if (onSelect) {
     return <button type="button" className={`${art} carta-escolha`} aria-label={accessibleName}
-      aria-pressed={selected} onClick={onSelect} />;
+      aria-pressed={selected} onClick={onSelect} disabled={disabled} />;
   }
   return <div className={art} role="img" aria-label={accessibleName} title={accessibleName}
     style={animationDelay ? { animationDelay } : undefined}>{children}</div>;

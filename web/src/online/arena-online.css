@@ -1,0 +1,233 @@
+.online-arena .scoreboard-bar {
+  max-width: 100%;
+}
+
+.online-arena .player-stat {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+  padding: 5px 9px;
+}
+
+.online-arena .player-stat.online-viewer {
+  border-color: var(--cyan, #00f3ff);
+}
+
+.online-arena .player-stat strong {
+  max-width: 15ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.online-player-presence {
+  color: #ffc477;
+  font-size: 0.9rem;
+}
+
+.online-player-presence[data-connected="true"] {
+  color: #86e9b2;
+}
+
+.online-arena .playmat-arena {
+  min-width: 0;
+}
+
+.online-arena .player-hand-container {
+  margin-top: 0;
+}
+
+.online-playmat-scroll {
+  width: 100%;
+  max-height: min(54dvh, 560px);
+  padding: 4px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.online-arena .online-panel,
+.online-arena .oracle-shell {
+  width: min(100%, 560px);
+  max-height: none;
+  margin: 0 auto 6px;
+  padding: 12px;
+  overflow: visible;
+  color: #f2eaf1;
+  background: rgba(5, 5, 14, 0.96);
+}
+
+.online-arena .online-panel h2 {
+  margin: 0 0 5px;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+
+.online-arena .online-panel p {
+  margin: 4px 0 8px;
+}
+
+.online-decision-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.online-arena .online-panel button:not(.carta) {
+  width: auto;
+  min-height: 42px;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.online-arena .online-panel > button:not(.carta) {
+  margin: 6px 0 0;
+}
+
+.online-turn-message,
+.online-error {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 6px 12px;
+  border: 1px solid var(--cyan, #00f3ff);
+  background: rgba(5, 5, 14, 0.96);
+  color: #effbfc;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.online-error {
+  border-color: var(--magenta, #ff0055);
+}
+
+.online-arena .online-progress {
+  color: var(--cyan, #00f3ff);
+}
+
+.online-responses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 7px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.online-responses li {
+  padding: 2px 4px;
+  border: 1px solid #6d3c53;
+  color: #ecc1cf;
+  overflow-wrap: anywhere;
+}
+
+.online-responses li[data-responded="true"] {
+  border-color: #376f5c;
+  color: #86e9b2;
+}
+
+.online-arena :is(button, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--cyan, #00f3ff);
+  outline-offset: 2px;
+}
+
+.online-arena .declared-card .carta-declarada {
+  width: clamp(44px, 14vw, 78px);
+  height: auto;
+  aspect-ratio: 0.61;
+}
+
+.online-arena #loss-cards .carta,
+.online-arena #negotiation-cards .carta {
+  width: clamp(46px, 15vw, 94px);
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 0.61;
+}
+
+.online-arena .oracle-header h2 {
+  font-size: clamp(1.5rem, 4.5vw, 2.3rem);
+}
+
+.online-arena .oracle-header p {
+  font-size: 1rem;
+}
+
+.online-arena .oracle-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+}
+
+@media (max-width: 900px), (max-height: 600px) and (pointer: coarse) {
+  .online-arena .header-center {
+    overflow: hidden;
+  }
+
+  .online-arena .scoreboard-bar {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .online-arena .player-stat,
+  .online-arena .player-stat.active {
+    display: grid;
+    flex: 0 0 115px;
+    grid-template-rows: auto auto auto;
+    min-height: 55px;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 0;
+    font-size: 0.9rem;
+  }
+
+  .online-arena .player-stat.online-viewer {
+    order: -2;
+  }
+
+  .online-arena .player-stat.active:not(.online-viewer) {
+    order: -1;
+  }
+
+  .online-arena .player-stat strong {
+    overflow: hidden;
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+  }
+
+  .online-arena .player-resource {
+    padding: 0 2px;
+  }
+
+  .online-arena .player-resource b,
+  .online-player-presence {
+    font-size: 0.67rem;
+  }
+
+  .online-arena .panel-center {
+    --online-hand-size: clamp(105px, 20dvh, 164px);
+    grid-template-rows: minmax(0, 1fr) var(--online-hand-size) auto;
+  }
+
+  .online-arena .panel-center.online-no-action-bar {
+    grid-template-rows: minmax(0, 1fr) var(--online-hand-size);
+  }
+
+  .online-arena .player-hand-container {
+    min-height: 0;
+  }
+
+  .online-arena #player-hand .carta {
+    width: auto;
+    height: calc(var(--online-hand-size) - 28px);
+    aspect-ratio: 0.61;
+  }
+
+  .online-playmat-scroll {
+    height: 100%;
+    max-height: none;
+    padding: 2px;
+  }
+}
