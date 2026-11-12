@@ -120,14 +120,29 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
   };
 }
 
+// node-postgres overwrites explicit SSL options when the URI has sslmode.
+// Keep project CA trust and hostname validation active for remote databases.
+export function verifiedPostgresConnection(connectionString: string, pem?: string) {
+  const url = new URL(connectionString);
+  if (loopbackHosts.has(url.hostname)) return { connectionString: url.href };
+  const ca = pem?.replace(/\\n/g, '\n').trim();
+  if (!ca?.includes('-----BEGIN CERTIFICATE-----') || !ca.includes('-----END CERTIFICATE-----')) {
+    console.error('Backstabber database TLS root CA not configured');
+    throw new ApiError('SERVICE_UNAVAILABLE', 503);
+  }
+  for (const name of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey', 'ssl', 'uselibpqcompat']) {
+    url.searchParams.delete(name);
+  }
+  return { connectionString: url.href, ssl: { ca, rejectUnauthorized: true } };
+}
+
 let pool: Pool | undefined;
 export function handleRequest(request: Request, attachPool?: (pool: Pool) => void) {
   return createApi(async () => {
     if (!process.env.DATABASE_URL) throw new ApiError('SERVICE_UNAVAILABLE', 503);
     if (!pool) {
-      const url = new URL(process.env.DATABASE_URL);
-      if (!loopbackHosts.has(url.hostname)) url.searchParams.set('sslmode', 'verify-full');
-      const instance = new Pool({ connectionString: url.href, max: 3, idleTimeoutMillis: 5000,
+      const connection = verifiedPostgresConnection(process.env.DATABASE_URL, process.env.SUPABASE_DB_CA_CERT);
+      const instance = new Pool({ ...connection, max: 3, idleTimeoutMillis: 5000,
         connectionTimeoutMillis: 5000 });
       instance.on('error', () => console.error('Backstabber idle database connection closed'));
       attachPool?.(instance);
