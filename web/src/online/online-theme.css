@@ -1,0 +1,49 @@
+
+@font-face {
+  font-family: 'Backstabber Pixel';
+  src: url('./fonts/VT323-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:is(.online-hub, .online-arena) {
+  --net-display: 'Backstabber Pixel', 'Courier New', monospace;
+  --net-body: system-ui, sans-serif;
+  --net-ink: #080610;
+  --net-panel: #120d20;
+  --net-raised: #1d122d;
+  --net-line: #4e365c;
+  --net-text: #f9edf7;
+  --net-muted: #cbbdd6;
+  --net-hot: #ff4e96;
+  --net-cold: #6beaf1;
+  --net-green: #8cf0c1;
+  --net-cut: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  --net-ease: cubic-bezier(.2,.7,.2,1);
+}
+
+@keyframes online-arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes online-scan {
+  from { transform: translateY(-25%); }
+  to { transform: translateY(120%); }
+}
+
+@keyframes online-ready {
+  from { background-color: #214939; }
+  to { background-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.online-hub, .online-arena) *, :is(.online-hub, .online-arena) *::before,
+  :is(.online-hub, .online-arena) *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

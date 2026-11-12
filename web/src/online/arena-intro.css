@@ -1,0 +1,100 @@
+.online-arena .online-arena-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 26000;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  overflow: clip;
+  background: radial-gradient(ellipse at center, #170d31, #050410 68%);
+  color: #b9fdff;
+  font: 400 clamp(1.45rem, 4vw, 2.7rem)/1 var(--net-display);
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+  animation: online-intro-open 5000ms linear both;
+}
+
+.online-intro-shuffle {
+  grid-area: 1 / 1;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  animation: online-intro-deck 2000ms cubic-bezier(.22,.7,.2,1) both;
+}
+.online-arena .online-intro-shuffle .intro-deck {
+  width: clamp(72px, 13dvh, 140px);
+  height: auto;
+  aspect-ratio: .61;
+}
+.online-arena .online-intro-shuffle .intro-card { animation-duration: 2400ms; }
+.online-arena .online-intro-shuffle .intro-face { width: 100%; height: 100%; }
+
+.online-intro-tunnel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  perspective: 520px;
+  background: radial-gradient(ellipse at center, #0a0a1a 6%, #1b0c3b 38%, #050410 75%);
+  animation: online-tunnel-gate 5000ms linear both;
+}
+.online-intro-tunnel i {
+  position: absolute;
+  width: min(85vw, 120dvh);
+  aspect-ratio: 1.6;
+  border: 2px solid #82fcff;
+  border-radius: 24%;
+  box-shadow: 0 0 22px #00edff8a, inset 0 0 18px #d025fc75;
+  opacity: 0;
+  animation: online-tunnel-travel 1450ms linear calc(2000ms + var(--ring) * 115ms) both;
+}
+.online-intro-tunnel i:nth-child(even) { border-color: #f478ea; }
+.online-intro-tunnel img {
+  width: clamp(48px, 9dvh, 86px);
+  opacity: .82;
+  animation: online-tunnel-mark 2200ms cubic-bezier(.35,.05,.8,.55) 2000ms both;
+}
+.online-intro-arrival {
+  position: absolute;
+  inset: auto 4px 10%;
+  color: #d3ffff;
+  text-shadow: 0 0 14px #10edff;
+  animation: online-intro-arrival 800ms linear 4200ms both;
+}
+.online-intro-reduced { display: none; }
+
+@keyframes online-intro-open {
+  0%, 84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes online-intro-deck {
+  0%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: scale(.12); visibility: hidden; }
+}
+@keyframes online-tunnel-gate {
+  0%, 39.9% { opacity: 0; }
+  45%, 77% { opacity: 1; }
+  84%, 100% { opacity: 0; }
+}
+@keyframes online-tunnel-travel {
+  0% { transform: translateZ(-850px) scale(.19) rotate(-12deg); opacity: 0; }
+  32% { opacity: .8; }
+  82% { opacity: .66; }
+  100% { transform: translateZ(315px) scale(2.5) rotate(9deg); opacity: 0; }
+}
+@keyframes online-tunnel-mark {
+  0% { transform: scale(.28); }
+  78% { opacity: .95; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+@keyframes online-intro-arrival {
+  0%, 100% { opacity: 0; }
+  30%, 75% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-arena .online-arena-intro { animation: none; }
+  .online-intro-shuffle, .online-intro-tunnel, .online-intro-arrival { display: none; }
+  .online-intro-reduced { display: block; }
+}

@@ -30,6 +30,48 @@
 
 No Backstabber, cada jogador controla influências secretas e pode declarar qualquer personagem — tendo a carta ou não. Use Créditos, conteste blefes, bloqueie seus rivais e seja a última pessoa com uma influência em jogo.
 
+### Desenvolvimento da versão React (AV2)
+
+No checkout da branch da Sprint 01, use Node.js 22 ou superior e execute dentro de `web/`.
+
+```bash
+cd web
+npm ci
+npm run dev
+npm run test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+`npm run preview` serve o build de `web/dist/` para teste local. O build reutiliza as artes e folhas de estilo do repositório. O modo local salva partidas no navegador e oferece a opção **Retomar partida** quando há um estado recuperável.
+
+- [Inventário do legado](docs/av2/sprint-01-baseline.md)
+- [Contrato dos backends](docs/av2/backend-contract.md)
+- [Plano de distribuição](docs/av2/distribution-migration.md)
+- [Validação e paridade funcional](docs/av2/sprint-01-validation.md)
+
+### Multiplayer online (Sprint 02)
+
+O modo local continua disponível sem conta. O modo online usa Supabase Auth, a API Node.js e canais privados para sincronizar salas e partidas.
+
+1. Inicie uma instância local do Supabase com Docker e a CLI. Aplique as migrações da pasta `supabase/migrations/` na instância local. Use `supabase status` para obter a URL da API, a chave pública e a conexão PostgreSQL.
+2. Preencha `web/.env` a partir de `web/.env.example`. Mantenha a conexão PostgreSQL apenas no servidor. Para testar Google, habilite o provedor na configuração local e cadastre o callback mostrado pelo Supabase no Google Cloud. Cadastre a URL do frontend em Redirect URLs e inclua `http://localhost:5173/?online=1` para o fluxo local.
+3. Execute `npm ci` em `web/`. Em dois terminais, execute `npm run dev:api` e `npm run dev`. Abra o endereço mostrado pelo Vite e selecione **Multiplayer online**. Use perfis separados do navegador para sessões independentes.
+4. Crie uma sala, copie o código e use as outras contas para entrar. Cada jogador confirma prontidão. O anfitrião inicia após o lobby confirmar todos conectados e prontos.
+
+Na Vercel, o arquivo `vercel.json` usa a raiz do repositório, o build Vite em `web/` e a função Node.js em `api/index.ts`. Configure as variáveis de ambiente antes de qualquer publicação. Para trocar de backend, configure `VITE_API_URL` e gere o frontend novamente.
+
+- [Arquitetura da Sprint 02](docs/av2/sprint-02-architecture.md)
+- [Banco de dados](docs/av2/database-schema.md)
+- [Fluxo multiplayer](docs/av2/multiplayer-interaction-flow.md)
+- [Validação da Sprint 02](docs/av2/sprint-02-validation.md)
+- [Handoff para Spring Boot](docs/av2/sprint-03-handoff.md)
+
+### Homologação 02.1
+
+Consulte o [relatório da Sprint 02.1](docs/av2/sprint-02-homologation.md) e os guias de [Supabase](docs/av2/supabase-setup.md), [Google OAuth](docs/av2/google-oauth-setup.md), [preview Vercel](docs/av2/vercel-deployment.md) e [testes E2E](docs/av2/multiplayer-e2e.md).
+
 - De **1 a 10 jogadores** no mesmo dispositivo.
 - Baralhos proporcionais de **15, 20 ou 25 cartas**.
 - Cartas: **Magnata, Executor, Sentinela, Mercenário e Broker**.

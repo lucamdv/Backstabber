@@ -1,0 +1,48 @@
+.arena-root .arena-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.arena-player-reactions {
+  display: contents;
+}
+
+.arena-backstab-impact .hud-container {
+  animation: backstabHudImpact 0.9s steps(2, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-backstab-impact .hud-container {
+    animation: none;
+  }
+}
+
+#intro-overlay.arena-intro-fading {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.arena-error {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 25000;
+  width: min(430px, calc(100vw - 24px));
+  padding: 8px 12px;
+  border: 1px solid var(--magenta);
+  background: #050508;
+  color: #fff;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+body:has(.arena-root #pause-modal),
+body:has(.arena-root .mobile-drawer-scrim.is-open),
+body:has(.arena-root .oracle-overlay.is-open) {
+  overflow: hidden;
+}
