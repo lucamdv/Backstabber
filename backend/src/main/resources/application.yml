@@ -1,0 +1,63 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+spring:
+  application:
+    name: backstabber-backend
+  profiles:
+    default: dev
+  sql:
+    init:
+      mode: never
+  mvc:
+    log-request-details: false
+
+management:
+  health:
+    db:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+backstabber:
+  allowed-origin: ${BACKSTABBER_ALLOWED_ORIGIN:}
+  auth:
+    url: ${SUPABASE_URL:}
+    publishable-key: ${SUPABASE_PUBLISHABLE_KEY:}
+    timeout: 6s
+  database:
+    url: ${DATABASE_URL:}
+    ca-certificate: ${SUPABASE_DB_CA_CERT:}
+    allow-loopback-plaintext: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev | test
+
+server:
+  address: 127.0.0.1
+
+backstabber:
+  database:
+    allow-loopback-plaintext: true
