@@ -1,6 +1,6 @@
 # Backstabber Backend · Spring Boot
 
-Fundação AV3 para a migração incremental do servidor. A rota de negócio disponível é `GET /api/v1/profile`. O backend Node.js continua atendendo o jogo publicado.
+Backend AV3 para a migração incremental do servidor. A Sprint 03.2 cobre perfis, amizades, convites e lobby. O backend Node.js continua atendendo o jogo publicado. O [mapa de rotas](../docs/av3/04-sprint-03-2-social-lobby.md) descreve as operações e a fronteira do início de partida.
 
 ## Executar localmente
 
@@ -47,5 +47,6 @@ Liveness verifica o processo. Readiness inclui o PostgreSQL e devolve `503` se e
 - `mvnw clean verify` roda as verificações de segurança, configuração, CORS, health e falhas de dependências. A suíte nativa é habilitada por um dos modos abaixo.
 - `BACKSTABBER_TESTCONTAINERS=true` habilita a suíte de PostgreSQL via Docker/Testcontainers.
 - `BACKSTABBER_JAVA_TEST_DATABASE_URL` habilita a mesma suíte num PostgreSQL 17 descartável em `127.0.0.1`. A URI deve apontar para a base de controle `backstabber_native` e para um usuário de teste com permissão de criar bancos e papéis. O teste cria uma base com nome aleatório e a descarta ao final. Use somente credenciais de um cluster de teste isolado.
+- `BACKSTABBER_NODE_PARITY=true` adiciona a comparação direta com o handler Node.js. Requer Node no PATH, dependências de `web/` instaladas e um dos modos de PostgreSQL acima.
 
 [Inventário Node.js](../docs/av3/01-backend-inventory.md) · [Arquitetura Java](../docs/av3/02-spring-boot-architecture.md) · [Roteiro de migração](../docs/av3/03-migration-roadmap.md)

@@ -14,6 +14,10 @@ public final class ApiFailure extends RuntimeException {
         return status;
     }
 
+    public static ApiFailure badRequest(String code) {
+        return new ApiFailure(HttpStatus.BAD_REQUEST, code);
+    }
+
     public static ApiFailure unauthenticated() {
         return new ApiFailure(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED");
     }

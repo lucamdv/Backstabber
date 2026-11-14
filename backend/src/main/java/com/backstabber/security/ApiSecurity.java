@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.backstabber.api.ApiErrorHandler.ErrorBody;
 import com.backstabber.api.ApiFailure;
+import com.backstabber.api.RequestInput;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 @Configuration
 public class ApiSecurity {
     private static final Pattern BEARER = Pattern.compile("Bearer ([\\w.-]+)");
+    private static final Set<String> BODY_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, SupabaseAuthenticator authenticator,
@@ -79,6 +81,9 @@ public class ApiSecurity {
                         try {
                             if (!match.matches()) throw ApiFailure.unauthenticated();
                             userId = authenticator.authenticate(match.group(1));
+                            if (BODY_METHODS.contains(request.getMethod())) {
+                                request.setAttribute(RequestInput.ATTRIBUTE, RequestInput.read(request.getInputStream(), json));
+                            }
                         } catch (ApiFailure failure) {
                             writeError(response, json, failure.status().value(), failure.getMessage());
                             return;

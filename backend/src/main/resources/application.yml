@@ -15,6 +15,9 @@ spring:
       mode: never
   mvc:
     log-request-details: false
+    formcontent:
+      filter:
+        enabled: false
 
 management:
   health:
