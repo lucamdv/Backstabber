@@ -15,16 +15,22 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 @Configuration
 public class DatabaseConfiguration {
     private static final Set<String> LOOPBACK = Set.of("localhost", "127.0.0.1", "[::1]");
 
     @Bean(destroyMethod = "close")
-    HikariDataSource dataSource(@Value("${backstabber.database.url:}") String url,
+    HikariDataSource dataSource(Environment environment, @Value("${backstabber.database.url:}") String url,
             @Value("${backstabber.database.ca-certificate:}") String ca,
             @Value("${backstabber.database.allow-loopback-plaintext:false}") boolean allowLoopbackPlaintext) {
-        var postgres = postgresSource(url, ca, allowLoopbackPlaintext);
+        boolean staging = environment.matchesProfiles("homologation");
+        if (staging) {
+            StagingIsolation.validate(environment.getProperty("backstabber.staging.project-ref", ""),
+                    environment.getProperty("backstabber.auth.url", ""), url);
+        }
+        var postgres = postgresSource(url, ca, allowLoopbackPlaintext && !staging);
         var config = new HikariConfig();
         config.setPoolName("backstabber-db");
         config.setDataSource(postgres.source());

@@ -10,13 +10,14 @@ Configure as variáveis no processo que inicia o Java. [.env.example](.env.examp
 
 | Variável | Uso |
 | --- | --- |
-| `SERVER_PORT` | Porta HTTP, padrão 8080. O perfil `dev` liga o servidor em `127.0.0.1`. |
+| `SERVER_PORT` / `PORT` | Porta HTTP nessa ordem de precedência, padrão 8080. O perfil `dev` liga o servidor em `127.0.0.1`. |
 | `SUPABASE_URL` | Origem do Supabase Auth de desenvolvimento. HTTPS é exigido para hosts remotos. |
 | `SUPABASE_PUBLISHABLE_KEY` | Chave pública do Auth de desenvolvimento. |
 | `DATABASE_URL` | URI `postgresql://usuario:senha@host:porta/banco` ou `postgres://...`. Codifique caracteres reservados nos componentes de credencial. |
+| `BACKSTABBER_STAGING_PROJECT_REF` | Referência do projeto Supabase autorizado, obrigatória no perfil `homologation`. |
 | `SUPABASE_DB_CA_CERT` | Certificado CA em PEM, com quebras de linha reais ou sequências literais `\n`. Exigido para o PostgreSQL remoto. |
 | `BACKSTABBER_ALLOWED_ORIGIN` | Origens completas permitidas, separadas por vírgula. Vazio permite apenas o uso sem CORS. |
-| `SPRING_PROFILES_ACTIVE` | Padrão `dev`. Use `test` para fixtures locais. `homologation` usa os defaults estritos e o ambiente externo. |
+| `SPRING_PROFILES_ACTIVE` | Padrão `dev`. Use `test` para fixtures locais e `homologation` para deploy em staging. |
 
 A URI é convertida em parâmetros do pgJDBC. O formato `jdbc:` e parâmetros arbitrários não são aceitos. O único parâmetro de consulta aceito é um `sslmode` legado, que não determina a política TLS do aplicativo. Para bancos remotos, o cliente aplica `verify-full`. Em `dev` e `test`, o banco local de loopback pode operar sem TLS se a CA estiver ausente.
 
@@ -31,6 +32,19 @@ cd backend
 ```
 
 Com o ambiente configurado, `mvnw clean verify` gera `target/backstabber-backend-0.1.0.jar`, executável com `java -jar target/backstabber-backend-0.1.0.jar`.
+
+## Contêiner de homologação
+
+A partir da raiz do repositório
+
+```sh
+docker build -t backstabber-java-staging backend
+docker run --rm --env-file /caminho/privado/staging.env -p 8080:8080 backstabber-java-staging
+```
+
+A imagem inicia em homologation, como usuário não root. Forneça variáveis de staging aprovadas em tempo de execução. Se o Supabase de Auth e o PostgreSQL não corresponderem à referência aprovada, a aplicação falha antes de criar o pool JDBC. O Supabase de produção é rejeitado nesse perfil. Num arquivo de ambiente Docker, use o PEM em uma única linha com as quebras representadas por \n.
+
+Consulte a [configuração de staging e o roteiro de homologação](../docs/av3/07-sprint-03-5-integration-homologation.md).
 
 ## Verificar
 

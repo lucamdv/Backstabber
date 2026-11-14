@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:${PORT:8080}}
   error:
     include-message: never
     include-stacktrace: never
@@ -43,6 +43,8 @@ logging:
 
 backstabber:
   allowed-origin: ${BACKSTABBER_ALLOWED_ORIGIN:}
+  staging:
+    project-ref: ${BACKSTABBER_STAGING_PROJECT_REF:}
   auth:
     url: ${SUPABASE_URL:}
     publishable-key: ${SUPABASE_PUBLISHABLE_KEY:}
