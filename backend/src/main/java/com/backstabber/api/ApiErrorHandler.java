@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -37,17 +38,25 @@ public class ApiErrorHandler {
     @ExceptionHandler({DataAccessException.class, TransactionException.class})
     ResponseEntity<ErrorBody> databaseFailure(RuntimeException failure) {
         boolean unavailable = failure instanceof CannotCreateTransactionException
-                || failure instanceof CannotGetJdbcConnectionException;
-        for (Throwable cause = failure; cause != null && !unavailable; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && sql.getSQLState() != null) {
-                unavailable = sql.getSQLState().startsWith("08") || UNAVAILABLE_STATES.contains(sql.getSQLState());
-            }
-        }
+                || failure instanceof CannotGetJdbcConnectionException
+                || hasUnavailableSqlState(failure)
+                || failure instanceof TransactionSystemException transaction
+                        && hasUnavailableSqlState(transaction.getApplicationException());
         if (unavailable) {
             log.atWarn().addKeyValue("type", failure.getClass().getSimpleName()).log("Database unavailable");
             return apiFailure(ApiFailure.unavailable());
         }
         return unexpected(failure);
+    }
+
+    private static boolean hasUnavailableSqlState(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sql && sql.getSQLState() != null
+                    && (sql.getSQLState().startsWith("08") || UNAVAILABLE_STATES.contains(sql.getSQLState()))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @ExceptionHandler(Exception.class)

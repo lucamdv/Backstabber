@@ -32,6 +32,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class ApiSecurity {
+    private static final Pattern MATCH_ROUTE = Pattern.compile("/api/v1/matches/[^/]+(?:/(?:commands|rematch))?");
     private static final Pattern BEARER = Pattern.compile("Bearer ([\\w.-]+)");
     private static final Set<String> BODY_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
 
@@ -88,7 +89,7 @@ public class ApiSecurity {
                             writeError(response, json, failure.status().value(), failure.getMessage());
                             return;
                         }
-                        if ("HEAD".equals(request.getMethod())) {
+                        if ("HEAD".equals(request.getMethod()) && !MATCH_ROUTE.matcher(request.getServletPath()).matches()) {
                             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                             return;
                         }

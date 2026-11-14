@@ -112,7 +112,7 @@ public class RoomService {
         return read(userId, roomId);
     }
 
-    /** Future start orchestration must invoke this inside the transaction that creates the real match. */
+    /** Locks and validates the room in the transaction that creates the match. */
     @Transactional(propagation = Propagation.MANDATORY)
     public RoomSnapshot validateStart(UUID userId, UUID roomId) {
         limits();
@@ -123,6 +123,14 @@ public class RoomService {
         requireLobby(room);
         if (!snapshot.canStart()) throw new ApiFailure(HttpStatus.CONFLICT, "ROOM_NOT_READY");
         return snapshot;
+    }
+
+    /** Completes a start after validateStart acquired the room lock and the match was inserted. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public RoomSnapshot completeStart(UUID userId, UUID roomId) {
+        rooms.markStarted(roomId);
+        rooms.expireInvites(roomId, null);
+        return read(userId, roomId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

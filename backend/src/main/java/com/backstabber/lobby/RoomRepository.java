@@ -126,6 +126,10 @@ class RoomRepository {
                 .param("seconds", RoomPolicy.HOST_ABANDONMENT_SECONDS).query(Boolean.class).single();
     }
 
+    void markStarted(UUID roomId) {
+        db.sql("update public.bs_rooms set status = 'started' where id = :id").param("id", roomId).update();
+    }
+
     void close(UUID roomId) {
         db.sql("update public.bs_rooms set status = 'closed' where id = :id and status <> 'closed'")
                 .param("id", roomId).update();

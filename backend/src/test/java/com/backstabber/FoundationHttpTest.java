@@ -98,9 +98,10 @@ class FoundationHttpTest {
     }
 
     @Test
-    void futureRoutesRemainProtectedAndReturnNotFoundAfterAuthentication() throws Exception {
+    void matchRoutesAuthenticateBeforeLookingUpTheMatch() throws Exception {
         assertError(401, "UNAUTHENTICATED", get("/api/v1/matches/00000000-0000-4000-8000-000000000001", null));
-        assertError(404, "NOT_FOUND", get("/api/v1/matches/00000000-0000-4000-8000-000000000001", "Bearer valid"));
+        assertError(404, "NOT_FOUND", get("/api/v1/matches/invalid", "Bearer valid"));
+        assertError(503, "SERVICE_UNAVAILABLE", get("/api/v1/matches/00000000-0000-4000-8000-000000000001", "Bearer valid"));
     }
 
     private HttpResponse<String> get(String path, String authorization) throws Exception {

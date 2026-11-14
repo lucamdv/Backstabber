@@ -223,7 +223,7 @@ class RoomLobbyTest extends SocialIntegrationTest {
         assertEquals("lobby", candidate.status());
         assertNull(candidate.matchId());
         assertEquals(0, jdbc.queryForObject("select count(*) from public.bs_matches where room_id = ?", Integer.class, id));
-        assertError(post(id, "start", "first", "{}"), 404, "NOT_FOUND");
+        assertTrue(expectOk(post(id, "start", "first", "{}")).get("matchId").isTextual());
     }
 
     @Test

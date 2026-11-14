@@ -107,6 +107,13 @@ public abstract class SocialIntegrationTest {
         }
     }
 
+    protected static void configureChildProcess(ProcessBuilder process) {
+        process.environment().put("SPRING_PROFILES_ACTIVE", "test");
+        process.environment().put("DATABASE_URL", fixtureDatabaseUrl);
+        process.environment().put("SUPABASE_URL", "http://127.0.0.1:" + auth.getAddress().getPort());
+        process.environment().put("SUPABASE_PUBLISHABLE_KEY", PUBLIC_KEY);
+    }
+
     @AfterAll
     static void stopFixtures() throws SQLException {
         if (auth != null) {
