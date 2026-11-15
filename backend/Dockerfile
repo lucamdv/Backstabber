@@ -1,4 +1,6 @@
 FROM eclipse-temurin:21-jdk-jammy@sha256:432e54724c3e57d1846aeb886f4d339f3b0522931c4e64119c2797013b7cfc3c AS build
+# The wrapper pins the ZIP checksum. Without unzip it downloads the tar.gz instead.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./

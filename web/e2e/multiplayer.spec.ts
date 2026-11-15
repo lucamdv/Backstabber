@@ -31,7 +31,12 @@ test('três contas, reação em reconexão, vitória e revanche @live', async ({
   const [a, b, c] = pages;
   const button = (page: Page, name: string | RegExp) => page.getByRole('button', { name, exact: typeof name === 'string' });
   try {
-    await Promise.all(pages.map(page => page.goto('./#/amigos')));
+    await Promise.all(pages.map(async page => {
+      const socialLoaded = Promise.all(['friends', 'invites'].map(route => page.waitForResponse(response =>
+        response.ok() && response.request().method() === 'GET'
+        && new URL(response.url()).pathname.endsWith('/api/v1/' + route), { timeout: 25_000 })));
+      await Promise.all([page.goto('./#/amigos'), socialLoaded]);
+    }));
     await Promise.all(pages.map(page => expect(page.getByRole('heading', { name: 'Rede de contatos', exact: true })).toBeVisible()));
     const friend = a.getByRole('list', { name: 'Lista de amigos' }).getByRole('listitem')
       .filter({ hasText: '@' + usernames[1] });

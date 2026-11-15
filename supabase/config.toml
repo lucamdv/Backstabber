@@ -8,6 +8,7 @@ schemas = ["public", "graphql_public"]
 [db]
 port = 54322
 major_version = 17
+health_timeout = "5m"
 
 [realtime]
 enabled = true
