@@ -68,7 +68,7 @@ $env:BACKSTABBER_E2E_USERNAMES = node e2e/local-supabase.mjs
 if ($LASTEXITCODE -eq 0) { npm run test:e2e -- --grep '@live' }
 ```
 
-O roteiro HTTP cobre os perfis e o isolamento de canais privados e partidas. O teste de navegador usa as sessões locais para validar o fluxo React, incluindo reconexão, vitória e revanche. O provedor Google local continua desabilitado.
+O roteiro HTTP cobre os perfis e o isolamento de canais privados e partidas. O teste de navegador usa as sessões locais para validar o fluxo React, incluindo reconexão, vitória e revanche. O provedor Google local fica desabilitado por padrão. [Configuração e evidência do OAuth local na Sprint 03.5B](09-sprint-03-5b-google-oauth-local.md)
 
 No ensaio, o primeiro boot excedeu o timeout de PostgreSQL. A tentativa seguinte aplicou a migração, mas a CLI encerrou a stack quando o PostgREST retornou 503 durante a inicialização. A terceira usou o argumento suportado --ignore-health-check para deixar os serviços terminarem de subir, com verificação explícita antes dos testes. PostgreSQL 17.11 confirmou a migração, Auth retornou HTTP 200, Realtime ficou saudável e o React compilado respondeu em loopback. O Spring respondeu HTTP 200 em liveness e readiness no JAR do host e no contêiner com o PostgreSQL local. Com o banco indisponível, a readiness do contêiner retornou 503.
 

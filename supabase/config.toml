@@ -15,11 +15,13 @@ enabled = true
 
 [auth]
 enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173"]
+site_url = "http://127.0.0.1:4253"
+additional_redirect_urls = ["http://127.0.0.1:4253/"]
 enable_anonymous_sign_ins = false
 
 [auth.external.google]
+# Enable only for a local run with the dedicated development credentials.
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
