@@ -27,23 +27,35 @@ try {
         throw 'Both OAuth variables must be set for this local run.'
     }
 
+    Write-Host 'Iniciando Auth, PostgreSQL e Realtime locais no Docker...'
     try {
         [IO.File]::WriteAllText($config, $enabled)
-        & npx.cmd --yes --package supabase@3.1.0 -- supabase start --workdir $repo --agent no *> $null
+        $extras = 'storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'
+        & npx.cmd --yes --package supabase@3.1.0 -- supabase start --workdir $repo --agent no --exclude $extras --ignore-health-check *> $null
         if ($LASTEXITCODE -ne 0) {
             throw 'Local Supabase startup failed. Check Docker Desktop and whether the ports are in use.'
         }
     } finally {
         [IO.File]::WriteAllBytes($config, $original)
     }
+    Write-Host 'Verificando o Auth local e o provedor Google...'
     $statusJson = & npx.cmd --yes --package supabase@3.1.0 -- supabase status --workdir $repo --agent no --output json 2>$null
     if ($LASTEXITCODE -ne 0) { throw 'Could not verify local Supabase status.' }
     $status = ($statusJson -join [Environment]::NewLine) | ConvertFrom-Json
     if ($status.API_URL -ne 'http://127.0.0.1:54321') { throw 'Unexpected local Auth URL.' }
     $publicKey = $status.PUBLISHABLE_KEY
     if (-not $publicKey) { $publicKey = $status.ANON_KEY }
-    $auth = Invoke-RestMethod -Uri 'http://127.0.0.1:54321/auth/v1/settings' `
-        -Headers @{ apikey = $publicKey } -MaximumRedirection 0 -TimeoutSec 10
+    $auth = $null
+    for ($attempt = 0; $attempt -lt 10; $attempt++) {
+        try {
+            $auth = Invoke-RestMethod -Uri 'http://127.0.0.1:54321/auth/v1/settings' `
+                -Headers @{ apikey = $publicKey } -MaximumRedirection 0 -TimeoutSec 5
+            break
+        } catch {
+            Start-Sleep -Seconds 2
+        }
+    }
+    if (-not $auth) { throw 'The local Auth endpoint did not become ready.' }
     if ($auth.external.google -ne $true) { throw 'Google is disabled in the running stack. Stop the local stack and try again.' }
     Write-Output 'Supabase local iniciado. Google habilitado nesta instancia local. Configuracao padrao restaurada.'
 } finally {
