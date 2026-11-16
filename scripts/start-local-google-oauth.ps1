@@ -1,5 +1,15 @@
 $ErrorActionPreference = 'Stop'
 
+function Invoke-SupabaseCli {
+    param([string[]]$CliArguments, [string]$FailureMessage)
+
+    $npx = Get-Command npx.cmd -CommandType Application -ErrorAction Stop | Select-Object -First 1
+    # Windows PowerShell 5.1 treats a native stderr progress line as an error record.
+    $ErrorActionPreference = 'Continue'
+    & $npx.Source --yes --package supabase@3.1.0 -- supabase @CliArguments --workdir $repo --agent no 2>$null
+    if ($LASTEXITCODE -ne 0) { throw $FailureMessage }
+}
+
 $repo = Split-Path -Parent $PSScriptRoot
 $config = Join-Path $repo 'supabase/config.toml'
 $original = [IO.File]::ReadAllBytes($config)
@@ -31,16 +41,14 @@ try {
     try {
         [IO.File]::WriteAllText($config, $enabled)
         $extras = 'storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'
-        & npx.cmd --yes --package supabase@3.1.0 -- supabase start --workdir $repo --agent no --exclude $extras --ignore-health-check *> $null
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Local Supabase startup failed. Check Docker Desktop and whether the ports are in use.'
-        }
+        Invoke-SupabaseCli -CliArguments @('start', '--exclude', $extras, '--ignore-health-check') `
+            -FailureMessage 'Local Supabase startup failed. Check Docker Desktop and whether the ports are in use.' | Out-Null
     } finally {
         [IO.File]::WriteAllBytes($config, $original)
     }
     Write-Host 'Verificando o Auth local e o provedor Google...'
-    $statusJson = & npx.cmd --yes --package supabase@3.1.0 -- supabase status --workdir $repo --agent no --output json 2>$null
-    if ($LASTEXITCODE -ne 0) { throw 'Could not verify local Supabase status.' }
+    $statusJson = Invoke-SupabaseCli -CliArguments @('status', '--output', 'json') `
+        -FailureMessage 'Could not verify local Supabase status.'
     $status = ($statusJson -join [Environment]::NewLine) | ConvertFrom-Json
     if ($status.API_URL -ne 'http://127.0.0.1:54321') { throw 'Unexpected local Auth URL.' }
     $publicKey = $status.PUBLISHABLE_KEY

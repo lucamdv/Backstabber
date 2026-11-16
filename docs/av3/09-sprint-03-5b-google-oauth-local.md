@@ -46,12 +46,21 @@ npm run test:e2e -- --grep '@local-oauth'
 
 O Playwright usa o React real, verifica o desafio PKCE S256 e primeiro redirecionamento emitido pelo Auth local, e interrompe a navegação antes do Google. O pré-teste aceita valores fictícios no provedor para exercitar somente essa parte.
 
-## Evidência da Sprint 03.5B
+## Evidência confirmada da Sprint 03.5B
 
 - O Playwright passou em dois cenários contra o React compilado e o Supabase local. Amigos e Salas com convite geraram `code_challenge_method=s256` e preservaram o destino. O Auth emitiu o redirecionamento para o Google com o callback exato em `127.0.0.1:54321`. O teste reteve o redirecionamento e usou valores fictícios para o cliente.
 - O Supabase Auth local e a readiness do Spring retornaram HTTP 200. Uma identidade fictícia de e-mail e senha obteve HTTP 200 no perfil do Spring antes e depois da rotação do refresh token. O logout removeu a sessão e uma tentativa de renovar com o último refresh token foi recusada. A chamada direta ao perfil sem token retornou HTTP 401.
 - Typecheck, lint e build React passaram. O build manteve o aviso de tamanho do bundle. O Vitest passou em 119 testes, com oito cenários de PostgreSQL omitidos na configuração padrão.
 - Os nove testes Java de HTTP/Auth e isolamento passaram em modo offline com acesso ao loopback. A primeira execução encontrou uma restrição do sandbox ao iniciar a fixture HTTP local.
-- Login Google, retorno e troca do código PKCE, renovação e logout de uma sessão originada pelo Google e partida com três contas Google permanecem pendentes. O ensaio com três identidades de e-mail e senha da Sprint 03.5 permanece documentado no [relatório de integração local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows).
 
-Na continuação com o cliente Google existente, o Docker Engine Linux respondeu e o checkout estava sem vínculo com um projeto remoto. Com as variáveis no terminal local, a primeira tentativa ficou parada na CLI antes de criar contêineres. Após encerrar o processo filho, o script restaurou a configuração padrão. A nova versão informa o progresso e exclui os serviços opcionais. Passou em testes simulados de inicialização e falha com credenciais fictícias no ambiente e restauração do TOML nos dois caminhos. Ainda falta repetir a inicialização no terminal que contém as variáveis e fazer o consentimento no navegador.
+### Login Google real em Amigos
+
+- O usuário concluiu o login com uma conta Google no navegador, voltou ao React e visualizou o perfil em Amigos. O Supabase Auth local registrou `GET /callback` HTTP 302 e `POST /token` com `grant_type=pkce` HTTP 200. O banco local passou de zero para uma identidade Google, com uma sessão associada. O log do Spring registrou `GET /api/v1/profile` HTTP 200 após o login. A mesma rota retornou HTTP 401 sem token.
+- A readiness da API Java retornou HTTP 200. O build React apontou para a API Java em `127.0.0.1:18085` e para o Auth em `127.0.0.1:54321`. O preflight CORS aceitou a origem do React em `127.0.0.1:4253` e recusou uma segunda origem. Os dois pré-testes Playwright foram repetidos com o Auth local habilitado e passaram.
+- O Windows PowerShell 5.1 reproduziu `NativeCommandError` ao tratar uma mensagem de progresso em stderr como falha mesmo com código de saída 0. O teste do script corrigido aceitou stderr com saída 0, recusou código 7 e verificou a restauração do TOML e do ambiente nos dois casos. O login real usou o Supabase local já iniciado.
+- Após a janela de teste, os contêineres do Supabase local foram encerrados e o gateway deixou de responder em `127.0.0.1:54321`. O arquivo `supabase/config.toml` manteve Google desabilitado por padrão.
+
+## Testes pendentes
+
+- Persistência do login Google após reload, renovação com `grant_type=refresh_token` e logout da sessão Google. O perfil visível após o callback confirma a sessão inicial. A janela observada registrou somente a troca PKCE e a consulta inicial autenticada ao perfil. O HTTP 401 avulso sem token e o ensaio com e-mail e senha não comprovam logout ou refresh do Google.
+- Retorno Google real em Salas com convite e partida completa com três contas Google. O ensaio com três identidades de e-mail e senha da Sprint 03.5 permanece documentado no [relatório de integração local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows).
