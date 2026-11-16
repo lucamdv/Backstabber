@@ -6,36 +6,26 @@ O React inicia `signInWithOAuth` com Google e usa PKCE, persistência de sessão
 
 O React envia a sessão do Supabase em `Authorization: Bearer` para o Spring. O backend consulta `/auth/v1/user` na instância configurada e usa o UUID do usuário autenticado. Em HTTP 401, o cliente web tenta renovar a sessão e repete a requisição uma vez com o token atualizado. O logout é da sessão local do Backstabber, enquanto a sessão do navegador no Google segue independente.
 
-## 1. Criar o cliente de desenvolvimento
+## 1. Autorizar o loopback no cliente Google existente
 
-1. No Google Cloud Console, selecione um projeto exclusivo de desenvolvimento ou crie um projeto de desenvolvimento sem ativar faturamento. Em **Google Auth Platform → Branding**, use um nome identificável como `Backstabber Local`, configure o e-mail de suporte e informe um contato de desenvolvedor.
-2. Em **Audience**, escolha **External** com estado **Testing**. Adicione as três contas autorizadas em **Test users**, principalmente se o app solicitar escopos adicionais. Em **Data Access**, use apenas os escopos de login padrão `openid`, `email` e `profile`.
-3. Em **Clients → Create client**, escolha **Web application**. Em **Authorized redirect URIs**, adicione exatamente `http://127.0.0.1:54321/auth/v1/callback`. O React inicia OAuth pelo Supabase e por isso esse fluxo dispensa uma origem JavaScript autorizada no cliente Google. As URLs do React pertencem à configuração local do Supabase. O Google aceita HTTP para endereços de loopback. [Configuração do cliente Google](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred)
-4. Use o Client ID e o Client Secret desse cliente para o próximo passo. Mantenha esses valores no terminal local e fora de arquivos versionados, logs, capturas e variáveis `VITE_*`.
+1. No Google Cloud Console, abra **Google Auth Platform → Clients** e selecione o cliente **Web application** que o Backstabber já usa.
+2. Acrescente `http://127.0.0.1:4253` em **Authorized JavaScript origins** e `http://127.0.0.1:54321/auth/v1/callback` em **Authorized redirect URIs**. Preserve todos os endereços existentes e as configurações de consentimento e escopos. O React retorna pelo `site_url` do Supabase local. [Validação de redirecionamentos do Google](https://developers.google.com/identity/protocols/oauth2/web-server#uri-validation)
+3. Use o Client ID e o Client Secret existentes apenas no processo local do Supabase. Mantenha os valores fora de arquivos versionados, logs, capturas e variáveis `VITE_*`.
 
 ## 2. Subir somente em loopback
 
 Use a stack Docker local e um terminal PowerShell na raiz. O provedor Google vem desabilitado para que o ensaio com usuários de e-mail funcione sem credenciais Google.
 
-1. Em `supabase/config.toml`, mude temporariamente apenas `enabled = false` para `enabled = true` no bloco `[auth.external.google]`. Se já houver uma stack local em execução, encerre-a antes de iniciar com a nova configuração. Para reiniciar, use os comandos locais da CLI 3.1.0.
+1. Se já houver uma stack local desta pasta em execução, encerre-a com `npx --yes --package supabase@3.1.0 -- supabase stop`. Rode o comando abaixo na raiz. O script usa `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` do terminal ou pede os valores localmente com o Secret mascarado. Ele habilita Google durante a inicialização da CLI, restaura o arquivo para o padrão desabilitado e verifica se o provedor está ativo na instância que acabou de subir.
 
    ```powershell
-   $env:SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID = Read-Host 'Client ID do Backstabber Local'
-   $oauthSecret = Read-Host 'Client Secret do Backstabber Local' -AsSecureString
-   $env:SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET = [System.Net.NetworkCredential]::new('', $oauthSecret).Password
-   try {
-     npx --yes --package supabase@3.1.0 supabase start
-     if ($LASTEXITCODE -ne 0) { throw 'Falha ao iniciar o Supabase local' }
-   } finally {
-     Remove-Item Env:SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID, Env:SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET
-     Remove-Variable oauthSecret
-   }
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-local-google-oauth.ps1
    ```
 
 2. Use o status **local** da CLI para obter a chave pública e a URI do PostgreSQL. Antes de iniciar o backend, confirme Auth em `http://127.0.0.1:54321` e PostgreSQL em `127.0.0.1:54322`. A URI contém uma senha local. Leia os valores no terminal sem incluí-los no relatório.
 3. Inicie o JAR no perfil `dev` com `SERVER_PORT=18085`, `SUPABASE_URL=http://127.0.0.1:54321`, `SUPABASE_PUBLISHABLE_KEY` e `DATABASE_URL` do status local e `BACKSTABBER_ALLOWED_ORIGIN=http://127.0.0.1:4253`. Confirme HTTP 200 em `http://127.0.0.1:18085/actuator/health/readiness`. O ensaio usa o perfil e o banco locais. [Comandos de build e stack local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows)
 4. Em `web/`, execute `npm run build` com `VITE_SUPABASE_URL=http://127.0.0.1:54321`, `VITE_SUPABASE_PUBLISHABLE_KEY` com a chave pública do status local e `VITE_API_URL=http://127.0.0.1:18085/api/v1`. Suba o build com `npm run preview -- --host 127.0.0.1 --port 4253 --strictPort`.
-5. Ao concluir, encerre o Preview e o Spring, use `npx --yes --package supabase@3.1.0 supabase stop` na raiz e volte o provedor a `enabled = false`. Confira as portas publicadas pelo Docker, principalmente em rede compartilhada.
+5. Ao concluir, encerre o Preview e o Spring e use `npx --yes --package supabase@3.1.0 -- supabase stop` na raiz. Confirme `enabled = false` no bloco `[auth.external.google]`. Confira as portas publicadas pelo Docker, principalmente em rede compartilhada.
 
 ## 3. Validar com contas autorizadas
 
@@ -63,3 +53,5 @@ O Playwright usa o React real, verifica o desafio PKCE S256 e primeiro redirecio
 - Typecheck, lint e build React passaram. O build manteve o aviso de tamanho do bundle. O Vitest passou em 119 testes, com oito cenários de PostgreSQL omitidos na configuração padrão.
 - Os nove testes Java de HTTP/Auth e isolamento passaram em modo offline com acesso ao loopback. A primeira execução encontrou uma restrição do sandbox ao iniciar a fixture HTTP local.
 - Login Google, retorno e troca do código PKCE, renovação e logout de uma sessão originada pelo Google e partida com três contas Google permanecem pendentes. O ensaio com três identidades de e-mail e senha da Sprint 03.5 permanece documentado no [relatório de integração local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows).
+
+Na continuação com o cliente Google existente, o Docker Engine Linux respondeu normalmente e o checkout estava sem vínculo com um projeto remoto. O script PowerShell passou em testes simulados de inicialização e falha, com credenciais fictícias exclusivamente no ambiente, argumentos locais para a CLI e restauração do TOML nos dois caminhos. A sessão de execução ainda não recebeu as duas variáveis OAuth. O ensaio com o provedor verdadeiro depende da inicialização local com o cliente existente e do consentimento no navegador.

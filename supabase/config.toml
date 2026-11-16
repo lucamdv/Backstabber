@@ -20,7 +20,7 @@ additional_redirect_urls = ["http://127.0.0.1:4253/"]
 enable_anonymous_sign_ins = false
 
 [auth.external.google]
-# Enable only for a local run with the dedicated development credentials.
+# Enable only during a local OAuth run with credentials supplied through env.
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
