@@ -50,6 +50,23 @@ function baseData(path: string) {
 afterEach(() => {
   window.history.replaceState(null, '', '/');
   useOnlineAuth.mockReset();
+  vi.unstubAllEnvs();
+});
+
+test('staging joins isolated user and room topics and refreshes from the staging room broadcast', async () => {
+  vi.stubEnv('VITE_GAME_SCHEMA', 'bs_staging');
+  let snapshot = room;
+  const refresh = connect(async path => {
+    if (path === '/rooms') return [snapshot];
+    if (path === `/rooms/${room.id}/heartbeat`) return snapshot;
+    return baseData(path);
+  });
+  render(<OnlineHub onExit={() => undefined} renderMatch={({ matchId }) => <output>Partida {matchId}</output>} />);
+  await screen.findByRole('heading', { name: 'Preparação da mesa' });
+  expect([...refresh.keys()].sort()).toEqual(['hml:room:first-room', 'hml:user:eva']);
+  snapshot = { ...room, status: 'started', matchId: 'staging-game' };
+  await act(async () => { refresh.get('hml:room:first-room')?.(); });
+  expect(await screen.findByText('Partida staging-game')).toBeInTheDocument();
 });
 
 test('a shared room link prefills the code even with an existing room, then enters the authorized room', async () => {

@@ -2,6 +2,7 @@ package com.backstabber.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
+import com.backstabber.persistence.GameSchema;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,6 +12,28 @@ class StagingIsolationTest {
     private static final String AUTH = "https://" + REF + ".supabase.co";
     private static final String DIRECT = "postgresql://postgres:fixture@db." + REF + ".supabase.co:5432/postgres";
     private static final String POOLER = "@aws-0-sa-east-1.pooler.supabase.com:5432/postgres";
+
+    @Test
+    void sharedModeRequiresExplicitStagingSchemaAndRestrictedRoleOnTheApprovedProject() {
+        var auth = "https://" + PROD + ".supabase.co";
+        var direct = "postgresql://bs_staging_app:fixture@db." + PROD + ".supabase.co:5432/postgres";
+        assertDoesNotThrow(() -> StagingIsolation.validateShared(PROD, auth, direct, GameSchema.STAGING));
+        assertDoesNotThrow(() -> StagingIsolation.validateShared(PROD, auth,
+                "postgresql://bs_staging_app." + PROD + ":fixture" + POOLER, GameSchema.STAGING));
+        assertThrows(IllegalStateException.class, () -> StagingIsolation.validateShared(PROD, auth, direct, GameSchema.PUBLIC));
+        for (String invalid : new String[]{direct.replace("bs_staging_app:", "postgres:"),
+                direct.replace(PROD, REF), direct.replace("/postgres", "/other"),
+                "postgresql://postgres." + PROD + ":fixture" + POOLER,
+                "postgresql://bs_staging_app." + REF + ":fixture" + POOLER,
+                "postgresql://bs_staging_app." + PROD + ":fixture" + POOLER.replace(":5432", ":6543")}) {
+            assertThrows(IllegalStateException.class,
+                    () -> StagingIsolation.validateShared(PROD, auth, invalid, GameSchema.STAGING));
+        }
+        assertThrows(IllegalStateException.class, () -> StagingIsolation.validateShared(PROD,
+                auth.replace("https:", "http:"), direct, GameSchema.STAGING));
+        assertThrows(IllegalStateException.class, () -> StagingIsolation.validateShared(PROD,
+                auth + "/auth/v1", direct, GameSchema.STAGING));
+    }
 
     @Test
     void acceptsMatchingDirectAndPoolerDestinationsWithoutConnecting() {

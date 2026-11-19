@@ -7,7 +7,7 @@ import java.util.List;
 
 public final class RoomPolicy {
     public static final int HOST_ABANDONMENT_SECONDS = 300;
-    // Alias r must refer to public.bs_rooms.
+    // Alias r must refer to the selected game schema's bs_rooms table.
     public static final String EFFECTIVE_STATUS_SQL = """
             case when r.host_id is null or (r.status = 'lobby' and r.expires_at <= now())
               then 'closed' else r.status end

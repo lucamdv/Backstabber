@@ -1,7 +1,7 @@
 package com.backstabber.game.application;
 
 import com.backstabber.lobby.RoomPolicy;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.backstabber.persistence.GameJdbc;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -9,9 +9,9 @@ import java.util.UUID;
 
 @Repository
 class MatchRepository {
-    private final JdbcClient db;
+    private final GameJdbc db;
 
-    MatchRepository(JdbcClient db) {
+    MatchRepository(GameJdbc db) {
         this.db = db;
     }
 

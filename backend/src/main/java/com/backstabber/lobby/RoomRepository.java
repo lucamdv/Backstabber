@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.backstabber.persistence.GameJdbc;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,9 +26,9 @@ class RoomRepository {
             where own.user_id = :userId and %s
             order by r.created_at desc, r.id, m.joined_at, m.user_id
             """;
-    private final JdbcClient db;
+    private final GameJdbc db;
 
-    RoomRepository(JdbcClient db) {
+    RoomRepository(GameJdbc db) {
         this.db = db;
     }
 

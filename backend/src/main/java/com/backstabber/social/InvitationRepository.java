@@ -6,14 +6,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.backstabber.lobby.RoomPolicy;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.backstabber.persistence.GameJdbc;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class InvitationRepository {
-    private final JdbcClient jdbc;
+    private final GameJdbc jdbc;
 
-    public InvitationRepository(JdbcClient jdbc) {
+    public InvitationRepository(GameJdbc jdbc) {
         this.jdbc = jdbc;
     }
 

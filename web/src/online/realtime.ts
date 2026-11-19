@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
+import { realtimeTopic } from './environment';
 
 const releasing = new WeakMap<SupabaseClient, Map<string, Promise<unknown>>>();
 
@@ -54,7 +55,7 @@ export function useRoomRealtime(
     setPresence(undefined);
     setUnavailableRoom(undefined);
     if (!roomId) return;
-    const topic = `room:${roomId}`;
+    const topic = realtimeTopic('room', roomId);
     let presenceTimer: number | undefined;
     let failureTimer: number | undefined;
     let observedRoster: string | undefined;

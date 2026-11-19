@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.backstabber.persistence.GameSchema;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -26,11 +27,21 @@ public class DatabaseConfiguration {
             @Value("${backstabber.database.ca-certificate:}") String ca,
             @Value("${backstabber.database.allow-loopback-plaintext:false}") boolean allowLoopbackPlaintext) {
         boolean staging = environment.matchesProfiles("homologation");
+        var schema = GameSchema.parse(environment.getProperty("backstabber.database.schema", "public"));
         if (staging) {
-            StagingIsolation.validate(environment.getProperty("backstabber.staging.project-ref", ""),
-                    environment.getProperty("backstabber.auth.url", ""), url);
+            String ref = environment.getProperty("backstabber.staging.project-ref", "");
+            String auth = environment.getProperty("backstabber.auth.url", "");
+            String mode = environment.getProperty("backstabber.staging.mode", "dedicated");
+            if ("shared".equals(mode)) {
+                StagingIsolation.validateShared(ref, auth, url, schema);
+            } else if ("dedicated".equals(mode) && schema == GameSchema.PUBLIC) {
+                StagingIsolation.validate(ref, auth, url);
+            } else {
+                throw new IllegalStateException("Use dedicated/public or shared/bs_staging for homologation.");
+            }
         }
         var postgres = postgresSource(url, ca, allowLoopbackPlaintext && !staging);
+        postgres.source().setCurrentSchema(schema.sqlName());
         var config = new HikariConfig();
         config.setPoolName("backstabber-db");
         config.setDataSource(postgres.source());
@@ -39,6 +50,9 @@ public class DatabaseConfiguration {
         config.setConnectionTimeout(5000);
         config.setValidationTimeout(2000);
         config.setInitializationFailTimeout(-1);
+        if (schema == GameSchema.STAGING) {
+            config.setConnectionInitSql("select bs_staging.assert_runtime_role()");
+        }
         try {
             return new HikariDataSource(config) {
                 @Override

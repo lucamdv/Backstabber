@@ -16,7 +16,7 @@ import com.backstabber.persistence.TransactionLimits;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.backstabber.persistence.GameJdbc;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +25,9 @@ public class ProfileReader {
     private static final Pattern USERNAME = Pattern.compile("[a-z0-9_]{3,18}");
     private static final Pattern PREFIX = Pattern.compile("[a-z0-9_]{1,18}");
     private final JdbcTemplate jdbc;
-    private final JdbcClient client;
+    private final GameJdbc client;
 
-    public ProfileReader(JdbcTemplate jdbc, JdbcClient client) {
+    public ProfileReader(JdbcTemplate jdbc, GameJdbc client) {
         this.jdbc = jdbc;
         this.client = client;
     }

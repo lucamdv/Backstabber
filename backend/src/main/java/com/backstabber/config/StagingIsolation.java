@@ -1,8 +1,11 @@
 package com.backstabber.config;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import com.backstabber.persistence.GameSchema;
 
 /** Checks the effective staging configuration before the application can create its datasource. */
 final class StagingIsolation {
@@ -13,7 +16,18 @@ final class StagingIsolation {
     private StagingIsolation() {}
 
     static void validate(String projectRef, String authUrl, String databaseUrl) {
-        if (!PROJECT_REF.matcher(projectRef).matches() || PRODUCTION.equals(projectRef)) {
+        validateDestination(projectRef, authUrl, databaseUrl, false);
+    }
+
+    static void validateShared(String projectRef, String authUrl, String databaseUrl, GameSchema schema) {
+        if (schema != GameSchema.STAGING) {
+            throw new IllegalStateException("Shared homologation requires BACKSTABBER_GAME_SCHEMA=bs_staging.");
+        }
+        validateDestination(projectRef, authUrl, databaseUrl, true);
+    }
+
+    private static void validateDestination(String projectRef, String authUrl, String databaseUrl, boolean shared) {
+        if (!PROJECT_REF.matcher(projectRef).matches() || (!shared && PRODUCTION.equals(projectRef))) {
             throw new IllegalStateException("Configure BACKSTABBER_STAGING_PROJECT_REF with the approved staging project.");
         }
         URI auth = parse(authUrl, "SUPABASE_URL");
@@ -25,15 +39,21 @@ final class StagingIsolation {
         }
 
         URI database = parse(databaseUrl, "DATABASE_URL");
-        String info = database.getUserInfo();
-        String role = info == null ? "" : info.split(":", 2)[0];
+        String info = database.getRawUserInfo();
+        String role = info == null ? "" : URLDecoder.decode(info.split(":", 2)[0].replace("+", "%2B"), StandardCharsets.UTF_8);
         String host = host(database);
         boolean direct = ("db." + projectRef + ".supabase.co").equals(host)
                 && (database.getPort() == -1 || database.getPort() == 5432);
-        boolean pooled = POOLER.matcher(host).matches() && ("postgres." + projectRef).equals(role)
-                && (database.getPort() == 5432 || database.getPort() == 6543);
+        boolean pooled = POOLER.matcher(host).matches()
+                && (shared ? ("bs_staging_app." + projectRef).equals(role) : ("postgres." + projectRef).equals(role))
+                && (database.getPort() == 5432 || (!shared && database.getPort() == 6543));
+        if (shared && ((direct && !"bs_staging_app".equals(role)) || !"/postgres".equals(database.getRawPath())
+                || database.getRawFragment() != null || info == null || info.split(":", 2).length != 2
+                || (database.getRawQuery() != null && !database.getRawQuery().matches("sslmode=[a-z-]+")))) {
+            throw new IllegalStateException("Shared DATABASE_URL requires the restricted staging role and approved PostgreSQL endpoint.");
+        }
         if (!("postgresql".equals(database.getScheme()) || "postgres".equals(database.getScheme()))
-                || !(direct || pooled) || role.contains(PRODUCTION)) {
+                || !(direct || pooled) || (!shared && role.contains(PRODUCTION))) {
             throw new IllegalStateException("DATABASE_URL must point to the approved staging PostgreSQL project.");
         }
     }

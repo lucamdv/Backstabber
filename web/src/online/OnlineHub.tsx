@@ -4,6 +4,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { onlineErrorMessage } from './api';
 import type { OnlineApi } from './api';
 import { useOnlineAuth } from './auth';
+import { realtimeTopic } from './environment';
 import { FriendsPanel, RoomInvites } from './FriendsPanel';
 import { Lobby } from './Lobby';
 import { OnlineAtmosphere } from './OnlineAtmosphere';
@@ -174,7 +175,7 @@ function ConnectedHub({
     setMatchInvalidation(count => count + 1);
   }, [refreshRooms]);
 
-  usePrivateBroadcast(client, `user:${profile.id}`, invalidateUser);
+  usePrivateBroadcast(client, realtimeTopic('user', profile.id), invalidateUser);
   const { presence, realtimeUnavailable } = useRoomRealtime(client, roomId, profile.id, invalidateRoom, refreshRooms);
 
   useEffect(() => {

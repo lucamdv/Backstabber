@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.backstabber.persistence.GameJdbc;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class FriendshipRepository {
-    private final JdbcClient client;
+    private final GameJdbc client;
 
-    public FriendshipRepository(JdbcClient client) {
+    public FriendshipRepository(GameJdbc client) {
         this.client = client;
     }
 

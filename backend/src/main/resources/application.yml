@@ -44,12 +44,14 @@ logging:
 backstabber:
   allowed-origin: ${BACKSTABBER_ALLOWED_ORIGIN:}
   staging:
+    mode: ${BACKSTABBER_STAGING_MODE:dedicated}
     project-ref: ${BACKSTABBER_STAGING_PROJECT_REF:}
   auth:
     url: ${SUPABASE_URL:}
     publishable-key: ${SUPABASE_PUBLISHABLE_KEY:}
     timeout: 6s
   database:
+    schema: ${BACKSTABBER_GAME_SCHEMA:public}
     url: ${DATABASE_URL:}
     ca-certificate: ${SUPABASE_DB_CA_CERT:}
     allow-loopback-plaintext: false
