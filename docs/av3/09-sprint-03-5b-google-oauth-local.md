@@ -60,7 +60,37 @@ O Playwright usa o React real, verifica o desafio PKCE S256 e primeiro redirecio
 - O Windows PowerShell 5.1 reproduziu `NativeCommandError` ao tratar uma mensagem de progresso em stderr como falha mesmo com código de saída 0. O teste do script corrigido aceitou stderr com saída 0, recusou código 7 e verificou a restauração do TOML e do ambiente nos dois casos. O login real usou o Supabase local já iniciado.
 - Após a janela de teste, os contêineres do Supabase local foram encerrados e o gateway deixou de responder em `127.0.0.1:54321`. O arquivo `supabase/config.toml` manteve Google desabilitado por padrão.
 
+## Retomada final das pendências
+
+O ambiente foi reiniciado com o cliente Google existente e as credenciais fornecidas exclusivamente ao processo local. A verificação dos endereços confirmou Auth em `127.0.0.1:54321`, PostgreSQL em `127.0.0.1:54322`, Spring em `127.0.0.1:18085` e React em `127.0.0.1:4253`. A readiness do Java retornou HTTP 200. O bundle do React apontou para esses serviços e o preflight CORS aceitou a origem local autorizada, recusando uma segunda origem.
+
+Uma página temporária na mesma origem do React disponibilizou renovação explícita com o SDK e consulta ao perfil Java. Os resultados foram apresentados sem valores de tokens, códigos OAuth, cookies, credenciais ou dados da conta. A duração padrão do JWT foi preservada.
+
+| Verificação | Evidência obtida | Resultado |
+| --- | --- | --- |
+| Login real e retorno PKCE | Uma resposta `GET /callback` HTTP 302 e uma `POST /token` com `grant_type=pkce` HTTP 200 na janela desta rodada. | Confirmado pelos registros locais. |
+| Sessão Google aceita pelo Java | Quatro respostas `GET /api/v1/profile` HTTP 200 durante a rodada. | Confirmado pelos registros locais. |
+| Refresh de sessão Google | Uma `POST /token` com `grant_type=refresh_token` HTTP 200. | Renovação confirmada pelos registros locais. |
+| Logout | Uma `POST /logout` HTTP 204. A contagem agregada de sessões Google criadas nesta janela terminou em zero. | Encerramento da sessão confirmado. |
+| API sem sessão | Duas respostas HTTP 401 ao perfil, incluindo a consulta de referência anterior ao teste manual. O usuário também informou HTTP 401 no teste de logout. | Recusa de acesso sem sessão confirmada. |
+| Persistência após F5 e recarga após logout | O usuário informou que o conjunto de testes aparentou o comportamento esperado e recordou respostas 200 e 401, sem discriminar essas duas etapas. | Relato manual geral. Falta confirmação isolada das recargas. |
+| Nova autenticação após logout | A janela registrou uma única troca PKCE real. | Pendente de confirmação. |
+| Entrada real por Salas e preservação de convite | Os dois pré-testes automatizados verificaram a construção do retorno e do convite fictício `11111ABC12`, interceptando a navegação antes do Google. O relato manual foi geral. | Pré-testes confirmados. Falta evidência individual dos retornos Google reais. |
+
+Os registros foram consultados com projeção apenas de método, caminho sem query string, status HTTP, tipo de grant e contagens. A consulta ao PostgreSQL local retornou somente agregados. O relatório usa a contagem de sessões criadas na janela do teste para distinguir o logout desta rodada de sessões locais anteriores.
+
+### Regressão desta retomada
+
+- Passaram 13 testes direcionados de `online-auth.test.tsx`, `online-api.test.ts` e `online-hub-flow.test.tsx`.
+- A primeira rodada do Playwright teve um caso aprovado e um falho. O gateway retornou HTTP 504 em `/authorize` no caso Amigos, sem cabeçalho de redirecionamento. A repetição passou nos dois casos em 17,6 segundos. A causa do 504 inicial permanece sem diagnóstico conclusivo.
+- O build React local foi concluído. Readiness, configuração do bundle e CORS foram verificados novamente.
+
 ## Testes pendentes
 
-- Persistência do login Google após reload, renovação com `grant_type=refresh_token` e logout da sessão Google. O perfil visível após o callback confirma a sessão inicial. A janela observada registrou somente a troca PKCE e a consulta inicial autenticada ao perfil. O HTTP 401 avulso sem token e o ensaio com e-mail e senha não comprovam logout ou refresh do Google.
-- Retorno Google real em Salas com convite e partida completa com três contas Google. O ensaio com três identidades de e-mail e senha da Sprint 03.5 permanece documentado no [relatório de integração local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows).
+- Confirmar individualmente a persistência após F5, a recarga após logout, a nova autenticação e os retornos reais por Salas e pelo convite.
+- Verificar refresh automático por expiração, caso seja desejada essa evidência adicional. A renovação da sessão Google por refresh token passou nesta rodada.
+- A partida com três contas Google é evidência adicional opcional. O multiplayer com três identidades locais já está registrado no [relatório de integração local](07-sprint-03-5-integration-homologation.md#ensaio-local-com-docker-no-windows).
+
+## Encerramento do ambiente desta rodada
+
+O React, o Spring e os contêineres do Supabase local foram encerrados após a coleta. As portas HTTP 4253, 18085 e 54321 deixaram de responder, e o Engine confirmou a ausência de contêineres ativos do Backstabber. O arquivo de configuração manteve `[auth.external.google].enabled = false`, com Client ID e Secret referenciados por variáveis de ambiente. Os arquivos temporários da página de verificação foram removidos.
