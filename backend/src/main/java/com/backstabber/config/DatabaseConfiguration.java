@@ -40,15 +40,17 @@ public class DatabaseConfiguration {
                 throw new IllegalStateException("Use dedicated/public or shared/bs_staging for homologation.");
             }
         }
-        var postgres = postgresSource(url, ca, allowLoopbackPlaintext && !staging);
+        var postgres = postgresSource(url, ca, allowLoopbackPlaintext && !staging, staging);
         postgres.source().setCurrentSchema(schema.sqlName());
         var config = new HikariConfig();
         config.setPoolName("backstabber-db");
         config.setDataSource(postgres.source());
         config.setMaximumPoolSize(3);
         config.setMinimumIdle(0);
-        config.setConnectionTimeout(5000);
-        config.setValidationTimeout(2000);
+        // Supavisor may need longer than five seconds to initialize a session pool.
+        // Bound only homologation retries; preserve the existing local/test values.
+        config.setConnectionTimeout(staging ? 20_000 : 5_000);
+        config.setValidationTimeout(staging ? 5_000 : 2_000);
         config.setInitializationFailTimeout(-1);
         if (schema == GameSchema.STAGING) {
             config.setConnectionInitSql("select bs_staging.assert_runtime_role()");
@@ -71,6 +73,11 @@ public class DatabaseConfiguration {
     }
 
     static PostgresSource postgresSource(String url, String ca, boolean allowLoopbackPlaintext) {
+        return postgresSource(url, ca, allowLoopbackPlaintext, false);
+    }
+
+    static PostgresSource postgresSource(String url, String ca, boolean allowLoopbackPlaintext,
+            boolean managedPooler) {
         var source = new PGSimpleDataSource();
         String host;
         try {
@@ -94,9 +101,11 @@ public class DatabaseConfiguration {
         } catch (IllegalArgumentException | NullPointerException failure) {
             throw new IllegalStateException("Configure DATABASE_URL as a PostgreSQL URI with host, database and credentials.");
         }
-        source.setConnectTimeout(3);
-        source.setSocketTimeout(12);
-        source.setLoginTimeout(5);
+        // The hosted session pooler can authenticate only after warming its backend.
+        // Keep finite limits and TLS verification; do not permit unbounded waits.
+        source.setConnectTimeout(managedPooler ? 10 : 3);
+        source.setSocketTimeout(managedPooler ? 20 : 12);
+        source.setLoginTimeout(managedPooler ? 20 : 5);
         if (allowLoopbackPlaintext && LOOPBACK.contains(host.toLowerCase(Locale.ROOT)) && ca.isBlank()) {
             source.setSslMode("disable");
             return new PostgresSource(source, null);
