@@ -4,6 +4,8 @@
 
 Preparação de código, migration proposta, rollback e testes exclusivamente locais. A aplicação no Supabase hospedado depende de aprovação explícita em uma etapa posterior. O plano usa o projeto Backstabber existente, o schema `bs_staging` e uma API Java HTTPS separada.
 
+A [pré-aplicação e o checklist GO / NO-GO](11-sprint-03-5c-preflight.md) detalham o pacote SELECT-only e os gates de aprovação. A compatibilidade de grants e políticas do serviço gerenciado permanece não verificada. A permissão de gerenciar políticas em `realtime.messages` não comprova a capacidade de delegar INSERT nessa tabela. Nenhuma auditoria SQL hospedada foi executada nesta preparação.
+
 ## Isolamento dos dados e dos privilégios
 
 | Camada | Produção existente | Homologação proposta |
