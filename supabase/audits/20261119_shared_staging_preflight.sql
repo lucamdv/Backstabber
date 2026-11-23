@@ -6,6 +6,8 @@
 -- Prefer an externally configured read-only transaction with a timeout.
 -- Empty output is NOT a GO. Interpret all results with docs/av3/11-sprint-03-5c-preflight.md.
 -- Body/expression hashes detect drift; they do not prove semantic compatibility.
+-- Sprint03.5D: Auth REFERENCES/USAGE and send EXECUTE delegation below are
+-- diagnostic historical facts, NOT requirements of the revised proposal.
 
 -- Q01: execution identity, version and read-only state. PG17 is the tested baseline.
 select 'Q01_context' as audit, current_user as executor, session_user as login_role,
@@ -63,7 +65,8 @@ join pg_catalog.pg_roles owner on owner.oid = n.nspowner
 where n.nspname in ('public', 'bs_staging', 'auth', 'realtime', 'extensions')
 order by n.nspname;
 
--- Q06: exact delegation required on PRE-EXISTING shared objects.
+-- Q06: delegation on shared objects. Only messages INSERT remains required
+-- here for03.5D; existing PUBLIC EXECUTE/invoker send is inspected byQ13/Q14.
 -- A usable privilege is different from WITH GRANT OPTION. Missing rows are blockers.
 select 'Q06_delegation' as audit, 'auth.users(id)' as object_name,
        'REFERENCES' as privilege,
@@ -385,3 +388,20 @@ left join pg_catalog.pg_roles r on r.oid = a.grantee
 left join pg_catalog.pg_roles grantor on grantor.oid = a.grantor
 where n.nspname in ('public', 'bs_staging', 'auth', 'realtime')
 order by n.nspname, grantee, a.privilege_type;
+
+-- Q26: separate policy authority evidence. A declaration is not a DDL probe.
+-- Emit only the effective executor's boolean entry, not the entire setting.
+with policy_setting as (
+  select nullif(s.setting, '')::pg_catalog.jsonb as grants
+  from pg_catalog.pg_settings s where s.name = 'supautils.policy_grants'
+)
+select 'Q26_policy_authority' as audit, current_user as executor,
+       owner.rolname as table_owner, executor.rolsuper,
+       pg_catalog.pg_has_role(executor.oid, c.relowner, 'USAGE') as inherits_owner,
+       (select coalesce((s.grants -> current_user) ? 'realtime.messages', false)
+        from policy_setting s) as declared_supautils_policy_grant
+from pg_catalog.pg_class c
+join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+join pg_catalog.pg_roles owner on owner.oid = c.relowner
+join pg_catalog.pg_roles executor on executor.rolname = current_user
+where n.nspname = 'realtime' and c.relname = 'messages';

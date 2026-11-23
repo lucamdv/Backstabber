@@ -9,19 +9,25 @@ import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 
 // This fixture deliberately accepts only the local CLI stack and local Java APIs.
-const auth = 'http://127.0.0.1:54321';
-const apis = { staging: 'http://127.0.0.1:18085/api/v1', productionFixture: 'http://127.0.0.1:18086/api/v1' };
+const disposable = process.env.BACKSTABBER_LOCAL_DISPOSABLE === 'true';
+const authPort = disposable ? 55431 : 54321;
+const databasePort = disposable ? '55432' : '54322';
+const auth = `http://127.0.0.1:${authPort}`;
+const apis = {
+  staging: `http://127.0.0.1:${disposable ? 18095 : 18085}/api/v1`,
+  productionFixture: `http://127.0.0.1:${disposable ? 18096 : 18086}/api/v1`,
+};
 const databaseUrl = new URL(process.env.BACKSTABBER_LOCAL_DATABASE_URL ?? '');
 assert.equal(databaseUrl.protocol, 'postgresql:');
 assert.equal(databaseUrl.hostname, '127.0.0.1');
-assert.equal(databaseUrl.port, '54322');
+assert.equal(databaseUrl.port, databasePort);
 assert.equal(databaseUrl.pathname, '/postgres');
 assert.equal(databaseUrl.search, '');
 assert.equal(databaseUrl.hash, '');
 const stagingUrl = new URL(process.env.BACKSTABBER_LOCAL_STAGING_DATABASE_URL ?? '');
 assert.equal(stagingUrl.protocol, 'postgresql:');
 assert.equal(stagingUrl.hostname, '127.0.0.1');
-assert.equal(stagingUrl.port, '54322');
+assert.equal(stagingUrl.port, databasePort);
 assert.equal(stagingUrl.pathname, '/postgres');
 assert.equal(stagingUrl.username, 'bs_staging_app');
 assert.equal(stagingUrl.search, '');
@@ -219,6 +225,9 @@ try {
   if (stagingConnected && createdUsers.length) await attempt(() => stagingDb.query(
     'delete from bs_staging.bs_rooms where id = any($1::uuid[]) or host_id = any($2::uuid[])',
     [createdRooms.staging, createdUsers]));
+  // Staging intentionally has no Auth FK; clean only identities created here.
+  if (stagingConnected && createdUsers.length) await attempt(() => stagingDb.query(
+    'delete from bs_staging.bs_profiles where user_id = any($1::uuid[])', [createdUsers]));
   if (connected && createdUsers.length) {
     await attempt(() => db.query('delete from public.bs_rooms where id = any($1::uuid[]) or host_id = any($2::uuid[])',
       [createdRooms.public, createdUsers]));

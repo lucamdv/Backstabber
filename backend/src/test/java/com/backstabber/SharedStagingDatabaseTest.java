@@ -106,7 +106,8 @@ class SharedStagingDatabaseTest {
 
     @BeforeEach
     void reset() throws Exception {
-        executeAdmin("truncate auth.users, public.bs_rooms, bs_staging.bs_rooms, realtime.messages cascade;"
+        SocialIntegrationTest.resetAuthRejections();
+        executeAdmin("truncate auth.users, public.bs_rooms, bs_staging.bs_profiles, bs_staging.bs_rooms, realtime.messages cascade;"
                 + " insert into auth.users values ('" + FIRST + "'), ('" + SECOND + "'), ('" + THIRD + "');");
         for (String schema : List.of("public", "bs_staging")) {
             String prefix = schema.equals("public") ? "public" : "stage";
@@ -167,6 +168,23 @@ class SharedStagingDatabaseTest {
             assertEquals("0", scalarAdmin("select count(*) from public." + table), table);
             assertNotEquals("0", scalarAdmin("select count(*) from bs_staging." + table), table);
         }
+    }
+
+    @Test
+    @Order(2)
+    void forgedProfileUuidCannotChangeAnotherStagingOrPublicIdentity() throws Exception {
+        JsonNode changed = ok(request("PUT", "/api/v1/profile?userId=" + FIRST, "second", """
+                {"userId":"%s","username":"stage_authorized","displayName":"Authorized only"}
+                """.formatted(FIRST)));
+        assertEquals(SECOND.toString(), changed.path("id").asString());
+        assertEquals("stage_first", scalarAdmin("select username from bs_staging.bs_profiles where user_id='" + FIRST + "'"));
+        assertEquals("stage_authorized", scalarAdmin("select username from bs_staging.bs_profiles where user_id='" + SECOND + "'"));
+        assertEquals("public_first", scalarAdmin("select username from public.bs_profiles where user_id='" + FIRST + "'"));
+        assertEquals("public_second", scalarAdmin("select username from public.bs_profiles where user_id='" + SECOND + "'"));
+        assertEquals(401, request("PUT", "/api/v1/profile", "expired", """
+                {"userId":"%s","username":"forbidden_user","displayName":"Forbidden"}
+                """.formatted(FIRST)).statusCode());
+        assertEquals("stage_first", scalarAdmin("select username from bs_staging.bs_profiles where user_id='" + FIRST + "'"));
     }
 
     @Test

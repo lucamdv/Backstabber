@@ -1,5 +1,6 @@
 -- PROPOSED / LOCAL-ONLY: not authorized for hosted application.
--- Creates empty isolated game tables; shared auth.users is referenced, never written.
+-- Creates empty isolated game tables. Java validates the Auth UUID over HTTP;
+-- no foreign key or privilege on managed auth.users is required or granted.
 -- Run as a trusted migration administrator able to create roles and assign ownership.
 -- Deliberately fails on pre-existing names. Provision the LOGIN password separately.
 -- This boundary applies to bs_staging_app, not privileged database administrators.
@@ -15,6 +16,21 @@ begin
   if not (select relrowsecurity from pg_catalog.pg_class
           where oid = 'realtime.messages'::pg_catalog.regclass) then
     raise exception 'realtime.messages must already have RLS enabled';
+  end if;
+  if not exists (
+    select 1 from pg_catalog.pg_proc p
+    where p.oid = 'realtime.send(jsonb,text,text,boolean)'::pg_catalog.regprocedure
+      and not p.prosecdef and exists (
+        select 1 from pg_catalog.aclexplode(coalesce(p.proacl,
+          pg_catalog.acldefault('f', p.proowner))) a
+        where a.grantee = 0 and a.privilege_type = 'EXECUTE'
+      )
+  ) then
+    raise exception 'Staging requires invoker realtime.send with existing PUBLIC EXECUTE';
+  end if;
+  if not pg_catalog.has_schema_privilege('realtime', 'USAGE WITH GRANT OPTION')
+     or not pg_catalog.has_table_privilege('realtime.messages', 'INSERT WITH GRANT OPTION') then
+    raise exception 'Executor must delegate realtime schema USAGE and messages INSERT';
   end if;
 end;
 $preflight$;
@@ -44,13 +60,10 @@ alter role bs_staging_app set search_path = bs_staging, pg_catalog;
 create schema bs_staging authorization bs_staging_owner;
 revoke all on schema bs_staging from public, anon, authenticated, bs_staging_app;
 grant usage on schema bs_staging to bs_staging_app, authenticated;
-grant usage on schema auth to bs_staging_owner;
-grant references (id) on auth.users to bs_staging_owner;
 grant usage on schema realtime to bs_staging_owner;
-grant execute on function realtime.send(jsonb,text,text,boolean) to bs_staging_owner;
--- Supabase versions with SECURITY INVOKER send() need a narrow insertion
--- bridge. SECURITY DEFINER versions remain supported. This non-login owner
--- cannot be assumed by the runtime role; only fixed trigger bodies use it.
+-- PUBLIC already has EXECUTE on invoker send(). Do not regrant managed function
+-- privileges without GRANT OPTION. Only fixed trigger bodies use this no-login
+-- owner's INSERT bridge; the runtime cannot assume its role.
 grant insert on realtime.messages to bs_staging_owner;
 create policy bs_staging_owner_hml_broadcast on realtime.messages
   for insert to bs_staging_owner with check (
@@ -69,8 +82,8 @@ create policy bs_staging_owner_hml_broadcast on realtime.messages
     )
   );
 
--- Fail if pre-existing PUBLIC grants would give the new owner Auth data access.
--- Its only Auth table capability must be the explicitly granted FK reference.
+-- Reject existing PUBLIC Auth table privileges, including column REFERENCES.
+-- The staging owner needs no rights on managed Auth tables.
 do $owner_auth_boundary$
 begin
   if exists (
@@ -78,23 +91,19 @@ begin
     join pg_catalog.pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'auth' and c.relkind in ('r', 'p', 'v', 'm', 'f')
       and (pg_catalog.has_table_privilege('bs_staging_owner', c.oid,
-             'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')
+             'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
         or pg_catalog.has_any_column_privilege('bs_staging_owner', c.oid,
-             'SELECT,INSERT,UPDATE'))
-  ) or pg_catalog.has_table_privilege('bs_staging_owner', 'auth.users', 'REFERENCES')
-     or exists (
-       select 1 from pg_catalog.pg_attribute a
-       where a.attrelid = 'auth.users'::pg_catalog.regclass
-         and a.attnum > 0 and not a.attisdropped and a.attname <> 'id'
-         and pg_catalog.has_column_privilege('bs_staging_owner', a.attrelid, a.attnum, 'REFERENCES')
-     ) then
+             'SELECT,INSERT,UPDATE,REFERENCES'))
+  ) then
     raise exception 'PUBLIC privileges violate the staging owner Auth boundary; inspect manually';
   end if;
 end;
 $owner_auth_boundary$;
 
 create table bs_staging.bs_profiles (
-  user_id uuid primary key references auth.users (id) on delete cascade,
+  -- HTTP writes bind Java's validated Auth principal, never a client UUID.
+  -- Auth deletion intentionally retains this row until approved staging cleanup.
+  user_id uuid primary key,
   username text not null unique check (username ~ '^[a-z0-9_]{3,18}$'),
   display_name text not null check (char_length(display_name) between 1 and 40),
   avatar_url text check (char_length(avatar_url) <= 2048 and avatar_url like 'https://%'),

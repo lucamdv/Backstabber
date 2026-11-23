@@ -3,6 +3,7 @@ package com.backstabber;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -47,6 +49,7 @@ public abstract class SocialIntegrationTest {
     protected static final UUID THIRD = UUID.fromString("b6100000-0000-0000-0000-000000000006");
     protected static final UUID FOURTH = UUID.fromString("b6100000-0000-0000-0000-000000000007");
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+    private static final ConcurrentHashMap<String, Integer> AUTH_REJECTIONS = new ConcurrentHashMap<>();
     private static final String MANAGED_SCHEMA_FIXTURE = """
             do $setup$ begin
               if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
@@ -58,7 +61,7 @@ public abstract class SocialIntegrationTest {
               $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
             grant usage on schema auth to anon, authenticated;
             create schema realtime;
-            create table realtime.messages (topic text, extension text, payload jsonb, event text, private boolean);
+            %s
             alter table realtime.messages enable row level security;
             grant usage on schema realtime to anon, authenticated;
             grant select, insert on realtime.messages to anon, authenticated;
@@ -67,6 +70,8 @@ public abstract class SocialIntegrationTest {
             create function realtime.send(jsonb, text, text, boolean)
               returns void language sql as $$ insert into realtime.messages values ($3, 'broadcast', $1, $2, $4) $$;
             """;
+    private static final String DEFAULT_REALTIME_MESSAGES_BOOTSTRAP =
+            "create table realtime.messages (topic text, extension text, payload jsonb, event text, private boolean);";
 
     private static PostgreSQLContainer container;
     private static LocalCluster cluster;
@@ -88,8 +93,14 @@ public abstract class SocialIntegrationTest {
 
     @DynamicPropertySource
     static void startFixtures(DynamicPropertyRegistry properties) throws Exception {
+        startFixtures(properties, DEFAULT_REALTIME_MESSAGES_BOOTSTRAP);
+    }
+
+    /** Allows a disposable test to establish messages ownership at creation, before canonical policies exist. */
+    static void startFixtures(DynamicPropertyRegistry properties, String realtimeMessagesBootstrap) throws Exception {
+        resetAuthRejections();
         try {
-            fixtureDatabaseUrl = initializeDatabase();
+            fixtureDatabaseUrl = initializeDatabase(realtimeMessagesBootstrap);
             auth = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             auth.createContext("/auth/v1/user", SocialIntegrationTest::authResponse);
             auth.start();
@@ -116,6 +127,7 @@ public abstract class SocialIntegrationTest {
 
     @AfterAll
     static void stopFixtures() throws SQLException {
+        resetAuthRejections();
         if (auth != null) {
             auth.stop(0);
             auth = null;
@@ -132,6 +144,7 @@ public abstract class SocialIntegrationTest {
 
     @BeforeEach
     void resetRows() {
+        resetAuthRejections();
         jdbc.execute("truncate auth.users, public.bs_rooms, realtime.messages cascade");
         jdbc.update("insert into auth.users (id) values (?), (?), (?), (?), (?)", FIRST, SECOND, THIRD, FOURTH, MISSING);
         insertProfile(FIRST, "first_profile", "Perfil de São Luís", null, false);
@@ -139,6 +152,20 @@ public abstract class SocialIntegrationTest {
         insertProfile(THIRD, "third_profile", "Third Profile", null, true);
         insertProfile(FOURTH, "fourth_profile", "Fourth Profile", null, false);
         jdbc.execute("truncate realtime.messages");
+    }
+
+    @AfterEach
+    void resetAuthAfterTest() {
+        resetAuthRejections();
+    }
+
+    protected static void rejectBearerAtAuth(String token, int status) {
+        if (status != 401 && status != 403) throw new IllegalArgumentException("Expected Auth rejection status");
+        AUTH_REJECTIONS.put("Bearer " + token, status);
+    }
+
+    protected static void resetAuthRejections() {
+        AUTH_REJECTIONS.clear();
     }
 
     private void insertProfile(UUID id, String username, String name, String avatar, boolean online) {
@@ -165,6 +192,11 @@ public abstract class SocialIntegrationTest {
                 return;
             }
             String token = exchange.getRequestHeaders().getFirst("Authorization");
+            Integer rejection = token == null ? null : AUTH_REJECTIONS.get(token);
+            if (rejection != null) {
+                reply(exchange, rejection, "{}");
+                return;
+            }
             switch (token == null ? "" : token) {
                 case "Bearer first" -> reply(exchange, 200, user(FIRST, false));
                 case "Bearer second" -> reply(exchange, 200, user(SECOND, false));
@@ -172,6 +204,7 @@ public abstract class SocialIntegrationTest {
                 case "Bearer fourth" -> reply(exchange, 200, user(FOURTH, false));
                 case "Bearer missing" -> reply(exchange, 200, user(MISSING, false));
                 case "Bearer anonymous" -> reply(exchange, 200, user(FIRST, true));
+                case "Bearer expired" -> reply(exchange, 403, "{}");
                 case "Bearer unavailable" -> reply(exchange, 503, "{}");
                 default -> reply(exchange, 401, "{}");
             }
@@ -189,29 +222,30 @@ public abstract class SocialIntegrationTest {
         exchange.getResponseBody().write(payload);
     }
 
-    private static String initializeDatabase() throws IOException, SQLException {
+    private static String initializeDatabase(String realtimeMessagesBootstrap) throws IOException, SQLException {
         if (USE_TESTCONTAINERS) {
             String database = "backstabber_java_" + UUID.randomUUID().toString().replace("-", "");
-            container = new PostgreSQLContainer("postgres:17-alpine").withDatabaseName(database);
+            container = new PostgreSQLContainer("postgres:17-alpine").withDatabaseName(database)
+                    .withStartupTimeout(Duration.ofMinutes(3));
             container.start();
             try (Connection db = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword())) {
-                seedDatabase(db);
+                seedDatabase(db, realtimeMessagesBootstrap);
             }
             return "postgresql://" + container.getUsername() + ":" + container.getPassword() + "@127.0.0.1:"
                     + container.getMappedPort(5432) + "/" + container.getDatabaseName();
         }
         cluster = LocalCluster.create(LOCAL_DATABASE);
         try (Connection db = cluster.connect(cluster.database)) {
-            seedDatabase(db);
+            seedDatabase(db, realtimeMessagesBootstrap);
         }
         return cluster.applicationUrl();
     }
 
-    private static void seedDatabase(Connection database) throws IOException, SQLException {
+    private static void seedDatabase(Connection database, String realtimeMessagesBootstrap) throws IOException, SQLException {
         Path migration = Path.of("..", "supabase", "migrations", "20261112000101_backstabber_multiplayer.sql");
         if (!Files.isRegularFile(migration)) migration = Path.of("supabase", "migrations", migration.getFileName().toString());
         try (var sql = database.createStatement()) {
-            sql.execute(MANAGED_SCHEMA_FIXTURE);
+            sql.execute(MANAGED_SCHEMA_FIXTURE.formatted(realtimeMessagesBootstrap));
             sql.execute(Files.readString(migration));
         }
 

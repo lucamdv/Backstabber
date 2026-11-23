@@ -4,7 +4,7 @@
 
 Preparação de código, migration proposta, rollback e testes exclusivamente locais. A aplicação no Supabase hospedado depende de aprovação explícita em uma etapa posterior. O plano usa o projeto Backstabber existente, o schema `bs_staging` e uma API Java HTTPS separada.
 
-A [pré-aplicação e o checklist GO / NO-GO](11-sprint-03-5c-preflight.md) detalham o pacote SELECT-only e os gates de aprovação. A compatibilidade de grants e políticas do serviço gerenciado permanece não verificada. A permissão de gerenciar políticas em `realtime.messages` não comprova a capacidade de delegar INSERT nessa tabela. Nenhuma auditoria SQL hospedada foi executada nesta preparação.
+A [pré-aplicação e o checklist GO / NO-GO](11-sprint-03-5c-preflight.md) registram o pacote SELECT-only. Na [Sprint 03.5D](12-sprint-03-5d-managed-compatibility.md), a auditoria de leitura fornecida pelo usuário identificou grants gerenciados inviáveis. A proposta foi revisada localmente para removê-los. Nenhum SQL hospedado é executado nesta adequação; a autorização de aplicação continua separada.
 
 ## Isolamento dos dados e dos privilégios
 
@@ -18,7 +18,7 @@ A [pré-aplicação e o checklist GO / NO-GO](11-sprint-03-5c-preflight.md) deta
 | Realtime | `user:<uuid>`, `room:<uuid>` | `hml:user:<uuid>`, `hml:room:<uuid>` |
 | Frontend | Configuração atual | Preview exclusivo da branch Java com `VITE_GAME_SCHEMA=bs_staging` |
 
-Os perfis de jogo são independentes mesmo quando o UUID do Auth é o mesmo. A homologação cria seu próprio perfil em staging. A migration usa apenas uma chave estrangeira para `auth.users(id)`, sem copiar perfis, salas, partidas ou comandos existentes.
+Os perfis de jogo são independentes mesmo quando o UUID do Auth é o mesmo. A homologação cria seu próprio perfil em staging, associado ao principal validado pelo Java via Supabase Auth. Desde a Sprint 03.5D não existe FK para `auth.users(id)` nem concessão de privilégios no Auth; todas as FKs internas são mantidas. A exclusão de uma conta Auth deixa registros de staging para limpeza explicitamente autorizada, conforme o relatório 12. Não se copiam perfis, salas, partidas ou comandos existentes.
 
 ### Auditoria do Java
 
@@ -34,7 +34,7 @@ Proposta em `supabase/migrations/20261119000101_backstabber_shared_staging.sql`.
 
 `bs_staging_app` recebe somente uso do schema e DML nas tabelas de staging, com políticas RLS próprias. O login nasce com senha nula e precisa de uma senha exclusiva fornecida fora do Git após aprovação. Ele não é dono dos objetos, não recebe memberships e não possui CREATE, TRUNCATE, TRIGGER, privilégios administrativos ou escrita no Auth.
 
-`bs_staging_owner` possui os objetos novos e os triggers, sem login. Recebe somente a referência de FK a `auth.users(id)` e a ponte de publicação de invalidações. O executor administrativo não-superusuário mantém a associação ADMIN-only que o PostgreSQL cria automaticamente para o criador desses dois papéis, com INHERIT e SET desabilitados ao final. Essa capacidade permite configurar a senha e executar o rollback. O superusuário usado no fixture descartável já possui capacidade administrativa intrínseca. A administração dos papéis novos deve constar na aprovação. [Papéis no PostgreSQL 17](https://www.postgresql.org/docs/17/role-attributes.html)
+`bs_staging_owner` possui os objetos novos e os triggers, sem login. Recebe apenas a ponte restrita de publicação, sem privilégios sobre tabelas Auth. O executor não-superusuário mantém a associação ADMIN-only criada pelo PostgreSQL para os dois papéis, com INHERIT e SET desabilitados ao final. Essa capacidade permite configurar a senha e executar o rollback. A administração dos papéis novos deve constar na aprovação. O rollback deve usar o mesmo executor efetivo para respeitar a origem dos grants. [Papéis no PostgreSQL 17](https://www.postgresql.org/docs/17/role-attributes.html)
 
 Os privilégios herdados de `PUBLIC` são verificados. Se eles derem ao novo papel acesso incompatível, a proposta falha sem alterar as concessões ou políticas existentes da produção. O teste usa os OIDs dos objetos para consultar privilégios sem conceder acesso aos schemas protegidos.
 
@@ -44,7 +44,7 @@ Administradores privilegiados do projeto continuam tendo capacidade administrati
 
 Os triggers são funções de staging com `SECURITY DEFINER`, `search_path` vazio e referências qualificadas. O papel do Java não pode executar diretamente esses triggers nem publicar mensagens por uma credencial administrativa.
 
-O Supabase local usa `realtime.send` com permissões do chamador. Por isso, a proposta concede INSERT em `realtime.messages` exclusivamente ao dono sem login, com uma política adicional que aceita apenas invalidações privadas `hml:` e os formatos esperados. A política permite o UUID de transporte que o serviço acrescenta ao payload. O papel `bs_staging_app` continua sem privilégios de dados nessa tabela.
+O send observado é SECURITY INVOKER e já possui EXECUTE para PUBLIC. A revisão 03.5D exige essas condições e não tenta conceder ou revogar EXECUTE da função gerenciada. A proposta concede USAGE em realtime e INSERT em messages apenas ao dono sem login, com uma política adicional que aceita invalidações privadas `hml:` e os formatos esperados. A política permite o UUID de transporte acrescentado ao payload. `bs_staging_app` continua sem privilégios de dados nessa tabela e não pode assumir o owner.
 
 As novas políticas de clientes permitem o canal individual correspondente ao usuário autenticado e canais de sala com membership de staging. Presença exige membership. Publicações arbitrárias de broadcast pelo cliente são recusadas. Guardas restritivas limitadas a tópicos `hml:` impedem que uma política permissiva externa abra esses canais. Nos demais tópicos, os guardas são neutros. As definições das políticas de produção são preservadas.
 
@@ -115,7 +115,9 @@ Railway também suporta o Dockerfile e HTTPS com domínio gerado. O plano Free d
 
 Não foi criado serviço, projeto, plano ou deploy nesses hosts. O pool JDBC mantém máximo de três conexões. Como a infraestrutura é compartilhada, carga, conexões, Auth e Realtime de staging consomem capacidade do mesmo projeto. O primeiro aceite deve usar uma única instância e carga pequena com contas de teste.
 
-## Validação local
+## Validação local histórica da03.5C
+
+Os resultados abaixo pertencem à proposta anterior. A regressão da revisão sem FK Auth e sem grants inviáveis consta no relatório 03.5D.
 
 | Ensaio | Resultado |
 | --- | --- |
@@ -164,7 +166,7 @@ O browser utiliza o Java e o Realtime. O schema de staging pode permanecer fora 
 
 ## Relatório de impacto
 
-- Novos objetos de staging, novos papéis, políticas adicionais e concessões limitadas à ponte Realtime e à FK do Auth.
+- Novos objetos de staging, papéis, políticas adicionais e concessões limitadas à ponte Realtime. A revisão 03.5D removeu a FK do Auth e os grants inviáveis de Auth/send.
 - Novas associações ADMIN-only do executor confiável sobre os dois papéis novos, para administração e rollback.
 - Nenhuma cópia de dados de produção. Novos perfis e salas são criados somente no schema de staging.
 - Contrato HTTP preservado. Seleção de schema e tópicos passa a ser configuração explícita de homologação.
@@ -173,11 +175,11 @@ O browser utiliza o Java e o Realtime. O schema de staging pode permanecer fora 
 
 ## Checklist de pré-aplicação para aprovação explícita
 
-Estes itens descrevem uma etapa futura autorizada. Nenhum SQL foi executado no Supabase hospedado nesta sprint.
+Estes itens descrevem gates de uma aplicação futura. A auditoria de leitura foi fornecida pelo usuário; nenhum SQL é executado no Supabase hospedado durante a adequação 03.5D.
 
 - [ ] Revisar o commit, a migration e o rollback propostos.
 - [ ] Aprovar o projeto compartilhado, o schema `bs_staging`, os dois papéis e a delegação ADMIN-only do executor.
-- [ ] Autorizar uma auditoria remota prévia de metadados, grants, ownership, memberships, funções e políticas, sem leitura ou cópia de dados de jogo.
+- [x] Auditoria remota de leitura fornecida pelo usuário como entrada da Sprint 03.5D. A capacidade de gerenciar políticas continua sendo um gate específico.
 - [ ] Confirmar ausência de colisões de nomes e de grants `PUBLIC` incompatíveis. Interromper se houver divergência, sem alterar privilégios de produção automaticamente.
 - [ ] Conferir backup e o executor capaz de aplicar a migration e fazer o rollback restrito.
 - [ ] Aprovar a aplicação transacional da migration e a senha exclusiva do papel, fornecida por canal local seguro.

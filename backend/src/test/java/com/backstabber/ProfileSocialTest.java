@@ -34,6 +34,38 @@ class ProfileSocialTest extends SocialIntegrationTest {
     }
 
     @Test
+    void rejectsPreviouslyAcceptedBearerWhenUpstreamAuthRejectsTheNextPut() throws Exception {
+        for (int upstreamStatus : new int[]{401, 403}) {
+            assertJson(200, """
+                    {"id":"%s","username":"accepted_profile","displayName":"Accepted","avatarUrl":null,"showOnline":false}
+                    """.formatted(FIRST), request("PUT", "/api/v1/profile", "first", """
+                    {"username":"accepted_profile","displayName":"Accepted"}
+                    """));
+            var before = jdbc.queryForMap("select * from public.bs_profiles where user_id = ?", FIRST);
+            rejectBearerAtAuth("first", upstreamStatus);
+            try {
+                assertError(401, "UNAUTHENTICATED", request("PUT", "/api/v1/profile", "first", """
+                        {"username":"forbidden_change","displayName":"Forbidden"}
+                        """));
+                assertEquals(before, jdbc.queryForMap("select * from public.bs_profiles where user_id = ?", FIRST));
+            } finally {
+                resetAuthRejections();
+            }
+        }
+    }
+
+    @Test
+    void invalidExpiredAndAnonymousBearersCannotCreateOrUpdateProfiles() throws Exception {
+        var before = jdbc.queryForList("select * from public.bs_profiles order by user_id");
+        for (String token : new String[]{null, "invalid", "expired", "anonymous"}) {
+            assertError(401, "UNAUTHENTICATED", request("PUT", "/api/v1/profile", token, """
+                    {"userId":"%s","username":"forbidden_profile","displayName":"Forbidden"}
+                    """.formatted(MISSING)));
+            assertEquals(before, jdbc.queryForList("select * from public.bs_profiles order by user_id"));
+        }
+    }
+
+    @Test
     void matchesProfileValidationAndUniqueConstraint() throws Exception {
         assertError(409, "USERNAME_TAKEN", request("PUT", "/api/v1/profile", "second",
                 "{\"username\":\"FIRST_PROFILE\",\"displayName\":\"Other\"}"));

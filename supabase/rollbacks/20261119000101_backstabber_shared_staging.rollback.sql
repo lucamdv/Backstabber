@@ -2,7 +2,9 @@
 -- separate authorization. Removes ALL staging game data if subsequently populated.
 -- Does not drop shared auth users, public game objects, or production RT policies.
 -- Deliberately avoids CASCADE: unexpected external dependencies abort atomically.
--- Run as the trusted migration executor (or another authorized administrator).
+-- Run as the SAME effective migration executor: REVOKE depends on the grantor.
+-- Another administrator must separately review grant provenance; merely having
+-- SUPERUSER does not guarantee these unqualified REVOKEs remove another grantor's ACL.
 -- Its automatic PostgreSQL ADMIN-only grants permit temporarily enabling teardown
 -- capabilities on these new roles; no production role membership is needed.
 begin;
@@ -55,11 +57,9 @@ drop function bs_staging.social_invalidation();
 drop function bs_staging.assert_runtime_role();
 drop schema bs_staging;
 
-revoke references (id) on auth.users from bs_staging_owner;
-revoke usage on schema auth from bs_staging_owner;
 revoke insert on realtime.messages from bs_staging_owner;
-revoke execute on function realtime.send(jsonb,text,text,boolean) from bs_staging_owner;
 revoke usage on schema realtime from bs_staging_owner;
+-- No Auth grant or managed-function grant was made. Preserve PUBLIC EXECUTE.
 -- RESTRICT behavior rejects unexpected additional grants/dependencies.
 -- Never use DROP OWNED: it could remove grants outside the known staging scope.
 drop role bs_staging_app;

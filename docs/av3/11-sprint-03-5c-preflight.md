@@ -4,9 +4,9 @@
 
 Base revisada: `1b4c870c245066e0e09ea844cb2ceb5acea26cc3`, branch `feature/av3-sprint-03-spring-boot`.
 
-O pacote de auditoria está preparado. **A execução no Supabase hospedado não está autorizada e não foi realizada.** O estado para aplicação da migration continua **NO-GO**, por falta das evidências do ambiente de destino. A aprovação arquitetural preliminar não equivale a aprovação para executar consultas, aplicar SQL ou ativar serviços.
+Este documento preserva o histórico da preparação 03.5C. Na Sprint 03.5D, o usuário informou a conclusão externa da auditoria hospedada de leitura. Os três grants não delegáveis motivaram a [revisão da migration](12-sprint-03-5d-managed-compatibility.md). Nenhuma consulta remota foi executada durante essa revisão. A aplicação hospedada continua **NO-GO** até os gates restantes e uma nova autorização explícita.
 
-Esta alteração contém somente documentação e o [script SELECT de auditoria](../../supabase/audits/20261119_shared_staging_preflight.sql). A migration, o rollback, o Java, o frontend e as configurações remotas permanecem como na base revisada.
+A entrega original continha somente documentação e o [script SELECT](../../supabase/audits/20261119_shared_staging_preflight.sql). A Sprint 03.5D revisa migration/rollback e testes locais; as configurações remotas continuam intocadas. O script recebeu uma consulta adicional de evidência de capacidade de políticas, que não foi executada remotamente.
 
 ## Plano e limites do preflight
 
@@ -16,11 +16,11 @@ Esta alteração contém somente documentação e o [script SELECT de auditoria]
 4. Conferir o bloqueio do Preview usando somente leitura da Vercel.
 5. Publicar o pacote nesta branch e aguardar autorização específica para a auditoria hospedada.
 
-Não foi criado papel da aplicação, não foi aplicada migration e nenhum Supabase foi iniciado para esta entrega. O container PostgreSQL usado para a validação é descartável, sem rede e sem portas expostas. Nenhum comando é enviado ao Supabase remoto por este script ou por um runner automático.
+Na preparação 03.5C não se criou papel da aplicação nem se aplicou migration. Os ensaios da Sprint 03.5D usam uma stack Supabase local descartável. Nenhum comando é enviado ao Supabase remoto por este script ou por um runner automático.
 
 ## Contrato do script
 
-O arquivo contém **25 instruções SELECT**, algumas com CTEs de leitura. As fontes são catálogos `pg_catalog`, incluindo a visão `pg_roles`, que não divulga hashes de senha. Não há `DO`, `SET ROLE`, DDL, DML, consultas às tabelas `public.bs_*`, `bs_staging.*`, `auth.users` ou `realtime.messages`, nem execução de funções do projeto.
+O arquivo atualizado contém **26 instruções SELECT**, algumas com CTEs de leitura. As fontes são catálogos `pg_catalog`, incluindo a visão `pg_roles`, que não divulga hashes de senha. Não há `DO`, `SET ROLE`, DDL, DML, consultas às tabelas `public.bs_*`, `bs_staging.*`, `auth.users` ou `realtime.messages`, nem execução de funções do projeto.
 
 As funções usadas são auxiliares explícitas de `pg_catalog` para verificar privilégios e descrever metadados. Não são chamadas `auth.uid()`, `realtime.send()` ou `bs_staging.assert_runtime_role()`. Referências a tabelas do jogo/Auth/Realtime são identificadores encontrados nos catálogos, sem leitura de seus dados.
 
@@ -33,7 +33,7 @@ Corpos de funções, expressões de políticas/defaults, argumentos de triggers 
 | Q01 | Identidade efetiva/login, versão, transação, CREATE no banco | Executor exato aprovado; PostgreSQL 17 como baseline validada; sessão read-only |
 | Q02 | Colisões de schema, papéis e cinco nomes de políticas | Zero resultados antes da primeira aplicação |
 | Q03–Q04 | Atributos e memberships, grantor, ADMIN/INHERIT/SET | Capacidade administrativa do executor; nenhum caminho de elevação concedido ao runtime |
-| Q05–Q06 | Ownership, USAGE e permissões delegáveis | USAGE delegável em Auth/Realtime; REFERENCES(id), INSERT e EXECUTE delegáveis nos objetos exigidos |
+| Q05–Q06 | Ownership, USAGE e permissões delegáveis | Na03.5D, exigir delegação apenas de USAGE em realtime e INSERT em messages; Auth e EXECUTE continuam como diagnóstico histórico |
 | Q07–Q09 | Relações, RLS, ACLs de tabela e coluna | Dependências presentes, RLS já habilitada em messages, nenhuma concessão PUBLIC incompatível |
 | Q10–Q11 | Default ACLs e privilégios PUBLIC de banco/schema | Ausência de CREATE para PUBLIC e de defaults de terceiros não aprovados |
 | Q12 | Políticas, comandos, permissividade, roles e hashes | Composição das políticas atuais compatível com os guardas `hml:` |
@@ -43,10 +43,11 @@ Corpos de funções, expressões de políticas/defaults, argumentos de triggers 
 | Q18–Q19 | Constraints, FKs e índices | Estrutura conhecida e ausência de dependências externas de staging |
 | Q20–Q21 | Dependências locais e de papéis no cluster | Rollback restrito possível; nenhuma dependência externa inesperada |
 | Q22–Q25 | Linguagens, TLS, partições e ACLs de schema | PL/pgSQL utilizável, conexão protegida e escopo real de grants/revokes compreendido |
+| Q26 | Owner efetivo e declaração Supautils para o executor | Evidência separada da capacidade de gerenciar políticas; não é ensaio CREATE/DROP nem autorização de escrita |
 
 O script permite diagnóstico em servidores anteriores ao PostgreSQL 16 sem referenciar diretamente colunas de membership inexistentes. Isso **não torna a migration compatível** com esses servidores. Ela usa opções de membership recentes e foi validada em PostgreSQL 17. Outra versão exige revisão e ensaio local específicos antes de GO.
 
-Resultados vazios não significam sucesso. Q06 precisa retornar as três dependências com as permissões esperadas, Q05 precisa encontrar Auth/Realtime, e Q13 precisa encontrar as assinaturas necessárias: `realtime.send(jsonb,text,text,boolean)` retornando `void`, `realtime.topic()` retornando `text`, `auth.uid()` e `pg_catalog.gen_random_uuid()` retornando `uuid`.
+Resultados vazios não significam sucesso. Q06 deve mostrar INSERT delegável em messages; resultados falsos para delegação Auth/send são esperados e compatíveis com a Sprint 03.5D. Q05 deve mostrar USAGE delegável em realtime. Q13 deve encontrar send invoker com a assinatura esperada e Q14 confirmar seu EXECUTE para PUBLIC. Permanecem necessárias `realtime.topic()` retornando `text`, `auth.uid()` e `pg_catalog.gen_random_uuid()` retornando `uuid`, sem grants novos no Auth.
 
 Os hashes servem para comparar snapshots do mesmo cluster/versão, em condições equivalentes. Árvores de expressão podem conter OIDs internos e não devem ser comparadas cegamente entre o fixture local e o hospedado. Um hash não classifica a segurança de uma função ou política. Indicadores `mentions_*` e `literal_true` são heurísticas conservadoras, sem prova de equivalência lógica.
 
@@ -56,18 +57,18 @@ Os hashes servem para comparar snapshots do mesmo cluster/versão, em condiçõe
 | --- | --- | --- |
 | Criar os dois papéis e ajustar memberships | Q01, Q03, Q04 | Exige CREATEROLE efetivo ou superusuário. Não basta ser membro de uma role com atributo CREATEROLE |
 | Criar schema, tabelas, funções e transferir ownership | Q01, Q04, Q22 | Exige CREATE no banco, linguagem e capacidade temporária de SET/INHERIT sobre os novos papéis |
-| FK compartilhada com Auth | Q05, Q06, Q09 | Exige USAGE delegável em auth e REFERENCES(id) delegável em auth.users, sem leitura/escrita de usuários |
-| Triggers de invalidação | Q05, Q06, Q13, Q14 | Exige USAGE delegável em realtime e EXECUTE delegável em send, com implementação compatível |
+| UUID de perfil validado pelo Java | Testes de identidade e Q18 | Sem FK/grants em Auth; todas as FKs internas preservadas e retenção de órfãos documentada |
+| Triggers de invalidação | Q05, Q06, Q13, Q14 | USAGE delegável em realtime; send invoker com EXECUTE já concedido a PUBLIC, sem nova delegação da função |
 | Ponte INSERT do owner sem login | Q06, Q08, Q12, Q15 | Exige INSERT delegável em messages e política compatível. Permissão de gerenciar políticas não comprova esta delegação |
-| Criar/remover cinco políticas em messages | Q07, Q12, Q15 | Ownership efetivo ou capacidade gerenciada explicitamente comprovada para o executor exato |
-| Revogar concessões no rollback | Q06, Q08, Q09, Q14, Q25 | Examinar grantor real e opções de grant. O mesmo executor ou administrador aprovado precisa poder revogar exatamente os grants novos |
+| Criar/remover cinco políticas em messages | Q07, Q12, Q15, Q26 | Ownership efetivo ou capacidade gerenciada explicitamente comprovada para o executor exato |
+| Revogar concessões no rollback | Q06, Q08, Q09, Q14, Q25 | Usar o mesmo executor efetivo. Um administrador diferente pode não remover o grant de outro grantor com os REVOKEs propostos |
 | Remover schema/funções/tabelas e papéis novos | Q04, Q16–Q21 | ADMIN-only deve permitir bootstrap temporário restrito. Dependências não previstas precisam ser recusadas, sem CASCADE/DROP OWNED |
 
 ### Ponto crítico do serviço gerenciado
 
 O Supabase documenta uma exceção gerenciada para o papel `postgres` administrar políticas em `realtime.messages` sem ser dono da tabela. Também documenta que os objetos de Realtime costumam pertencer a `supabase_realtime_admin` e que concessões/revogações dependem do grantor e das opções realmente disponíveis. **A exceção de políticas não é uma autorização geral para alterar grants.** [Autorização Realtime](https://supabase.com/docs/guides/realtime/authorization), [grants e revokes em objetos gerenciados](https://supabase.com/kb/troubleshooting/revoking-privileges-on-storage-pg_cron-vault-and-extension-objects-has-no-effect-916576)
 
-A proposta atual precisa executar `GRANT INSERT ON realtime.messages TO bs_staging_owner`, além dos grants de schema, função e FK. Se o executor não puder delegar qualquer um desses privilégios, a aplicação permanece **NO-GO**. Um GRANT/REVOKE pode produzir aviso sem realizar a mudança esperada; aceitar um comando sem erro não comprova o grant final.
+A proposta revisada precisa executar `GRANT INSERT ON realtime.messages TO bs_staging_owner` e USAGE no schema realtime. Os grants de Auth e da função foram removidos. Se o executor não puder delegar os privilégios restantes ou não possuir capacidade de gerenciar políticas, a aplicação permanece **NO-GO**. Um GRANT/REVOKE pode produzir aviso sem realizar a mudança esperada; aceitar um comando sem erro não comprova o grant final.
 
 O preflight SELECT identifica ACLs e capacidades declaradas, mas não ensaia DDL delegado por extensões, não cria roles de sondagem e não tenta mudar o owner gerenciado. Evidência insuficiente sobre a exceção de políticas continua pendente. Não conceder membership em `supabase_realtime_admin`, não transferir ownership de objetos existentes e não enfraquecer PUBLIC/RLS para contornar uma incompatibilidade. Uma revisão da proposta, se necessária, será outra alteração submetida à aprovação.
 
@@ -138,14 +139,14 @@ Há dois gates separados. Autorizar SELECTs não autoriza aplicar a migration, p
 - [ ] Preparar cliente com credenciais fora do Git, TLS, transação read-only, ON_ERROR_STOP e timeouts. Não adicionar SET/DO/DDL ao arquivo de consultas.
 - [ ] Definir armazenamento restrito para a evidência. Compartilhar apenas resultado resumido e redigido.
 
-**Estado atual do Gate A: aguardando aprovação.** Nenhuma execução hospedada será feita por este commit ou automaticamente no push.
+**Estado do Gate A:** auditoria original informada externamente pelo usuário. Uma consulta complementar Q26 requer nova autorização e não será executada automaticamente no push. Os itens de preparação acima são o registro histórico da entrega 03.5C.
 
 ### Gate B · Compatibilidade para futura aplicação
 
-- [ ] Todos os 25 resultados disponíveis, completos e associados ao executor/projeto aprovados. Falha de permissão ou resultado ausente significa evidência insuficiente.
+- [ ] Evidências suficientes do executor/projeto, incluindo a capacidade separada de políticas de Q26. Falha de permissão ou resultado ausente significa evidência insuficiente.
 - [ ] Versão compatível com o ensaio local e zero colisões de nomes.
 - [ ] CREATEROLE, CREATE no banco, linguagem e bootstrap de ownership/memberships viáveis, sem concessões administrativas ao runtime.
-- [ ] Todos os grants necessários delegáveis, com grantor e reversibilidade compreendidos, incluindo INSERT em messages e REFERENCES(id) no Auth.
+- [ ] Grants necessários delegáveis, com grantor e reversibilidade compreendidos: INSERT em messages e USAGE em realtime. Auth REFERENCES e EXECUTE da função não são requisitos de delegação na Sprint 03.5D.
 - [ ] Capacidade de CREATE/DROP POLICY em messages comprovada para o executor, sem membership em role gerenciada nem troca de owner.
 - [ ] PUBLIC, defaults, grants por coluna, funções definer e event triggers sem caminhos não aprovados para produção/staging.
 - [ ] Políticas atuais compatíveis nos dois sentidos: guardas hml fecham acesso indevido e restritivas existentes não impedem o fluxo novo nem exigem alteração em produção.
@@ -165,6 +166,6 @@ Há dois gates separados. Autorizar SELECTs não autoriza aplicar a migration, p
 
 ## Próxima autorização solicitada
 
-Autorizar, em etapa posterior, **somente a execução das 25 consultas SELECT deste arquivo contra catálogos do projeto Backstabber aprovado, pelo executor definido, para produzir relatório redigido de compatibilidade**. Essa autorização deverá citar o commit publicado e excluir aplicação de SQL de escrita, criação de roles, alterações de Auth/Realtime e ativação de infraestrutura.
+O pacote atual permite uma auditoria de 26 SELECTs. A evidência complementar de políticas pode ser obtida somente após autorização específica para Q26 (e eventual atualização dos outros metadados), pelo executor aprovado. Nenhuma autorização anterior implica permissão de escrita, criação de roles ou ativação de infraestrutura. A decisão atual de aplicação consta no relatório 03.5D.
 
 O [relatório original de impacto](10-sprint-03-5c-shared-staging.md) e as propostas de migration/rollback continuam sujeitos ao Gate B e a uma autorização de aplicação separada.
