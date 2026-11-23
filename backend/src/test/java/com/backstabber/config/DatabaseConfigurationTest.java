@@ -23,6 +23,21 @@ class DatabaseConfigurationTest {
     }
 
     @Test
+    void allowsBoundedWarmupForManagedSupavisorWithoutWeakeningTls() {
+        var connection = DatabaseConfiguration.postgresSource(
+                "postgresql://bs_staging_app.fixture:fixture@aws-0-sa-east-1.pooler.supabase.com:5432/postgres",
+                CA_FIXTURE, false, true);
+        try {
+            assertEquals("verify-full", connection.source().getSslMode());
+            assertEquals(10, connection.source().getConnectTimeout());
+            assertEquals(20, connection.source().getSocketTimeout());
+            assertEquals(20, connection.source().getLoginTimeout());
+        } finally {
+            connection.deleteCa();
+        }
+    }
+
+    @Test
     void enforcesRemoteCertificateAndHostnameEvenWithInsecureSslMode() throws Exception {
         var connection = DatabaseConfiguration.postgresSource(
                 "postgresql://fixture:fixture@db.example.test/fixture?sslmode=disable", CA_FIXTURE, true);
