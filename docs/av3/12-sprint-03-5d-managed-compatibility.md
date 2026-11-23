@@ -149,7 +149,7 @@ Antes de autorizar aplicação hospedada, permanecem os seguintes gates:
 - [ ] Evidência específica da capacidade do executor postgres de gerenciar políticas em messages no projeto aprovado, distinta do INSERT delegável. A consulta complementar requer autorização própria.
 - [ ] Revisão dos demais grants PUBLIC, defaults, funções definer e políticas, sem inferir compatibilidade completa a partir do resumo parcial fornecido. Interromper se houver drift desde a auditoria.
 - [ ] Aceite explícito da ausência de cascade Auth, da retenção e do procedimento de limpeza de staging, incluindo responsável e janela.
-- [ ] Revisão do commit, backup e rollback pelo mesmo executor, com senha exclusiva do runtime fora do Git.
+- [ ] Revisão do commit, backup e rollback pelo mesmo executor, com senha exclusiva do runtime fora do Git. O [relatório 03.5E](13-sprint-03-5e-backup-pre-migration.md) mantém o backup hospedado como FAIL por falta de credencial existente; o ensaio sintético local não fecha este gate.
 - [ ] Nova autorização explícita para aplicar esta versão da migration. Nenhuma autorização de leitura anterior permite escrita.
 - [ ] Gates separados para host Java HTTPS, CA/verify-full, conexão direta ou Supavisor session mode, limite de conexões, CORS, OAuth e Preview exclusivamente staging.
 
