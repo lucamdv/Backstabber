@@ -1,6 +1,6 @@
 # Autenticação unificada — relatório de validação
 
-Data: 23/11/2026. **Implementação publicada em homologação; aceite hospedado pendente de corrigir a autenticação SMTP.** O responsável corrigiu e confirmou a grafia do destinatário controlado. O endereço não é versionado neste relatório. A primeira tentativa manual exibiu uma máscara incompatível com o destinatário combinado; o formulário foi corrigido antes da segunda tentativa.
+Implementação: 23/11/2026. Atualização de evidências: 24/11/2026. **Cadastro/OTP, recuperação e vinculação email → Google confirmados em homologação após correção manual do SMTP.** Primeira senha de conta originalmente Google e refresh hospedado ainda não comprovados. O responsável corrigiu e confirmou a grafia do destinatário controlado. O endereço não é versionado neste relatório. A primeira tentativa manual exibiu uma máscara incompatível com o destinatário combinado; o formulário foi corrigido antes da segunda tentativa.
 
 ## Implementação por branch
 
@@ -45,8 +45,8 @@ O primeiro startup do PostgreSQL da fixture expirou; o segundo terminou saudáve
 | --- | --- |
 | Email → confirmação → recuperação → senha nova | **Real local:** UUID original preservado em todos os passos |
 | Google → primeira senha | Mecanismo oficial implementado (`resetPasswordForEmail`, `PASSWORD_RECOVERY`, `updateUser`); **teste com Google verdadeiro pendente** |
-| Email confirmado → Google do mesmo email | Delegado à vinculação automática oficial do Supabase; **teste com Google verdadeiro pendente** |
-| Alternância Google/senha e ausência de perfil duplicado | Backends aceitam o mesmo UUID confirmado independentemente do método nos testes; **prova hospedada com dados de staging pendente** |
+| Email confirmado → Google do mesmo email | **Real hospedado:** login Google no Preview Java retornou ao mesmo domínio e ao mesmo perfil. Uma única linha no Auth antes/depois e UUID comparado em memória: idêntico |
+| Alternância Google/senha e ausência de perfil duplicado | **Real hospedado para a conta criada por email:** perfil de staging preservado no Google, após recuperação e no retorno ao Google. Login por nova senha confirmado pelo responsável e por evento Auth HTTP200 |
 | Emails diferentes | Sem API de vinculação manual e sem comparação/merge por email na aplicação |
 | Troca concorrente de conta durante alteração de senha | Testes do controller e transporte recusam alteração para bearer diferente |
 | Voltar ao menu durante recuperação | Contexto em memória preservado com o cliente e vinculado ao UUID; teste de desmontagem/remontagem aprovado |
@@ -55,7 +55,7 @@ Não confundir preservar UUID no fluxo real de senha com comprovar os dois senti
 
 ## Auditoria hospedada e ajustes autorizados
 
-Vercel: projeto existente `backstabber-homologacao`; overrides exclusivos de Preview/branch Java presentes: schema `bs_staging`, API `https://backstabber-java-staging.onrender.com/api/v1` e `DATABASE_URL` vazio. Deploy anterior `c13adc5242ed0766c0830869e3bca91bf58e7932` estava READY na consulta. Isso não representa deploy desta implementação. Render: serviço existente `backstabber-java-staging`, plano free, mesma branch, auto deploy desligado. Nenhum recurso foi criado/alterado nesta tarefa.
+Auditoria inicial: projeto Vercel existente `backstabber-homologacao`; overrides exclusivos de Preview/branch Java presentes: schema `bs_staging`, API `https://backstabber-java-staging.onrender.com/api/v1` e `DATABASE_URL` vazio. O deploy anterior era `c13adc5242ed0766c0830869e3bca91bf58e7932`. Render: serviço existente `backstabber-java-staging`, plano free, mesma branch, auto deploy desligado. Nenhum novo recurso foi criado. A publicação e a correção restrita de CORS posteriores estão descritas abaixo.
 
 Auditoria inicial no Dashboard Supabase: Google e Email habilitados, confirmação obrigatória habilitada, usuários anônimos e linking manual desabilitados. OTP estava em **8 dígitos**, diferente do contrato solicitado. Validade observada: **3600 s**. A Site URL era `https://backstabber.vercel.app`; a allowlist incluía produção e previews AV2, mas não a URL estável da branch Java. Pela configuração exibida, um retorno não permitido cai em Site URL, explicando o redirecionamento indevido.
 
@@ -71,9 +71,28 @@ Foi detectada ausência de CORS para o Preview Java no serviço Render. A única
 
 O terminal real foi aberto no Chrome e o responsável realizou o cadastro, sem fornecer senha ou código ao agente. A segunda tentativa apresentou erro genérico na interface. A auditoria de logs do Auth consultou **somente contagens e classificações** do ClickHouse, sem selecionar mensagens, emails, códigos, URLs, tokens ou credenciais. Foram confirmados dois erros HTTP500 de envio, ambos contendo classificação SMTP535/credenciais rejeitadas, sem erro de TLS ou conexão. No painel, custom SMTP está habilitado, host `smtp.gmail.com`, porta465. Não foi lida, copiada nem alterada a senha SMTP.
 
-**Entrega externa: FAIL nesta tentativa.** O Gmail recusou a autenticação do remetente; não há evidência de chegada do OTP à caixa controlada. A correção exige intervenção do responsável: conferir o usuário SMTP e informar diretamente no painel uma senha de app válida da mesma conta Google. A senha de app requer verificação em duas etapas e pode ser revogada quando a senha da conta muda. Não a inserir em chat, fonte, bundle ou logs. [Documentação oficial Google](https://support.google.com/accounts/answer/185833?hl=pt-BR)
+**Histórico — entrega externa: FAIL nessa tentativa inicial.** O Gmail recusou a autenticação do remetente. O responsável posteriormente corrigiu e salvou o SMTP diretamente no painel, sem compartilhar o segredo. A repetição teve entrega real confirmada, conforme a seção seguinte. A senha de app requer verificação em duas etapas e pode ser revogada quando a senha da conta muda. Não a inserir em chat, fonte, bundle ou logs. [Documentação oficial Google](https://support.google.com/accounts/answer/185833?hl=pt-BR)
 
-A fixture `auth-email-proof` e seus volumes sintéticos foram encerrados/removidos com o comando local específico, sem `--all`; nenhum container desse projeto permaneceu em execução. Não houve consulta ao PostgreSQL hospedado, migration remota, alteração de dados do jogo ou criação de infraestrutura nesta entrega.
+A fixture `auth-email-proof` e seus volumes sintéticos foram encerrados/removidos com o comando local específico, sem `--all`; nenhum container desse projeto permaneceu em execução. Não houve consulta direta ao PostgreSQL hospedado, migration remota ou criação de infraestrutura. O ensaio posterior criou somente o perfil de teste em `bs_staging` por meio da API Java; não alterou dados do jogo em `public.bs_*`.
+
+## Reteste hospedado após correção do SMTP — 24/11/2026
+
+| Verificação | Resultado e origem da evidência |
+| --- | --- |
+| Cadastro e OTP | **PASS.** Signup HTTP200 observado no navegador. Responsável confirmou recebimento do email e informou que o OTP liberou o perfil. Senha e código foram digitados exclusivamente por ele |
+| API Java autenticada | **PASS.** GET `/api/v1/profile` HTTP200 observado após tentar novamente; perfil de teste salvo em staging. A primeira carga apresentou indisponibilidade, não reproduzida no retry; causa desconhecida |
+| Sessão após F5 | **PASS.** Mesmo perfil visível após recarga; repetido também após login Google |
+| Logout e recarga | **PASS.** Interface voltou ao login e permaneceu desconectada após recarga |
+| Email → Google | **PASS.** Google verdadeiro da mesma conta, escopos básicos de identidade; retorno ao alias Java, código removido da URL e mesmo perfil. Uma linha de Auth e mesmo UUID antes/depois, comparados em memória sem registrar o valor |
+| Recuperação hospedada | **PASS.** Solicitação HTTP200; responsável abriu o email, definiu a senha e confirmou a mensagem “Senha salva”. Link e senha não foram capturados |
+| Login com nova senha | **PASS com evidências complementares.** Responsável confirmou o reaparecimento do mesmo perfil; consulta restrita de logs Auth agregados da conta controlada confirmou um login password HTTP200. A resposta dessa operação não foi capturada diretamente na aba do agente |
+| Google após recuperação | **PASS.** Novo login Google executado e mesmo perfil de teste visível, sem nova conta de jogo |
+| Refresh de sessão Google hospedada | **PENDENTE.** Tentativa de induzir um único 401 via interceptação do navegador não conseguiu injetar a resposta; não comprova refresh. Interceptação removida, navegação normal restaurada e perfil visível. Não foram alterados TTL global, credenciais ou conteúdo da sessão. Refresh real local permanece aprovado |
+| Google primeiro → primeira senha | **PENDENTE.** A conta acima foi criada primeiro por email; sua recuperação não demonstra a primeira definição em uma conta exclusivamente Google |
+
+O callback Google permaneceu no domínio de homologação. Não foram capturados tokens, códigos OAuth, cookies, corpos de sessão ou credenciais. Consultas de logs selecionaram apenas contagens/status/classificações; a inspeção de usuário no Dashboard foi limitada ao email autorizado. A captura [hosted-staging-profile.jpg](screenshots/hosted-staging-profile.jpg) mostra apenas o perfil sintético e a interface do jogo, sem endereço de email ou identificador Auth.
+
+Os dados sociais preexistentes dessa conta de teste eram vazios. Preservar o perfil não constitui uma nova prova hospedada de histórico, amigos, partida em andamento ou convite; esses contratos têm cobertura automatizada e o ensaio completo hospedado não foi repetido. Também não se testou um login iniciado na produção, para evitar publicação ou alterações desse ambiente.
 
 ## Gate de validação externa
 
@@ -81,9 +100,9 @@ A fixture `auth-email-proof` e seus volumes sintéticos foram encerrados/removid
 - **Concluído:** retorno restrito Java e OTP6 aplicados após autorização, preservando Site URL e allowlist existente.
 - **Configurado:** mínimo8/quatro categorias; confirmar a rejeição efetiva pelo provedor durante o ensaio controlado, sem bloquear login de senhas antigas.
 - **Concluído:** dois templates e assuntos instalados, conteúdo persistido idêntico às fontes; validade observada de 3600 s.
-- **Bloqueado:** corrigir a autenticação Gmail SMTP535 e repetir um envio controlado. Verificar também remetente, entrega real, autenticação do domínio e ausência de rastreamento do link.
+- **Concluído:** responsável corrigiu o SMTP; confirmação e recuperação recebidas na caixa controlada, com OTP e nova senha funcionando. Compatibilidade visual em Outlook e autenticação de domínio do remetente ainda não auditadas.
 - **Concluído:** Preview e Java de staging publicados e saudáveis; main permanece local e não deve ser enviada automaticamente.
-- Executar Google → primeira senha e email → Google com contas controladas, comparar UUID sem divulgar seu valor, conferir perfil/amigos/salas de staging e repetir troca de método.
+- **Concluído:** email → Google com comparação de UUID e retorno ao mesmo perfil; nova senha e Google após recuperação. **Pendente:** Google → primeira senha em uma segunda conta controlada, refresh hospedado e preservação de relações/partida preexistentes em ensaio real.
 - Conferir produção e Preview retornando a seus próprios domínios, inclusive convite; validar link inválido/expirado e entrega Gmail/Outlook.
 
-**Veredito atual: PASS para implementação/provas locais e disponibilidade da homologação; FAIL de entrega SMTP; PENDENTE para aceite integral hospedado.** Alterações remotas: configurações Auth autorizadas, publicação do Preview/Java de staging e CORS desse serviço. Não houve alteração do cliente Google, senha administrativa, produção do frontend/Node, PostgreSQL hospedado ou cutover.
+**Veredito atual: PASS para implementação/provas locais, entrega SMTP e os fluxos hospedados confirmados acima; PENDENTE para aceite integral dos cenários restantes.** Alterações remotas: configurações Auth autorizadas, publicação do Preview/Java de staging, CORS desse serviço e conta/perfil sintético de teste. Não houve alteração do cliente Google, senha administrativa, produção do frontend/Node, migration hospedada ou cutover. O projeto Auth é compartilhado e recebeu somente as alterações de configuração e os ensaios explicitamente autorizados.
