@@ -1,6 +1,6 @@
 # Autenticação unificada — relatório de validação
 
-Implementação: 23/11/2026. Atualização de evidências: 24/11/2026. **Cadastro/OTP, recuperação e vinculação email → Google confirmados em homologação após correção manual do SMTP.** Primeira senha de conta originalmente Google e refresh hospedado ainda não comprovados. O responsável corrigiu e confirmou a grafia do destinatário controlado. O endereço não é versionado neste relatório. A primeira tentativa manual exibiu uma máscara incompatível com o destinatário combinado; o formulário foi corrigido antes da segunda tentativa.
+Implementação: 23/11/2026. Atualização de evidências: 24/11/2026. **Cadastro/OTP, recuperação e os dois sentidos de vinculação (email → Google e Google → primeira senha) confirmados em homologação após correção manual do SMTP.** Refresh hospedado ainda não comprovado; o email da primeira senha da segunda conta chegou ao spam. Os endereços controlados não são versionados neste relatório. A primeira tentativa manual exibiu uma máscara incompatível com o destinatário combinado; o formulário foi corrigido antes da segunda tentativa.
 
 ## Implementação por branch
 
@@ -44,7 +44,7 @@ O primeiro startup do PostgreSQL da fixture expirou; o segundo terminou saudáve
 | Cenário | Evidência atual |
 | --- | --- |
 | Email → confirmação → recuperação → senha nova | **Real local:** UUID original preservado em todos os passos |
-| Google → primeira senha | Mecanismo oficial implementado (`resetPasswordForEmail`, `PASSWORD_RECOVERY`, `updateUser`); **teste com Google verdadeiro pendente** |
+| Google → primeira senha | **Real hospedado:** segunda conta controlada previamente exibida apenas com Google, login Google verdadeiro, link de primeira senha recebido, senha definida e login password HTTP200. Um usuário Auth, UUID e perfil de staging preservados |
 | Email confirmado → Google do mesmo email | **Real hospedado:** login Google no Preview Java retornou ao mesmo domínio e ao mesmo perfil. Uma única linha no Auth antes/depois e UUID comparado em memória: idêntico |
 | Alternância Google/senha e ausência de perfil duplicado | **Real hospedado para a conta criada por email:** perfil de staging preservado no Google, após recuperação e no retorno ao Google. Login por nova senha confirmado pelo responsável e por evento Auth HTTP200 |
 | Emails diferentes | Sem API de vinculação manual e sem comparação/merge por email na aplicação |
@@ -88,11 +88,19 @@ A fixture `auth-email-proof` e seus volumes sintéticos foram encerrados/removid
 | Login com nova senha | **PASS com evidências complementares.** Responsável confirmou o reaparecimento do mesmo perfil; consulta restrita de logs Auth agregados da conta controlada confirmou um login password HTTP200. A resposta dessa operação não foi capturada diretamente na aba do agente |
 | Google após recuperação | **PASS.** Novo login Google executado e mesmo perfil de teste visível, sem nova conta de jogo |
 | Refresh de sessão Google hospedada | **PENDENTE.** Tentativa de induzir um único 401 via interceptação do navegador não conseguiu injetar a resposta; não comprova refresh. Interceptação removida, navegação normal restaurada e perfil visível. Não foram alterados TTL global, credenciais ou conteúdo da sessão. Refresh real local permanece aprovado |
-| Google primeiro → primeira senha | **PENDENTE.** A conta acima foi criada primeiro por email; sua recuperação não demonstra a primeira definição em uma conta exclusivamente Google |
+| Google primeiro → primeira senha | **PASS na segunda conta controlada.** Google verdadeiro antes da definição; responsável confirmou salvar e testar a senha, login password HTTP200 nos logs agregados; mesma linha Auth, UUID e perfil de staging após o fluxo. O email chegou ao spam |
 
 O callback Google permaneceu no domínio de homologação. Não foram capturados tokens, códigos OAuth, cookies, corpos de sessão ou credenciais. Consultas de logs selecionaram apenas contagens/status/classificações; a inspeção de usuário no Dashboard foi limitada ao email autorizado. A captura [hosted-staging-profile.jpg](screenshots/hosted-staging-profile.jpg) mostra apenas o perfil sintético e a interface do jogo, sem endereço de email ou identificador Auth.
 
 Os dados sociais preexistentes dessa conta de teste eram vazios. Preservar o perfil não constitui uma nova prova hospedada de histórico, amigos, partida em andamento ou convite; esses contratos têm cobertura automatizada e o ensaio completo hospedado não foi repetido. Também não se testou um login iniciado na produção, para evitar publicação ou alterações desse ambiente.
+
+### Segunda conta: Google → primeira senha
+
+O responsável autorizou expressamente uma segunda conta controlada. A busca no Dashboard encontrou uma única identidade preexistente, com Google exibido e sem provedor email exibido. Seu UUID e o texto do perfil de staging foram mantidos somente em memória para comparação. O Google verdadeiro dessa conta retornou ao alias Java e abriu o perfil existente; não foi criado nem alterado um perfil de produção.
+
+Após logout, o fluxo explícito de definição/recuperação enviou o link. O responsável abriu o email, definiu a senha e confirmou que já havia testado o acesso com sucesso. A interface autenticada mostrou o mesmo perfil. Consulta somente de logs Auth agregados da conta autorizada, na janela de 24/11/2026 03:07–03:28 UTC, registrou **um login password HTTP200**; não foram selecionados corpos, mensagens de erro, tokens ou credenciais. Uma conferência final restrita ao email autorizado encontrou **uma linha Auth, mesmo UUID e mesmo perfil de staging**. Os valores de identidade não foram impressos ou versionados.
+
+**Entregabilidade: email recebido no spam, segundo o responsável.** O fluxo de autenticação funcionou, mas isso não comprova entrega na caixa de entrada ou boa reputação do remetente. Não foram inspecionados cabeçalhos da mensagem nem auditados SPF, DKIM ou DMARC; nenhuma causa do spam foi atribuída. Não houve mudança adicional de SMTP, DNS ou Google Cloud durante esse ensaio. Não se repetiu o login Google dessa segunda conta após salvar a senha; a continuidade do Google após recuperação foi validada separadamente na primeira conta.
 
 ## Gate de validação externa
 
@@ -100,9 +108,9 @@ Os dados sociais preexistentes dessa conta de teste eram vazios. Preservar o per
 - **Concluído:** retorno restrito Java e OTP6 aplicados após autorização, preservando Site URL e allowlist existente.
 - **Configurado:** mínimo8/quatro categorias; confirmar a rejeição efetiva pelo provedor durante o ensaio controlado, sem bloquear login de senhas antigas.
 - **Concluído:** dois templates e assuntos instalados, conteúdo persistido idêntico às fontes; validade observada de 3600 s.
-- **Concluído:** responsável corrigiu o SMTP; confirmação e recuperação recebidas na caixa controlada, com OTP e nova senha funcionando. Compatibilidade visual em Outlook e autenticação de domínio do remetente ainda não auditadas.
+- **Concluído:** responsável corrigiu o SMTP; confirmação e recuperação recebidas nas contas controladas, com OTP e senha funcionando. **Ressalva:** email de primeira senha da segunda conta caiu no spam. Entrega na caixa de entrada, compatibilidade visual em Outlook e autenticação de domínio do remetente ainda não auditadas.
 - **Concluído:** Preview e Java de staging publicados e saudáveis; main permanece local e não deve ser enviada automaticamente.
-- **Concluído:** email → Google com comparação de UUID e retorno ao mesmo perfil; nova senha e Google após recuperação. **Pendente:** Google → primeira senha em uma segunda conta controlada, refresh hospedado e preservação de relações/partida preexistentes em ensaio real.
+- **Concluído:** email → Google e Google → primeira senha com comparação de UUID e retorno ao mesmo perfil; nova senha e Google após recuperação na primeira conta. **Pendente:** refresh hospedado e preservação de relações/partida preexistentes em ensaio real.
 - Conferir produção e Preview retornando a seus próprios domínios, inclusive convite; validar link inválido/expirado e entrega Gmail/Outlook.
 
-**Veredito atual: PASS para implementação/provas locais, entrega SMTP e os fluxos hospedados confirmados acima; PENDENTE para aceite integral dos cenários restantes.** Alterações remotas: configurações Auth autorizadas, publicação do Preview/Java de staging, CORS desse serviço e conta/perfil sintético de teste. Não houve alteração do cliente Google, senha administrativa, produção do frontend/Node, migration hospedada ou cutover. O projeto Auth é compartilhado e recebeu somente as alterações de configuração e os ensaios explicitamente autorizados.
+**Veredito atual: PASS para implementação/provas locais, recebimento SMTP e os dois sentidos de vinculação hospedada; PENDENTE para aceite integral dos cenários restantes e qualidade de entregabilidade.** Alterações remotas: configurações Auth autorizadas, publicação do Preview/Java de staging, CORS desse serviço e ensaios das duas contas controladas. Não houve alteração do cliente Google, senha administrativa, produção do frontend/Node, migration hospedada ou cutover. O projeto Auth é compartilhado e recebeu somente as alterações de configuração e os ensaios explicitamente autorizados.
