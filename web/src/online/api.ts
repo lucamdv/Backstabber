@@ -17,7 +17,7 @@ type ApiOptions = {
 };
 
 function sessionExpired() {
-  return new OnlineApiError(401, 'UNAUTHENTICATED', 'Sua sessão expirou. Entre com o Google novamente.');
+  return new OnlineApiError(401, 'UNAUTHENTICATED', 'Sua sessão expirou. Entre novamente.');
 }
 
 const messages: Readonly<Record<string, string>> = {

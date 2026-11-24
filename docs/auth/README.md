@@ -4,6 +4,7 @@ Uma identidade Supabase, acesso por Google ou senha e recuperação por email. O
 
 - [Desenho e plano executado](implementation-plan.md)
 - [Resultados, limitações e gate de publicação](validation-report.md)
+- [Homologação do candidato Node.js](node-release-validation.md)
 - [Instalação dos emails e SMTP](email-installation.md)
 - [Prévia de confirmação](previews/confirmation.html) · [Prévia de recuperação](previews/recovery.html)
 - [Capturas e condições dos ensaios](screenshots/README.md)
