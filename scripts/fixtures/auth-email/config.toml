@@ -1,0 +1,85 @@
+# Disposable Auth/Mailpit proof only. No game migrations, seeds, remote project or provider secrets.
+project_id = "auth-email-proof"
+
+[api]
+enabled = true
+port = 55441
+schemas = ["public"]
+
+[db]
+port = 55442
+shadow_port = 55440
+major_version = 17
+health_timeout = "8m"
+
+[db.migrations]
+enabled = false
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[db.pooler]
+enabled = false
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[storage]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[local_smtp]
+enabled = true
+port = 55444
+admin_email = "noreply@auth-email-proof.test"
+sender_name = "Backstabber local proof"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4263"
+additional_redirect_urls = ["http://127.0.0.1:4263/", "http://127.0.0.1:4263/?online=salas&auth=recovery", "http://localhost:4263/", "http://localhost:4263/?online=salas&auth=recovery"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+enable_refresh_token_rotation = true
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits_symbols"
+
+[auth.rate_limit]
+# Only this disposable loopback fixture: allow repeat proof runs without the hosted SMTP quota.
+email_sent = 100
+sign_in_sign_ups = 100
+token_verifications = 100
+
+[auth.email]
+enabled = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "1s"
+otp_length = 6
+# Matches the product's 60-minute email copy; elapsed-time expiry is not exercised.
+otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "Backstabber | Confirme sua identidade"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Backstabber | Recupere seu acesso"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.external.google]
+enabled = false
+
+[auth.sms]
+enabled = false

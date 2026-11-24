@@ -13,6 +13,7 @@ import { onlineHash } from './routes';
 import type { OnlineSection } from './routes';
 import type { Invite, Profile, ProfileInput, Room, Social } from './types';
 import './online.css';
+import { AuthTerminal } from './AuthTerminal';
 
 export type { OnlineApi } from './api';
 
@@ -417,30 +418,21 @@ function ProfileGate({ session, api, client, onLogout, authError, ...hub }: HubP
 }
 
 export function OnlineHub(props: HubProps) {
-  const { supabase, api, session, authError, configuration, signIn, signOut } = useOnlineAuth(props.section ?? 'rooms');
-  const [signingIn, setSigningIn] = useState(false);
+  const auth = useOnlineAuth(props.section ?? 'rooms');
+  const { supabase, api, session, authError, configuration, signOut } = auth;
 
   if (session && supabase && api) return <ProfileGate {...props} key={session.user.id}
     session={session} api={api} client={supabase} authError={authError} onLogout={() => { void signOut(); }} />;
 
   return <HubSurface onExit={props.onExit} section={props.section} onNavigate={props.onNavigate}>
     <section className="online-login" aria-labelledby="online-login-title">
-      <div className="online-card online-login-terminal">
-        <div className="online-terminal-label"><span aria-hidden="true" />Terminal de acesso</div>
+      {!supabase || session === undefined ? <div className="online-card online-login-terminal">
         <h2 id="online-login-title">Entrar na rede</h2>
-        <p>Na rede, alianças são temporárias. Entre com sua conta Google para disputar o controle da mesa.</p>
-        {authError && <p className="online-error" role="alert">{authError}</p>}
-        {!supabase
-          ? <p role="status">{configuration === 'invalid'
+        {!supabase ? <p role="status">{configuration === 'invalid'
             ? 'A configuração pública do Supabase está inválida. Confira a URL e a chave publicável do ambiente.'
             : 'O modo online precisa da configuração do Supabase neste ambiente. Você pode continuar no modo local.'}</p>
-          : session === undefined
-            ? <p className="online-loading-status" role="status">Restaurando sessão…</p>
-            : <button className="online-primary" disabled={signingIn} onClick={() => {
-              setSigningIn(true);
-              void signIn().finally(() => setSigningIn(false));
-            }}>{signingIn ? 'Conectando ao Google…' : 'Entrar com Google'}</button>}
-      </div>
+          : <p className="online-loading-status" role="status">Restaurando sessão…</p>}
+      </div> : <AuthTerminal {...auth} error={authError} />}
     </section>
   </HubSurface>;
 }

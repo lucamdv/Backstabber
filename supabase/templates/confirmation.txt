@@ -1,0 +1,11 @@
+BACKSTABBER
+IDENTIDADE PENDENTE
+
+Você está a um passo de entrar na rede. Antes de conquistar sua influência, precisamos confirmar sua identidade. Insira o código abaixo no terminal para ativar sua conta.
+
+CÓDIGO DE ATIVAÇÃO: {{ .Token }}
+
+Este código expira em 60 minutos. Se ele expirar, solicite outro no terminal.
+Não compartilhe este código com ninguém.
+
+BACKSTABBER // TRUST NO ONE

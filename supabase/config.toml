@@ -8,17 +8,41 @@ schemas = ["public", "graphql_public"]
 [db]
 port = 54322
 major_version = 17
+health_timeout = "5m"
 
 [realtime]
 enabled = true
 
+[local_smtp]
+enabled = true
+port = 54324
+
 [auth]
 enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173"]
+site_url = "http://127.0.0.1:4253"
+additional_redirect_urls = ["http://127.0.0.1:4253/"]
 enable_anonymous_sign_ins = false
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits_symbols"
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+max_frequency = "1m"
+otp_length = 6
+otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "Backstabber | Confirme sua identidade"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Backstabber | Recupere seu acesso"
+content_path = "./supabase/templates/recovery.html"
 
 [auth.external.google]
+# Enable only during a local OAuth run with credentials supplied through env.
 enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"

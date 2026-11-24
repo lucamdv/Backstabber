@@ -28,6 +28,6 @@ export default defineConfig({
       }
     },
   }],
-  server: { fs: { allow: [root] }, proxy: { '/api/v1': 'http://127.0.0.1:8787' } },
+  server: { fs: { allow: [root] }, headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }, proxy: { '/api/v1': 'http://127.0.0.1:8787' } },
   test: { environment: 'jsdom', setupFiles: ['./src/tests/setup.ts'], exclude: [...configDefaults.exclude, 'e2e/**'] },
 });

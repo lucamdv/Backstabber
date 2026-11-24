@@ -13,18 +13,30 @@ export function readOnlineSection(location: Pick<Location, 'hash' | 'search'>): 
   return null;
 }
 
-const callbackFields = ['code', 'error', 'error_code', 'error_description'] as const;
+const callbackFields = ['code', 'error', 'error_code', 'error_description', 'token_hash', 'type',
+  'access_token', 'refresh_token', 'provider_token', 'provider_refresh_token', 'expires_in',
+  'expires_at', 'token_type', 'sb_flow_id', 'flow_id'] as const;
 
 export function clearOnlineCallback(url: URL) {
   url.searchParams.delete('online');
+  url.searchParams.delete('auth');
   for (const key of callbackFields) url.searchParams.delete(key);
+  const fragment = new URLSearchParams(url.hash.slice(1));
+  if (callbackFields.some(key => fragment.has(key))) url.hash = '';
 }
 
-export function oauthRedirect(href: string, section: OnlineSection) {
+export function oauthRedirect(href: string, section: OnlineSection, recovery = false) {
   const url = new URL(href);
-  clearOnlineCallback(url);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error('Invalid auth origin');
+  }
+  const invite = url.searchParams.get('sala');
+  // Return to the caller's origin/path, never to a supplied redirect URL.
+  url.search = '';
+  if (invite && /^[a-f0-9]{10}$/i.test(invite)) url.searchParams.set('sala', invite);
   url.hash = '';
   url.searchParams.set('online', section === 'friends' ? 'amigos' : 'salas');
+  if (recovery) url.searchParams.set('auth', 'recovery');
   return url.href;
 }
 
