@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../app/App';
 import { OnlineHub } from '../online/OnlineHub';
@@ -97,17 +97,19 @@ test('a room broadcast reloads the server snapshot before mounting the match for
     <output>Partida {matchId} · {connectedIds.join(',')}</output>
   )} />);
   await screen.findByRole('heading', { name: 'Preparação da mesa' });
+  await waitFor(() => expect(refresh.has(`room:${room.id}`)).toBe(true));
   snapshot = { ...room, status: 'started', matchId: 'game-9' };
   await act(async () => { refresh.get(`room:${room.id}`)?.(); });
   expect(await screen.findByText('Partida game-9 · eva,rui')).toBeInTheDocument();
 });
 
 test('Amigos asks for login and a callback restores the Friends destination, including with an active match', async () => {
-  useOnlineAuth.mockReturnValue({ supabase: {}, session: null, authError: '' });
+  useOnlineAuth.mockReturnValue({ supabase: {}, session: null, authError: '', view: 'login', busy: false,
+    notice: '', cooldown: 0, pendingEmail: '', recoveryAuthorized: false });
   const app = render(<App />);
   fireEvent.click(screen.getByRole('button', { name: 'Amigos' }));
   expect(window.location.hash).toBe('#/amigos');
-  expect(screen.getByRole('button', { name: 'Entrar com Google' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Continuar com Google' })).toBeInTheDocument();
   app.unmount();
 
   window.history.replaceState(null, '', '/?online=amigos&code=example');

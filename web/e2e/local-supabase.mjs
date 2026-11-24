@@ -5,6 +5,7 @@ import { setTimeout, clearTimeout } from 'node:timers';
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createClient } from '@supabase/supabase-js';
+import { confirmLocalSignup } from './local-auth-user.mjs';
 
 const auth = 'http://127.0.0.1:54321';
 const frontend = 'http://127.0.0.1:4253';
@@ -26,9 +27,9 @@ const tokens = await Promise.all(['a', 'b', 'c'].map(async (label) => {
   const username = 'local_' + label + suffix;
   const client = createClient(auth, key, options);
   const email = username + '@example.com';
-  const password = randomUUID();
+  const password = randomUUID() + 'Local1!';
   const signup = await client.auth.signUp({ email, password });
-  assert.ifError(signup.error);
+  await confirmLocalSignup(client, signup, email, 'http://127.0.0.1:54324');
   const { data, error } = await client.auth.signInWithPassword({ email, password });
   assert.ifError(error);
   assert.ok(data.session);

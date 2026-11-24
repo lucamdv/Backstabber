@@ -1,0 +1,12 @@
+BACKSTABBER
+RESTAURAR ACESSO
+
+Recebemos uma solicitação para definir ou restaurar a senha de acesso à sua identidade na rede. Utilize o botão abaixo para cadastrar uma nova senha.
+
+DEFINIR NOVA SENHA: {{ .ConfirmationURL }}
+
+Este link tem validade limitada e só pode ser utilizado uma vez. Se ele expirar, solicite outro no terminal.
+
+Se você não solicitou esta alteração, ignore este email.
+
+BACKSTABBER // TRUST NO ONE

@@ -212,7 +212,7 @@ public abstract class SocialIntegrationTest {
     }
 
     private static String user(UUID id, boolean anonymous) {
-        return "{\"id\":\"" + id + "\",\"is_anonymous\":" + anonymous + "}";
+        return "{\"id\":\"" + id + "\",\"email_confirmed_at\":\"2026-11-20T12:00:00.000Z\",\"is_anonymous\":" + anonymous + "}";
     }
 
     private static void reply(HttpExchange exchange, int status, String json) throws IOException {

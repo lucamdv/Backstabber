@@ -64,7 +64,8 @@ class FoundationHttpTest {
     @Test
     void profileRejectsMissingInvalidExpiredAnonymousAndMalformedIdentity() throws Exception {
         for (String authorization : new String[]{"Basic test", "Bearer invalid", "Bearer expired",
-                "Bearer anonymous", "Bearer invalid-uuid", "Bearer missing-id"}) {
+                "Bearer anonymous", "Bearer invalid-uuid", "Bearer missing-id", "Bearer unverified",
+                "Bearer metadata-verified", "Bearer missing-confirmation"}) {
             assertError(401, "UNAUTHENTICATED", get("/api/v1/profile", authorization));
         }
         assertError(401, "UNAUTHENTICATED", get("/api/v1/profile", null));
@@ -128,7 +129,7 @@ class FoundationHttpTest {
                 try (exchange) {
                     String token = exchange.getRequestHeaders().getFirst("Authorization");
                     int status = 200;
-                    String body = "{\"id\":\"00000000-0000-4000-8000-000000000001\"}";
+                    String body = "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"email_confirmed_at\":\"2026-11-20T12:00:00.000Z\"}";
                     if (!"GET".equals(exchange.getRequestMethod())
                             || !"test-public-key".equals(exchange.getRequestHeaders().getFirst("apikey"))) {
                         status = 500;
@@ -139,6 +140,9 @@ class FoundationHttpTest {
                             case "Bearer anonymous" -> body = body.replace("}", ",\"is_anonymous\":true}");
                             case "Bearer invalid-uuid" -> body = "{\"id\":\"1-2-3-4-5\"}";
                             case "Bearer missing-id" -> body = "{}";
+                            case "Bearer unverified" -> body = "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"email_confirmed_at\":null}";
+                            case "Bearer missing-confirmation" -> body = "{\"id\":\"00000000-0000-4000-8000-000000000001\"}";
+                            case "Bearer metadata-verified" -> body = "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"user_metadata\":{\"email_verified\":true}}";
                             case "Bearer invalid-json" -> body = "{";
                             case "Bearer unavailable" -> status = 503;
                             case "Bearer redirect" -> {

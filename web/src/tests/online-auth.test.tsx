@@ -48,7 +48,7 @@ test('rejects malformed or secret frontend keys without echoing them', () => {
 
 test('starts Google PKCE from Amigos, restores the callback session and can sign out', async () => {
   publicConfig();
-  const restored = { user: { id: 'eva' }, access_token: 'fake-access-token' };
+  const restored = { user: { id: 'eva', email_confirmed_at: '2026-01-01T00:00:00Z' }, access_token: 'fake-access-token' };
   const auth = {
     initialize: vi.fn(async () => ({ error: null })),
     getSession: vi.fn(async () => ({ data: { session: null as typeof restored | null }, error: null })),
@@ -62,7 +62,7 @@ test('starts Google PKCE from Amigos, restores the callback session and can sign
   await waitFor(() => expect(initial.result.current.session).toBeNull());
   await act(async () => { await initial.result.current.signIn(); });
   expect(createClient).toHaveBeenCalledWith('https://backstabber.example.test', 'sb_publishable_test_key',
-    { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, debug: false }, global: { fetch: expect.any(Function) } });
   expect(auth.signInWithOAuth).toHaveBeenCalledWith({
     provider: 'google', options: { redirectTo: `${location.origin}/?online=amigos` },
   });
@@ -103,7 +103,7 @@ test('keeps the invite on a Google cancellation and offers a clean retry', async
 
 test('drops the private session when Supabase reports an unsolicited sign-out', async () => {
   publicConfig('expired');
-  const session = { user: { id: 'eva' }, access_token: 'fake-access-token' };
+  const session = { user: { id: 'eva', email_confirmed_at: '2026-01-01T00:00:00Z' }, access_token: 'fake-access-token' };
   let notify: (event: string, session: null) => void = () => undefined;
   const auth = {
     initialize: vi.fn(async () => ({ error: null })),

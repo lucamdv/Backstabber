@@ -5,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -89,8 +91,15 @@ public class SupabaseAuthenticator {
         }
         JsonNode id = user.path("id");
         JsonNode anonymous = user.path("is_anonymous");
+        JsonNode confirmation = user.path("email_confirmed_at");
         if (!id.isTextual() || !UUID_FORMAT.matcher(id.asText()).matches()
+                || !confirmation.isTextual()
                 || (anonymous.isBoolean() && anonymous.asBoolean())) {
+            throw ApiFailure.unauthenticated();
+        }
+        try {
+            Instant.parse(confirmation.asText());
+        } catch (DateTimeParseException failure) {
             throw ApiFailure.unauthenticated();
         }
         return UUID.fromString(id.asText());

@@ -24,17 +24,15 @@ export function supabaseAuthenticator(url: string, key: string, fetcher = fetch)
     let response: Response;
     try {
       const endpoint = new URL('/auth/v1/user', url);
-      if (endpoint.protocol !== 'https:' && (endpoint.protocol !== 'http:' || !loopbackHosts.has(endpoint.hostname))) {
+      if (endpoint.username || endpoint.password
+        || (endpoint.protocol !== 'https:' && (endpoint.protocol !== 'http:' || !loopbackHosts.has(endpoint.hostname)))) {
         throw new Error('Invalid Auth endpoint');
       }
       response = await fetcher(endpoint, {
-        headers: { apikey: key, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000),
+        headers: { apikey: key, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000), redirect: 'error',
       });
-    } catch (error) {
-      console.error('Backstabber auth upstream unreachable', {
-        errorType: error instanceof Error ? error.name : 'UnknownError',
-        errorCode: errorCode(error) || 'UNKNOWN',
-      });
+    } catch {
+      console.error('Backstabber auth upstream unreachable', { failure: 'AUTH_UNREACHABLE' });
       throw new ApiError('SERVICE_UNAVAILABLE', 503);
     }
     if (response.status === 401 || response.status === 403) throw new ApiError('UNAUTHENTICATED', 401);
@@ -42,8 +40,16 @@ export function supabaseAuthenticator(url: string, key: string, fetcher = fetch)
       console.error('Backstabber auth upstream unavailable', { httpStatus: response.status });
       throw new ApiError('SERVICE_UNAVAILABLE', 503);
     }
-    const user: unknown = await response.json();
+    let user: unknown;
+    try {
+      user = await response.json();
+    } catch {
+      console.error('Backstabber auth returned invalid JSON', { failure: 'AUTH_INVALID_RESPONSE' });
+      throw new ApiError('INTERNAL_ERROR', 500);
+    }
     if (!user || typeof user !== 'object' || !('id' in user) || typeof user.id !== 'string' || !uuid.test(user.id)
+      || !('email_confirmed_at' in user) || typeof user.email_confirmed_at !== 'string'
+      || !Number.isFinite(Date.parse(user.email_confirmed_at))
       || ('is_anonymous' in user && user.is_anonymous === true)) throw new ApiError('UNAUTHENTICATED', 401);
     return user.id;
   };
@@ -87,11 +93,8 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
       }
       try {
         tx = await connect();
-      } catch (error) {
-        console.error('Backstabber database connection unavailable', {
-          errorType: error instanceof Error ? error.name : 'UnknownError',
-          errorCode: errorCode(error) || 'UNKNOWN',
-        });
+      } catch {
+        console.error('Backstabber database connection unavailable', { failure: 'DATABASE_UNAVAILABLE' });
         throw new ApiError('SERVICE_UNAVAILABLE', 503);
       }
       await tx.query('begin');
@@ -112,7 +115,7 @@ export function createApi(connect: Connect, authenticate: Authenticate, origin?:
       if (unavailableCodes.has(sqlCode) || discardClient) {
         return Response.json({ error: 'SERVICE_UNAVAILABLE' }, { status: 503, headers });
       }
-      console.error('Backstabber API request failed', { type: error instanceof Error ? error.name : 'UnknownError' });
+      console.error('Backstabber API request failed', { failure: 'INTERNAL_ERROR' });
       return Response.json({ error: 'INTERNAL_ERROR' }, { status: 500, headers });
     } finally {
       tx?.release(discardClient);

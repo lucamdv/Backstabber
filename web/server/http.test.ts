@@ -23,7 +23,7 @@ const connect = async () => {
 const fakeAuth = (async (_url, options) => {
   const token = new Headers(options?.headers).get('Authorization')?.slice(7) ?? '';
   const id = token.replace(/^session\./, '').replace(/\.reconnected$/, '');
-  return ids.includes(id) ? Response.json({ id }) : Response.json({}, { status: 401 });
+  return ids.includes(id) ? Response.json({ id, email_confirmed_at: '2026-11-20T12:00:00.000Z' }) : Response.json({}, { status: 401 });
 }) as typeof fetch;
 const api = createApi(connect, supabaseAuthenticator('https://supabase.test', 'test-publishable', fakeAuth));
 const apiSecondInstance = createApi(connect, supabaseAuthenticator('https://supabase.test', 'test-publishable', fakeAuth));

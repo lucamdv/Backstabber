@@ -20,7 +20,14 @@ test.describe('identidade online', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/src/online/auth.ts*', route => route.fulfill({
       contentType: 'application/javascript',
-      body: 'export const useOnlineAuth = () => ({ supabase: {}, session: null, signIn: async () => {} });',
+      body: `const noop = async () => {};
+        export const useOnlineAuth = () => ({
+          supabase: {}, configuration: 'ready', session: null, authError: '',
+          view: 'login', busy: false, notice: '', cooldown: 0, pendingEmail: '', recoveryAuthorized: false,
+          signIn: noop, signOut: noop, onNavigate: () => {}, onGoogle: noop,
+          onPasswordSignIn: noop, onSignUp: noop, onConfirmEmail: noop, onResend: noop,
+          onRequestPassword: noop, onSavePassword: noop,
+        });`,
     }));
     await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
   });
@@ -174,7 +181,7 @@ test.describe('identidade online', () => {
         await expect.poll(() => page.evaluate(() => Math.max(document.documentElement.scrollWidth,
           document.querySelector('.online-hub')?.scrollWidth ?? 0) - innerWidth), `${scene} ${width}×${height}`).toBe(0);
         if (scene === 'login') {
-          await expect(page.getByRole('button', { name: 'Entrar com Google' })).toBeVisible();
+          await expect(page.getByRole('button', { name: 'Continuar com Google' })).toBeVisible();
           if (!baseline) {
             expect(await page.evaluate(async () => {
               const fonts = await document.fonts.load('28px "Backstabber Pixel"', 'Créditos');

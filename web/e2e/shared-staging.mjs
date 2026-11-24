@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout, clearTimeout } from 'node:timers';
 import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';
+import { confirmLocalSignup } from './local-auth-user.mjs';
 
 // This fixture deliberately accepts only the local CLI stack and local Java APIs.
 const disposable = process.env.BACKSTABBER_LOCAL_DISPOSABLE === 'true';
@@ -128,11 +129,12 @@ try {
       global: { fetch: (input, init) => globalThis.fetch(input, { ...init, redirect: 'error' }) },
     });
     clients.push(client);
-    const credentials = { email: 'staging_' + label + suffix + '@example.com', password: randomUUID() };
+    const credentials = { email: 'staging_' + label + suffix + '@example.com', password: randomUUID() + 'Local1!' };
     const signup = await client.auth.signUp(credentials);
     assert.equal(Boolean(signup.error), false, 'Local signup failed');
     assert.ok(signup.data.user?.id, 'Local signup did not return an identity');
     createdUsers.push(signup.data.user.id);
+    await confirmLocalSignup(client, signup, credentials.email, `http://127.0.0.1:${disposable ? 55434 : 54324}`);
     const login = await client.auth.signInWithPassword(credentials);
     assert.equal(Boolean(login.error), false, 'Local login failed');
     assert.ok(login.data.session);
