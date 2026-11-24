@@ -1,6 +1,6 @@
 # Autenticação unificada — relatório de validação
 
-Data: 23/11/2026. **Implementação local concluída; aceite hospedado condicionado aos testes externos abaixo.** Nenhum envio real foi realizado para o endereço anteriormente informado. O responsável informou que configurou SMTP, corrigiu e confirmou a grafia do destinatário controlado. O endereço não é versionado neste relatório.
+Data: 23/11/2026. **Implementação publicada em homologação; aceite hospedado pendente de corrigir a autenticação SMTP.** O responsável corrigiu e confirmou a grafia do destinatário controlado. O endereço não é versionado neste relatório. A primeira tentativa manual exibiu uma máscara incompatível com o destinatário combinado; o formulário foi corrigido antes da segunda tentativa.
 
 ## Implementação por branch
 
@@ -20,6 +20,7 @@ Não há tabela paralela de senhas, associação manual por email, alteração d
 | Web/Node da branch Java, suíte completa | **187 aprovados; 8 opcionais de PostgreSQL nativo omitidos** |
 | Web/Node da main, suíte completa com `--maxWorkers=1` | **171 aprovados; 8 opcionais de PostgreSQL nativo omitidos** |
 | Ajustes finais do controller/transporte/Hub Java | **22 aprovados** |
+| Autenticação final Java (componentes, controller, transporte, rotas e política) | **34 aprovados** |
 | Browser visual `auth-terminal.spec.ts` | **8 aprovados**, Chrome, seis vistas em 360×800, 390×844, 1366×768 e 1920×1080; APIs e controller simulados explicitamente |
 | Regressão visual de identidade 390×844 | **1 aprovado**; outros cenários visuais do jogo não foram repetidos nesta alteração |
 | Java completo, PostgreSQL descartável + paridade Node habilitados | **119 executados: 118 aprovados e 1 timeout ao iniciar processo filho**; nenhuma omissão nessa execução |
@@ -62,15 +63,27 @@ Após aprovação explícita do responsável, foi adicionada **somente** `https:
 
 Os HTMLs e assuntos de confirmação e recuperação foram instalados. Após recarregar cada página, o conteúdo integral do editor foi comparado em memória à fonte versionada, normalizando apenas CRLF/LF: **ambos idênticos**. Não foram lidos nem alterados os segredos SMTP ou Google. Captura gráfica desse painel não foi obtida: a interface de screenshot do Chrome expirou; a conferência usou os controles visíveis e a cópia do editor, sem registrar credenciais.
 
-## Gate de publicação e validação externa
+## Publicação e verificação de homologação
+
+Código da branch Java publicado: **`d02b0c5c13b3b79d9230da4b1c31b8e0b182e4c3`**. Preview Vercel `dpl_35f53hpYgTyMxNShxFpRHXYpxfAL` **READY**, com o alias estável preservado e apontando para esse deploy. Render recebeu o mesmo commit e ficou **live**. Main tem a implementação local em **`f31e12f78a4c8d9234496e67acbdf11da82b483b`**; seu remoto continua no release `f5c38d2`, sem push de produção. Commits posteriores deste relatório são apenas documentação.
+
+Foi detectada ausência de CORS para o Preview Java no serviço Render. A única variável alterada foi `BACKSTABBER_ALLOWED_ORIGIN`, com a origem exata do alias estável, através de atualização por merge, preservando as demais variáveis. O deploy resultante `dep-dc2fdtcs728c73aeb6gg` ficou **live**, com o mesmo código `d02b0c5`. Verificação HTTP real: liveness200; readiness200; perfil anônimo401; preflight do Preview204 **com** `Access-Control-Allow-Origin` exato; preflight de origem inválida204 **sem** esse cabeçalho, mantendo o bloqueio pelo navegador.
+
+O terminal real foi aberto no Chrome e o responsável realizou o cadastro, sem fornecer senha ou código ao agente. A segunda tentativa apresentou erro genérico na interface. A auditoria de logs do Auth consultou **somente contagens e classificações** do ClickHouse, sem selecionar mensagens, emails, códigos, URLs, tokens ou credenciais. Foram confirmados dois erros HTTP500 de envio, ambos contendo classificação SMTP535/credenciais rejeitadas, sem erro de TLS ou conexão. No painel, custom SMTP está habilitado, host `smtp.gmail.com`, porta465. Não foi lida, copiada nem alterada a senha SMTP.
+
+**Entrega externa: FAIL nesta tentativa.** O Gmail recusou a autenticação do remetente; não há evidência de chegada do OTP à caixa controlada. A correção exige intervenção do responsável: conferir o usuário SMTP e informar diretamente no painel uma senha de app válida da mesma conta Google. A senha de app requer verificação em duas etapas e pode ser revogada quando a senha da conta muda. Não a inserir em chat, fonte, bundle ou logs. [Documentação oficial Google](https://support.google.com/accounts/answer/185833?hl=pt-BR)
+
+A fixture `auth-email-proof` e seus volumes sintéticos foram encerrados/removidos com o comando local específico, sem `--all`; nenhum container desse projeto permaneceu em execução. Não houve consulta ao PostgreSQL hospedado, migration remota, alteração de dados do jogo ou criação de infraestrutura nesta entrega.
+
+## Gate de validação externa
 
 - **Concluído:** grafia do destinatário corrigido confirmada; endereço anterior excluído do teste.
 - **Concluído:** retorno restrito Java e OTP6 aplicados após autorização, preservando Site URL e allowlist existente.
 - **Configurado:** mínimo8/quatro categorias; confirmar a rejeição efetiva pelo provedor durante o ensaio controlado, sem bloquear login de senhas antigas.
 - **Concluído:** dois templates e assuntos instalados, conteúdo persistido idêntico às fontes; validade observada de 3600 s.
-- Verificar SMTP configurado pelo responsável, domínio remetente, SPF/DKIM/DMARC, rastreamento de links desativado e entrega real controlada.
-- Publicar somente o Preview autorizado e atualizar o Java de staging de forma explícita, se necessário; main não deve ser enviada automaticamente.
+- **Bloqueado:** corrigir a autenticação Gmail SMTP535 e repetir um envio controlado. Verificar também remetente, entrega real, autenticação do domínio e ausência de rastreamento do link.
+- **Concluído:** Preview e Java de staging publicados e saudáveis; main permanece local e não deve ser enviada automaticamente.
 - Executar Google → primeira senha e email → Google com contas controladas, comparar UUID sem divulgar seu valor, conferir perfil/amigos/salas de staging e repetir troca de método.
 - Conferir produção e Preview retornando a seus próprios domínios, inclusive convite; validar link inválido/expirado e entrega Gmail/Outlook.
 
-**Veredito atual: PASS para implementação e provas locais descritas; PENDENTE para aceite integral hospedado.** SMTP informado como configurado não é evidência de entrega. As únicas alterações remotas até esta etapa foram as configurações Auth autorizadas acima; não houve SQL remoto, reset de senha administrativa, alteração do cliente Google ou cutover.
+**Veredito atual: PASS para implementação/provas locais e disponibilidade da homologação; FAIL de entrega SMTP; PENDENTE para aceite integral hospedado.** Alterações remotas: configurações Auth autorizadas, publicação do Preview/Java de staging e CORS desse serviço. Não houve alteração do cliente Google, senha administrativa, produção do frontend/Node, PostgreSQL hospedado ou cutover.
