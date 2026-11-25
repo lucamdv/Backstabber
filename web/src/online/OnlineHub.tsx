@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import { GameIcon } from '../components/shared/GameIcon';
 import { onlineErrorMessage } from './api';
 import type { OnlineApi } from './api';
 import { useOnlineAuth } from './auth';
-import { FriendsPanel, RoomInvites } from './FriendsPanel';
+import { FriendsPanel, RoomInvites, SocialOverview } from './FriendsPanel';
 import { Lobby } from './Lobby';
 import { OnlineAtmosphere } from './OnlineAtmosphere';
 import { Avatar, ProfileEditor } from './Profile';
@@ -38,38 +39,49 @@ type HubProps = {
 };
 
 const destinations = [
-  { section: 'friends', label: 'Amigos' },
-  { section: 'rooms', label: 'Salas e partidas' },
+  { section: 'friends', label: 'Amigos', icon: 'users' },
+  { section: 'rooms', label: 'Salas e partidas', icon: 'rooms' },
 ] as const;
+
+function followSection(event: MouseEvent<HTMLAnchorElement>, section: OnlineSection, onNavigate?: HubProps['onNavigate']) {
+  if (onNavigate && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+    event.preventDefault();
+    onNavigate(section);
+  }
+}
 
 function HubSurface({ onExit, onLogout, section = 'rooms', onNavigate, children }:
 Pick<HubProps, 'onExit' | 'section' | 'onNavigate'> & { onLogout?: () => void; children: ReactNode }) {
   return <main className={`online-hub${onLogout ? '' : ' online-entry'}`}>
     <OnlineAtmosphere />
     <header className="online-header">
-      <div>
+      <div className="online-brand">
         <img src="images/isotipo.png" alt="" />
-        <h1>Backstabber <span>Online</span></h1>
+        <div><h1>Backstabber <span>Online</span></h1><p>Terminal de conexão</p></div>
       </div>
       <div className="online-actions">
-        <button onClick={onExit}>{onLogout ? 'Voltar ao menu' : 'Voltar ao menu local'}</button>
-        {onLogout && <button onClick={onLogout}>Sair da conta</button>}
+        <button type="button" aria-label={onLogout ? 'Voltar ao menu' : 'Voltar ao menu local'} title="Voltar ao menu" onClick={onExit}>
+          <GameIcon name="back" /><span>{onLogout ? 'Voltar ao menu' : 'Voltar ao menu local'}</span>
+        </button>
+        {onLogout && <button type="button" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}>
+          <GameIcon name="exit" /><span>Sair da conta</span>
+        </button>}
       </div>
     </header>
-    <div className="online-content">
-      {onLogout && <nav className="online-sections" aria-label="Modo online">
+    <div className="online-shell">
+      {onLogout && <aside className="online-rail">
+        <nav className="online-sections" aria-label="Modo online">
         {destinations.map(destination => (
           <a key={destination.section} href={onlineHash(destination.section)}
             aria-current={section === destination.section ? 'page' : undefined}
-            onClick={event => {
-              if (onNavigate && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
-                event.preventDefault();
-                onNavigate(destination.section);
-              }
-            }}>{destination.label}</a>
+            onClick={event => followSection(event, destination.section, onNavigate)}>
+            <GameIcon name={destination.icon} />{destination.label}
+          </a>
         ))}
-      </nav>}
-      {children}
+        </nav>
+        <img className="online-rail-card" src="images/verso_card.png" alt="" width="124" />
+      </aside>}
+      <div className="online-content">{children}</div>
     </div>
   </main>;
 }
@@ -80,22 +92,25 @@ function RoomEntry({ busy, onCreate, onJoin }: {
   const [capacity, setCapacity] = useState(4);
   const [code, setCode] = useState(() => new URLSearchParams(window.location.search).get('sala')?.slice(0, 10).toUpperCase() ?? '');
 
-  return <section className="online-card online-room-entry" aria-labelledby="room-entry-title">
-    <h2 id="room-entry-title">Salas privadas</h2>
-    <p>Abra uma mesa ou use o código que recebeu.</p>
-    <form className="online-inline" onSubmit={event => { event.preventDefault(); onCreate(capacity); }}>
+  return <section className="online-room-entry" aria-labelledby="room-entry-title">
+    <h2 id="room-entry-title" className="online-display-title">Salas privadas</h2>
+    <div className="online-room-forms">
+    <form className="online-room-form" onSubmit={event => { event.preventDefault(); if (!busy) onCreate(capacity); }}>
+      <h3 className="online-display-title"><GameIcon name="plus" />Criar sala</h3>
       <label htmlFor="room-capacity">Vagas</label>
-      <select id="room-capacity" value={capacity} onChange={event => setCapacity(Number(event.target.value))}>
+      <select id="room-capacity" value={capacity} disabled={busy} onChange={event => setCapacity(Number(event.target.value))}>
         {Array.from({ length: 9 }, (_, index) => index + 2).map(count => <option key={count} value={count}>{count}</option>)}
       </select>
-      <button className="online-primary" disabled={busy}>Criar sala</button>
+      <button className="online-primary" disabled={busy}>Criar sala <GameIcon name="plus" /></button>
     </form>
-    <form className="online-inline" onSubmit={event => { event.preventDefault(); onJoin(code.trim()); }}>
+    <form className="online-room-form" onSubmit={event => { event.preventDefault(); if (!busy) onJoin(code.trim()); }}>
+      <h3 className="online-display-title"><GameIcon name="enter" />Entrar na sala</h3>
       <label htmlFor="room-code">Código de convite</label>
-      <input id="room-code" value={code} onChange={event => setCode(event.target.value.toUpperCase())}
-        pattern="[0-9A-F]{10}" maxLength={10} autoComplete="off" title="Digite os 10 caracteres do código" required />
-      <button disabled={busy}>Entrar por código</button>
+      <input id="room-code" value={code} onChange={event => setCode(event.target.value.toUpperCase())} disabled={busy}
+        pattern="[0-9A-F]{10}" maxLength={10} autoComplete="off" spellCheck={false} placeholder="10 caracteres" title="Digite os 10 caracteres do código" required />
+      <button disabled={busy}>Entrar por código <GameIcon name="enter" /></button>
     </form>
+    </div>
   </section>;
 }
 
@@ -291,7 +306,7 @@ function ConnectedHub({
   return <HubSurface onExit={onExit} onLogout={onLogout} section={section} onNavigate={onNavigate}>
     <div className="online-profile-bar">
       <div className="online-identity"><Avatar profile={profile} /><p><strong>{profile.displayName}</strong><small>@{profile.username}</small></p></div>
-      <button onClick={editProfile}>Editar perfil</button>
+      <button type="button" onClick={editProfile}><GameIcon name="identity" />Editar perfil</button>
     </div>
     {(authError || error) && <p className="online-error" role="alert">{authError || error}</p>}
     {notice && <p className="online-notice" role="status">{notice}</p>}
@@ -300,6 +315,14 @@ function ConnectedHub({
       <button onClick={() => { void refreshSocial(); }}>Tentar novamente</button>
     </div>}
     {section === 'friends' ? <div className="online-stack online-social">
+      <header className="online-page-heading">
+        <div><h2>Seus <em>aliados.</em></h2><p>Mantenha os amigos perto. Os traidores, mais ainda.</p></div>
+        <a className="online-page-link" href={onlineHash('rooms')} onClick={event => followSection(event, 'rooms', onNavigate)}>
+          Ir para salas <GameIcon name="rooms" />
+        </a>
+      </header>
+      <SocialOverview social={social} invites={invites} />
+      {invitePanel}
       {!social && !socialError && <section className="online-card"><p role="status">Carregando amigos…</p></section>}
       {social && <FriendsPanel userId={profile.id} social={social} busy={busy}
         onSearch={async username => {
@@ -323,15 +346,18 @@ function ConnectedHub({
           await api.request(`/friends/${id}`, 'DELETE');
           await refreshSocial();
         }, 'Contato removido.')} />}
-      {invitePanel}
-    </div> : <section aria-label="Salas e partidas">
+    </div> : <section className={`online-stack online-rooms${room?.status === 'lobby' ? ' online-rooms-lobby' : ''}`} aria-label="Salas e partidas">
+      {room?.status !== 'lobby' && <header className="online-page-heading">
+        <div><h2>Reúna a <em>mesa.</em></h2><p>Uma sala. Muitos aliados. Apenas um sobrevivente.</p></div>
+        <GameIcon name="rooms" />
+      </header>}
       {roomError && <div className="online-error">
         <p role="alert">Não foi possível atualizar suas salas. {roomError}</p>
         <button onClick={() => { void refreshRooms(); }}>Tentar novamente</button>
       </div>}
       {selectedRoomId && rooms && !rooms.some(item => item.id === selectedRoomId) && !room &&
         <p className="online-notice" role="status">A sala anterior foi encerrada ou expirou.</p>}
-      {rooms && rooms.length > 0 && <div className="online-inline">
+      {rooms && rooms.length > 0 && <div className="online-room-selector">
         <label htmlFor="active-online-room">Selecionar sala</label>
         <select id="active-online-room" value={room?.id ?? ''} disabled={busy} onChange={event => {
           selectRoomId(event.target.value);
@@ -343,24 +369,22 @@ function ConnectedHub({
           </option>)}
         </select>
       </div>}
-      <div className="online-grid">
+      <div className="online-stack online-room-body">
+        {room?.status !== 'lobby' && invitePanel}
         {!rooms && !roomError && <section className="online-card"><p role="status">Buscando suas salas…</p></section>}
         {rooms && !room && <RoomEntry busy={busy}
           onCreate={capacity => run(async () => enter(await api.request<Room>('/rooms', 'POST', { capacity })))}
           onJoin={code => run(async () => enter(await api.request<Room>('/rooms/join', 'POST', { code })))} />}
-        {room?.status === 'lobby' && <div className="online-stack">
+        {room?.status === 'lobby' &&
           <Lobby key={room.id} room={room} userId={profile.id} friends={social?.friends ?? []} presence={presence} busy={busy}
             onReady={ready => run(() => changeRoom('ready', { ready }))}
             onStart={() => run(() => changeRoom('start'))}
             onLeave={() => run(() => changeRoom('leave'))}
             onClose={() => run(() => changeRoom('close'))}
             onInvite={userId => run(() => changeRoom('invite', { userId }), 'Convite enviado.')}
-            onCopy={() => { void copyLink(room.code); }} />
-          {shareLink && <label className="online-card">Link de convite
-            <input readOnly value={shareLink} onFocus={event => event.target.select()} />
-          </label>}
-        </div>}
-        {invitePanel}
+            onCopy={() => { void copyLink(room.code); }} shareLink={shareLink}>
+            {invitePanel}
+          </Lobby>}
       </div>
     </section>}
   </HubSurface>;
@@ -425,7 +449,7 @@ export function OnlineHub(props: HubProps) {
     session={session} api={api} client={supabase} authError={authError} onLogout={() => { void signOut(); }} />;
 
   return <HubSurface onExit={props.onExit} section={props.section} onNavigate={props.onNavigate}>
-    <section className="online-login" aria-labelledby="online-login-title">
+    <div className="online-login">
       {!supabase || session === undefined ? <div className="online-card online-login-terminal">
         <h2 id="online-login-title">Entrar na rede</h2>
         {!supabase ? <p role="status">{configuration === 'invalid'
@@ -433,6 +457,6 @@ export function OnlineHub(props: HubProps) {
             : 'O modo online precisa da configuração do Supabase neste ambiente. Você pode continuar no modo local.'}</p>
           : <p className="online-loading-status" role="status">Restaurando sessão…</p>}
       </div> : <AuthTerminal {...auth} error={authError} />}
-    </section>
+    </div>
   </HubSurface>;
 }

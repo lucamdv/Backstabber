@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { deckSizeFor, validateNames } from '../../game/core/setup';
+import { GameIcon } from '../shared/GameIcon';
 import { TerminalPanel } from './TerminalPanel';
 
 type SetupPanelProps = {
@@ -16,9 +17,36 @@ const playerCounts = Array.from({ length: 9 }, (_, index) => index + 2);
 export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: SetupPanelProps) {
   const [names, setNames] = useState(['', '']);
   const [error, setError] = useState<string | null>(null);
+  const [local, setLocal] = useState(false);
   const count = names.length;
   const deckSize = deckSizeFor(count);
   if (!active) return null;
+
+  function close() {
+    setLocal(false);
+    onClose();
+  }
+
+  if (onOnline && !local) {
+    return <TerminalPanel key="choose" panel="jogar" title="ESCOLHA O MODO" focusClose={false} onClose={close}>
+      <div className="menu-modes">
+        <button type="button" className="menu-mode" data-initial-focus aria-label="Partida local" aria-describedby="menu-local-help"
+          onClick={() => setLocal(true)}>
+          <GameIcon name="local" />
+          <span>Partida local <small id="menu-local-help">Jogue no mesmo dispositivo.</small></span>
+          <GameIcon name="enter" />
+        </button>
+        <button type="button" className="menu-mode" aria-label="Jogar online" aria-describedby="menu-online-help" onClick={onOnline}>
+          <GameIcon name="network" />
+          <span>Jogar online <small id="menu-online-help">Crie uma sala ou entre com um convite.</small></span>
+          <GameIcon name="enter" />
+        </button>
+        {onResume && <button type="button" className="menu-mode menu-mode-resume" onClick={onResume}>
+          <GameIcon name="play" />Retomar partida
+        </button>}
+      </div>
+    </TerminalPanel>;
+  }
 
   function changeCount(nextCount: number) {
     if (!playerCounts.includes(nextCount)) return;
@@ -35,10 +63,12 @@ export function SetupPanel({ active, onStart, onResume, onOnline, onClose }: Set
   }
 
   return (
-    <TerminalPanel panel="jogar" title="NOVA PARTIDA" focusClose={false} onClose={onClose}>
+    <TerminalPanel key="local" panel="jogar" title="NOVA PARTIDA" focusClose={false} onClose={close}>
       <p className="glitch-text">INICIALIZANDO PROTOCOLO DE CONEXÃO...</p>
-      {onOnline && <button type="button" className="btn-start menu-resume" onClick={onOnline}>Jogar online</button>}
-      {onResume && <button type="button" className="btn-start menu-resume" onClick={onResume}>Retomar partida</button>}
+      {onOnline && <button type="button" className="menu-mode-back" onClick={() => setLocal(false)}>
+        <GameIcon name="back" />Voltar aos modos
+      </button>}
+      {!onOnline && onResume && <button type="button" className="btn-start menu-resume" onClick={onResume}>Retomar partida</button>}
       <form id="setup-form" onSubmit={submit}>
         <div className="setup-options">
           <div className="input-group">

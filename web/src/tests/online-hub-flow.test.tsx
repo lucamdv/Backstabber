@@ -105,8 +105,8 @@ test('Amigos asks for login and a callback restores the Friends destination, inc
 test('Jogar online opens the rooms destination and leaves local setup available from the menu', async () => {
   connect(async path => path === '/rooms' ? [] : baseData(path));
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'Jogar' }));
-  expect(screen.getByRole('button', { name: 'ESTABELECER CONEXÃO' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'START' }));
+  expect(screen.getByRole('button', { name: 'Partida local' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Jogar online' }));
   expect(window.location.hash).toBe('#/online');
   expect(await screen.findByRole('heading', { name: 'Salas privadas' })).toBeInTheDocument();

@@ -17,6 +17,20 @@ function props(overrides: Partial<AuthTerminalProps> = {}): AuthTerminalProps {
 
 afterEach(() => vi.restoreAllMocks());
 
+test('apresenta o terminal com o modo atual e alterna para cadastro por teclado', async () => {
+  const config = props();
+  const user = userEvent.setup();
+  const view = render(<AuthTerminal {...config} />);
+  expect(screen.getByRole('heading', { name: /sua próxima traição começa aqui/i })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Login' })).toHaveAttribute('aria-pressed', 'true');
+  screen.getByRole('button', { name: 'Cadastro' }).focus();
+  await user.keyboard('{Enter}');
+  expect(config.onNavigate).toHaveBeenCalledExactlyOnceWith('signup');
+  view.rerender(<AuthTerminal {...config} view="signup" />);
+  expect(screen.getByRole('button', { name: 'Cadastro' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('heading', { name: 'Criar conta' })).toHaveFocus();
+});
+
 test('login submits credentials and clears them without writing secrets or logging', async () => {
   const user = userEvent.setup();
   const log = vi.spyOn(console, 'log');
@@ -52,7 +66,7 @@ test('login offers Google, signup and password recovery with accessible visibili
   expect(config.onGoogle).toHaveBeenCalledOnce();
   await user.click(screen.getByRole('button', { name: /Esqueci minha senha/ }));
   expect(config.onNavigate).toHaveBeenCalledWith('request-password');
-  await user.click(screen.getByRole('button', { name: /Criar conta/i }));
+  await user.click(screen.getByRole('button', { name: 'Cadastro' }));
   expect(config.onNavigate).toHaveBeenCalledWith('signup');
 });
 

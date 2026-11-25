@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 const repository = fileURLToPath(new URL('../..', import.meta.url));
-const screenshots = resolve(repository, 'docs/auth/screenshots');
-const viewports = [[360, 800], [390, 844], [1366, 768], [1920, 1080]];
+const screenshots = process.env.BACKSTABBER_AUTH_VISUAL_OUTPUT ?? resolve(repository, 'docs/auth/screenshots');
+const viewports = [[360, 800], [390, 844], [768, 1024], [1366, 768], [1920, 1080]];
 const views = [
   ['login', 'Entrar no sistema'], ['signup', 'Criar conta'],
   ['verify-email', 'Verifique sua identidade'], ['request-password', 'Recuperar acesso'],
@@ -133,7 +133,7 @@ test.describe('terminal de autenticação com fixture explícita', () => {
     await expect(page.getByLabel('Senha', { exact: true })).toHaveValue('');
     await page.getByRole('button', { name: 'Continuar com Google' }).click();
     await expect(page.locator('.auth-terminal [role="status"]')).toContainText('Fixture de interface');
-    await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
+    await page.getByRole('button', { name: 'Cadastro', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Criar conta', exact: true })).toBeFocused();
     await expect(page.getByLabel('E-mail', { exact: true })).toHaveValue('');
     await page.getByLabel('E-mail', { exact: true }).fill('operador@example.invalid');
@@ -157,7 +157,7 @@ test.describe('terminal de autenticação com fixture explícita', () => {
     await page.screenshot({ path: resolve(screenshots, 'terminal-verification-error-390x844.png'), animations: 'disabled' });
     await page.getByRole('button', { name: 'Corrigir e-mail' }).click();
     await expect(page.getByLabel('E-mail', { exact: true })).toHaveValue('');
-    await page.getByRole('button', { name: '← Voltar para entrar' }).click();
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
     await page.getByRole('button', { name: /Esqueci minha senha/ }).click();
     await page.getByLabel('E-mail', { exact: true }).fill('operador@example.invalid');
     await page.getByRole('button', { name: 'Enviar link de recuperação' }).click();

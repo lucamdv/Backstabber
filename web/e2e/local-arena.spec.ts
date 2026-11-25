@@ -13,7 +13,8 @@ async function openTable(page: Page, names: string[]) {
   await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
   await page.goto('./', { waitUntil: 'commit' });
   await expect(page.getByRole('navigation', { name: 'Menu principal' })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Jogar', exact: true }).click();
+  await page.getByRole('button', { name: 'START', exact: true }).click();
+  await page.getByRole('button', { name: 'Partida local' }).click();
   await page.locator('#player-count').selectOption(String(names.length));
   for (const [index, name] of names.entries()) await page.locator(`#player${index + 1}`).fill(name);
   await page.getByRole('button', { name: 'ESTABELECER CONEXÃO' }).click();

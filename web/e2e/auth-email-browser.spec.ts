@@ -119,7 +119,7 @@ test('real local browser email authentication with explicitly stubbed game API',
     stage = 'SIGNUP_NAVIGATION';
     await page.goto(app + '/?online=salas');
     stage = 'SIGNUP_OPEN_FORM';
-    await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
+    await page.getByRole('button', { name: 'Cadastro', exact: true }).click();
     stage = 'SIGNUP_FILL_FORM';
     await page.getByLabel('E-mail', { exact: true }).fill(email);
     await page.getByLabel('Senha', { exact: true }).fill(password);

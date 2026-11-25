@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { GameIcon } from '../components/shared/GameIcon';
 import { maskEmail, passwordRules, validNewPassword } from './auth-policy';
 import './auth-terminal.css';
 
@@ -24,7 +25,7 @@ export type AuthTerminalProps = {
 };
 
 const copy: Record<AuthView, { title: string; subtitle: string; step: string }> = {
-  login: { title: 'Entrar no sistema', subtitle: 'Sua próxima jogada começa aqui.', step: 'ACESSO / 01' },
+  login: { title: 'Entrar no sistema', subtitle: '', step: 'Acesso ao terminal' },
   signup: { title: 'Criar conta', subtitle: 'Escolha suas credenciais. Prepare sua estratégia.', step: 'CADASTRO / 01' },
   'verify-email': { title: 'Verifique sua identidade', subtitle: 'Só mais um passo para entrar na partida.', step: 'CADASTRO / 02' },
   'request-password': { title: 'Recuperar acesso', subtitle: 'Defina ou recupere sua senha por e-mail.', step: 'RECUPERAÇÃO / 01' },
@@ -147,12 +148,18 @@ function TerminalPanel(props: AuthTerminalProps) {
     </div>
     <div className="auth-terminal-body">
       <header className="auth-heading">
-        <img src="images/isotipo.png" alt="" width="50" height="50" />
+        <GameIcon name="identity" />
         <div><p className="auth-step">{copy[view].step}</p>
           <h2 id={`${id}-title`} ref={title} tabIndex={-1}>{copy[view].title}</h2>
         </div>
       </header>
-      <p className="auth-subtitle">{copy[view].subtitle}</p>
+      {copy[view].subtitle && <p className="auth-subtitle">{copy[view].subtitle}</p>}
+      {(view === 'login' || view === 'signup') && <div className="auth-tabs" role="group" aria-label="Modo de acesso">
+        <button type="button" aria-pressed={view === 'login'} disabled={disabled}
+          onClick={() => { if (view !== 'login') navigate('login'); }}>Login</button>
+        <button type="button" aria-pressed={view === 'signup'} disabled={disabled}
+          onClick={() => { if (view !== 'signup') navigate('signup'); }}>Cadastro</button>
+      </div>}
       <div className="auth-feedback">
         <p id={`${id}-error`} className="auth-error" role="alert" aria-atomic="true">{message}</p>
         <p className="auth-notice" role="status" aria-live="polite" aria-atomic="true">
@@ -213,9 +220,6 @@ function TerminalPanel(props: AuthTerminalProps) {
         <button type="button" className="auth-link auth-recovery" disabled={disabled} onClick={() => navigate('request-password')}>
           Esqueci minha senha <span>Definir ou recuperar senha</span>
         </button>
-        <div className="auth-bottom"><span>Ainda não tem uma conta?</span>
-          <button type="button" className="auth-link" disabled={disabled} onClick={() => navigate('signup')}>Criar conta</button>
-        </div>
       </>}
       {view === 'verify-email' && <div className="auth-secondary">
         <button type="button" className="auth-outline" disabled={disabled || cooldown > 0} onClick={() => void run(props.onResend)}>
@@ -223,14 +227,20 @@ function TerminalPanel(props: AuthTerminalProps) {
         </button>
         <button type="button" className="auth-link" disabled={disabled} onClick={() => navigate('signup')}>Corrigir e-mail</button>
       </div>}
-      {view !== 'login' && <button type="button" className="auth-link auth-back" disabled={disabled} onClick={() => navigate('login')}>
+      {view !== 'login' && view !== 'signup' && <button type="button" className="auth-link auth-back" disabled={disabled} onClick={() => navigate('login')}>
         {view === 'password-saved' ? 'Voltar para entrar' : '← Voltar para entrar'}
       </button>}
     </div>
-    <footer className="auth-terminal-footer" aria-hidden="true"><span>CONEXÃO SEGURA</span><span>JOGUE COM ESTRATÉGIA.</span></footer>
   </section>;
 }
 
 export function AuthTerminal(props: AuthTerminalProps) {
-  return <TerminalPanel key={props.view} {...props} />;
+  return <div className="auth-layout" data-view={props.view}>
+    <div className="auth-intro">
+      <h2>Sua próxima <em>traição</em> começa aqui.</h2>
+      <p>Entre na rede. Reúna seus aliados.<br /> Escolha em quem não confiar.</p>
+      <img src="images/isologo.png" alt="" width="260" />
+    </div>
+    <TerminalPanel key={props.view} {...props} />
+  </div>;
 }

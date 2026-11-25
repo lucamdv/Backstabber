@@ -50,6 +50,8 @@ npm run build
 - [Contrato dos backends](docs/av2/backend-contract.md)
 - [Plano de distribuição](docs/av2/distribution-migration.md)
 - [Validação e paridade funcional](docs/av2/sprint-01-validation.md)
+- [Critérios permanentes de viewport](docs/criterios-viewport.md)
+- [Uso das skills de design](docs/skills-de-design.md)
 
 ### Multiplayer online (Sprint 02)
 

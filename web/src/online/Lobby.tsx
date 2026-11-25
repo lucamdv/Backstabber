@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { GameIcon } from '../components/shared/GameIcon';
 import { Avatar } from './Profile';
 import type { Friend, Room } from './types';
 
 export function Lobby({
-  room, userId, friends, presence, busy = false, onReady, onStart, onLeave, onClose, onInvite, onCopy,
+  room, userId, friends, presence, busy = false, onReady, onStart, onLeave, onClose, onInvite, onCopy, shareLink, children,
 }: {
   room: Room;
   userId: string;
@@ -16,6 +18,8 @@ export function Lobby({
   onClose: () => void;
   onInvite: (id: string) => void;
   onCopy: () => void;
+  shareLink?: string;
+  children?: ReactNode;
 }) {
   const [recipient, setRecipient] = useState('');
   const me = room.members.find(player => player.id === userId);
@@ -49,19 +53,32 @@ export function Lobby({
   }, [rosterNotice]);
 
   return <section className="online-card online-lobby" data-ready={canStart} aria-labelledby="lobby-title">
-    <div className="online-card-heading">
-      <h2 id="lobby-title">Preparação da mesa</h2>
+    <header className="online-card-heading">
+      <h2 id="lobby-title"><GameIcon name="rooms" />Preparação da mesa</h2>
       <div className="online-occupancy">
         <span>{room.members.length}/{room.capacity} jogadores</span>
         <progress aria-label="Ocupação da sala" value={room.members.length} max={room.capacity} />
       </div>
+    </header>
+    <div className="online-actions online-lobby-start">
+      <button type="button" className={host && canStart ? undefined : 'online-primary'} onClick={() => onReady(!me?.ready)}
+        disabled={busy || !me || room.status !== 'lobby'}><GameIcon name="check" />{me?.ready ? 'Cancelar prontidão' : 'Estou pronto'}</button>
+      {host && <button type="button" className="online-primary" onClick={onStart}
+        disabled={busy || !canStart}>Iniciar partida</button>}
     </div>
     <div className="online-room-code">
       <p>Código da sala <strong>{room.code}</strong></p>
-      <button type="button" onClick={onCopy}>Copiar link de convite</button>
+      <button type="button" onClick={onCopy}><GameIcon name="copy" />Copiar link de convite</button>
     </div>
+    {shareLink && <label className="online-lobby-share">Link de convite
+      <input readOnly value={shareLink} onFocus={event => event.target.select()} />
+    </label>}
     <p className="online-lobby-hint" role="status">{startHint}</p>
     <div className="online-roster-notice" role="status">{rosterNotice}</div>
+    <div className="online-lobby-scroll" role="region" aria-label="Conteúdo da sala" tabIndex={0}>
+    <div className="online-lobby-layout">
+    <section aria-labelledby="lobby-roster-title">
+    <h3 id="lobby-roster-title" className="online-display-title"><GameIcon name="users" />Jogadores</h3>
     <ul className="online-list online-roster" aria-label="Participantes">
       {room.members.map(member => <li key={member.id} data-ready={member.ready} data-connected={member.connected}>
         <Avatar profile={member} />
@@ -79,24 +96,27 @@ export function Lobby({
         </div>
       </li>)}
     </ul>
-    {available.length > 0 && <form className="online-inline" onSubmit={event => {
-      event.preventDefault();
-      if (available.some(friend => friend.id === recipient)) onInvite(recipient);
-    }}>
-      <label htmlFor="invite-friend">Convidar amigo</label>
-      <select id="invite-friend" value={recipient} onChange={event => setRecipient(event.target.value)} required>
-        <option value="">Escolha um amigo</option>
-        {available.map(friend => <option key={friend.id} value={friend.id}>{friend.displayName}</option>)}
-      </select>
-      <button disabled={busy || !available.some(friend => friend.id === recipient)}>Enviar convite</button>
-    </form>}
-    <div className="online-actions">
-      <button type="button" className={host && canStart ? undefined : "online-primary"} onClick={() => onReady(!me?.ready)}
-        disabled={busy || !me || room.status !== 'lobby'}>{me?.ready ? 'Cancelar prontidão' : 'Estou pronto'}</button>
-      {host && <button type="button" className="online-primary" onClick={onStart}
-        disabled={busy || !canStart}>Iniciar partida</button>}
-      <button type="button" onClick={onLeave} disabled={busy}>Sair da sala</button>
+    </section>
+    <section className="online-lobby-invite" aria-labelledby="lobby-invite-title">
+      <h3 id="lobby-invite-title" className="online-display-title"><GameIcon name="send" />Convidar amigos</h3>
+      {available.length > 0 ? <form className="online-stack" onSubmit={event => {
+        event.preventDefault();
+        if (!busy && available.some(friend => friend.id === recipient)) onInvite(recipient);
+      }}>
+        <label htmlFor="invite-friend">Convidar amigo</label>
+        <select id="invite-friend" value={recipient} onChange={event => setRecipient(event.target.value)} required>
+          <option value="">Escolha um amigo</option>
+          {available.map(friend => <option key={friend.id} value={friend.id}>{friend.displayName}</option>)}
+        </select>
+        <button disabled={busy || !available.some(friend => friend.id === recipient)}>Enviar convite <GameIcon name="send" /></button>
+      </form> : <p>Copie o link de convite para chamar mais jogadores.</p>}
+    </section>
+    </div>
+    {children}
+    <div className="online-actions online-lobby-exit">
+      <button type="button" onClick={onLeave} disabled={busy}><GameIcon name="exit" />Sair da sala</button>
       {host && <button type="button" onClick={onClose} disabled={busy}>Encerrar sala</button>}
+    </div>
     </div>
   </section>;
 }

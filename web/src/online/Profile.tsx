@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GameIcon } from '../components/shared/GameIcon';
 import type { Profile as ProfileData, ProfileInput } from './types';
 
 export function Avatar({ profile }: { profile: Pick<ProfileData, 'avatarUrl' | 'displayName'> }) {
@@ -23,7 +24,7 @@ export function ProfileEditor({ profile, defaults, busy, onSave }: {
   const [showOnline, setShowOnline] = useState(profile?.showOnline ?? false);
   const [error, setError] = useState('');
 
-  return <form className="online-card online-form" onSubmit={event => {
+  return <form className="online-card online-form online-profile-editor" onSubmit={event => {
     event.preventDefault();
     const cleanName = displayName.trim();
     const cleanAvatar = avatar.trim();
@@ -53,6 +54,6 @@ export function ProfileEditor({ profile, defaults, busy, onSave }: {
       Mostrar minha disponibilidade aos amigos
     </label>
     {error && <p role="alert">{error}</p>}
-    <button className="online-primary" disabled={busy}>{busy ? 'Salvando perfil…' : 'Salvar perfil'}</button>
+    <button className="online-primary" disabled={busy}>{busy ? 'Salvando perfil…' : 'Salvar perfil'} <GameIcon name="check" /></button>
   </form>;
 }

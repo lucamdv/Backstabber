@@ -39,7 +39,7 @@ test('três contas, reação em reconexão, vitória e revanche @live', async ({
       await a.getByLabel('Buscar por nome de usuário').fill(usernames[1]);
       await button(a, 'Buscar jogador').click();
       await button(a, 'Adicionar amigo').click();
-      await b.getByRole('list', { name: 'Solicitações de amizade' }).getByRole('listitem')
+      await b.getByRole('list', { name: 'Solicitações recebidas' }).getByRole('listitem')
         .filter({ hasText: '@' + usernames[0] }).getByRole('button', { name: 'Aceitar amizade' }).click();
     }
     await expect(friend).toBeVisible();
@@ -50,7 +50,7 @@ test('três contas, reação em reconexão, vitória e revanche @live', async ({
     const roomCode = a.locator('.online-room-code strong');
     await expect(roomCode).toHaveText(/^[0-9A-F]{10}$/);
     const code = await roomCode.innerText();
-    await a.getByLabel('Convidar amigo').selectOption({ label: displayName });
+    await a.getByRole('combobox', { name: 'Convidar amigo', exact: true }).selectOption({ label: displayName });
     await button(a, 'Enviar convite').click();
     await button(b, 'Entrar pelo convite').click();
     await c.goto(`./?sala=${code}#/online`);

@@ -5,8 +5,27 @@ import MenuPage from '../pages/MenuPage';
 
 afterEach(cleanup);
 
+test('START abre a escolha de modo e Voltar restaura a opção local', () => {
+  const onOnline = vi.fn();
+  render(<MenuPage onStart={vi.fn()} onOnline={onOnline} />);
+  const start = screen.getByRole('button', { name: 'START' });
+  fireEvent.click(start);
+  const modes = screen.getByRole('dialog', { name: 'ESCOLHA O MODO' });
+  const local = within(modes).getByRole('button', { name: 'Partida local' });
+  expect(within(modes).queryByRole('combobox')).toBeNull();
+  expect(local).toHaveFocus();
+  fireEvent.click(local);
+  const setup = screen.getByRole('dialog', { name: 'NOVA PARTIDA' });
+  expect(within(setup).getByRole('combobox')).toHaveFocus();
+  fireEvent.click(within(setup).getByRole('button', { name: 'Voltar aos modos' }));
+  const chooser = screen.getByRole('dialog', { name: 'ESCOLHA O MODO' });
+  expect(within(chooser).getByRole('button', { name: 'Partida local' })).toHaveFocus();
+  fireEvent.click(within(chooser).getByRole('button', { name: 'Jogar online' }));
+  expect(onOnline).toHaveBeenCalledOnce();
+});
+
 function openSetup() {
-  fireEvent.click(screen.getByRole('button', { name: 'Jogar' }));
+  fireEvent.click(screen.getByRole('button', { name: 'START' }));
   return within(screen.getByRole('dialog', { name: 'NOVA PARTIDA' }));
 }
 
